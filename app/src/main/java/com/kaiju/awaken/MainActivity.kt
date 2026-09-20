@@ -63,14 +63,14 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (\!gameView.onBackPressed()) {
+        if (!gameView.onBackPressed()) {
             @Suppress("DEPRECATION")
             super.onBackPressed()
         }
     }
 
     override fun onDestroy() {
-        gameView.dispose()
+        gameView.destroy()
         super.onDestroy()
     }
 }

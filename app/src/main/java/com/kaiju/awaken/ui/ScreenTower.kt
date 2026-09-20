@@ -1,0 +1,273 @@
+package com.kaiju.awaken.ui
+
+import android.graphics.Canvas
+import android.graphics.Paint
+import com.kaiju.awaken.game.Content
+import com.kaiju.awaken.game.Data
+import com.kaiju.awaken.game.RunService
+import com.kaiju.awaken.game.TowerService
+import com.kaiju.awaken.game.Unit
+
+internal fun GameView.drawTowerScreen(c: Canvas) {
+    val p = run ?: return
+    r.panel(c, 0f, 0f, w, 104f, 0f, r.withAlpha(0xFF1B1040.toInt(), 238), r.withAlpha(0xFF120A2E.toInt(), 225), null)
+    r.fill.color = r.withAlpha(Palette.PINK, 70)
+    c.drawRect(0f, 102f, w, 104f, r.fill)
+    r.text(c, "第 ${p.floor} 层", 20f, 40f, 22f, Palette.TEXT, true)
+    r.text(c, p.mode.cn + "模式 · 目标 ${if (p.mode.endFloor == 0) "无尽" else p.mode.endFloor.toString() + " 层"}", 20f, 62f, 11.5f, Palette.TEXT_DIM)
+    r.text(c, "Lv.${p.level}   💰${p.gold}   ✨${p.skillPoints}", 20f, 86f, 13f, Palette.GOLD)
+
+    val navY = 22f
+    val bw = 62f
+    ghostButton(c, "tower_menu", "主城", w - bw * 3f - 30f, navY, bw, 34f, Palette.TEXT_DIM)
+    ghostButton(c, "tower_panel_talents", "天赋", w - bw * 2f - 22f, navY, bw, 34f, Palette.CYAN)
+    ghostButton(c, "tower_panel_attrs", "属性", w - bw - 14f, navY, bw, 34f, Palette.PINK)
+
+    // 路径
+    drawFloorPath(c, 118f)
+
+    // 事件舞台
+    val stageY = 214f
+    val fe = TowerService.currentEvent(p)
+    card(c, 18f, stageY, w - 36f, h - stageY - 108f, r.withAlpha(Palette.BORDER, 200), 18f)
+    if (fe == null) {
+        r.text(c, "本层已完成。", w / 2f, stageY + 80f, 18f, Palette.CYAN, true, Paint.Align.CENTER)
+        button(c, "tower_next_floor", "前往下一层", 48f, stageY + 120f, w - 96f, 56f, Palette.PINK)
+        drawBottomNav(c)
+        return
+    }
+    drawEventStage(c, stageY, fe)
+    drawBottomNav(c)
+}
+
+private fun GameView.drawFloorPath(c: Canvas, top: Float) {
+    val p = run ?: return
+    val list = p.floorEvents
+    if (list.isEmpty()) return
+    r.text(c, "本层路径", 22f, top + 2f, 11.5f, Palette.TEXT_DIM)
+    val n = list.size
+    val avail = w - 44f
+    val step = if (n > 1) avail / (n - 1) else 0f
+    val cy = top + 34f
+    r.stroke.shader = null
+    r.stroke.color = r.withAlpha(Palette.BORDER_SOFT, 200)
+    r.stroke.strokeWidth = 2f
+    if (n > 1) c.drawLine(22f, cy, 22f + avail, cy, r.stroke)
+    for (i in 0 until n) {
+        val cx = 22f + step * i
+        val fe = list[i]
+        val done = i < p.eventIdx
+        val cur = i == p.eventIdx
+        val col = when {
+            done -> Palette.GREEN
+            cur -> Palette.PINK
+            else -> Palette.BORDER_SOFT
+        }
+        if (cur) r.glowPanel(c, cx - 13f, cy - 13f, 26f, 26f, 13f, Palette.PINK, 70)
+        r.fill.shader = null
+        r.fill.color = r.withAlpha(col, if (cur || done) 255 else 140)
+        c.drawCircle(cx, cy, if (cur) 10f else 7f, r.fill)
+        val glyph = when (fe.kind) {
+            "boss" -> "王"
+            "combat_elite" -> "精"
+            "combat_normal" -> "战"
+            "shop" -> "商"
+            "tavern" -> "酒"
+            else -> "事"
+        }
+        r.text(c, glyph, cx, cy + 4f, 9f, 0xFF140B26.toInt(), true, Paint.Align.CENTER)
+    }
+}
+
+private fun GameView.drawEventStage(c: Canvas, top: Float, fe: com.kaiju.awaken.game.FloorEvent) {
+    val p = run ?: return
+    val accent = when (fe.kind) {
+        "boss" -> Palette.RED
+        "combat_elite" -> Palette.GOLD
+        "combat_normal" -> Palette.PINK
+        "shop" -> Palette.CYAN
+        "tavern" -> Palette.GREEN
+        else -> Palette.CYAN
+    }
+    if (fe.resolved) {
+        r.text(c, "结果", w / 2f, top + 40f, 15f, accent, true, Paint.Align.CENTER)
+        r.wrap(c, fe.result.ifEmpty { eventResult }, 44f, top + 78f, w - 88f, 15f, Palette.TEXT, 26f)
+        button(c, "tower_continue", "继 续", 48f, top + 150f, w - 96f, 54f, Palette.CYAN)
+        return
+    }
+    val (title, intro, glyph) = when (fe.kind) {
+        "boss" -> Triple("守层首领", "塔层守卫挡住了去路。", "👑")
+        "combat_elite" -> Triple("精英遭遇", "更强的气息逼近。", "⚔")
+        "combat_normal" -> Triple("魔物袭击", "几只魔物从阴影中扑出。", "🗡")
+        "shop" -> Triple("道具商店", "商人摊开了货物。", "🛒")
+        "tavern" -> Triple("佣兵酒馆", "佣兵们在角落里打量你。", "🍺")
+        else -> Triple(fe.event?.name ?: "奇遇", fe.event?.intro ?: "", fe.event?.glyph ?: "❖")
+    }
+    r.text(c, glyph, 46f, top + 62f, 34f, accent, true)
+    r.text(c, title, 92f, top + 50f, 19f, Palette.TEXT, true)
+    r.text(c, "第 ${p.floor} 层", 92f, top + 72f, 11.5f, Palette.TEXT_DIM)
+    r.wrap(c, intro, 30f, top + 104f, w - 96f, 12.5f, Palette.TEXT_DIM, 18f)
+
+    val choices = fe.event?.choices ?: emptyList()
+    var y = top + 150f
+    if (choices.isEmpty()) {
+        button(c, "evt_enter", "进 入", 48f, y, w - 96f, 54f, accent)
+    } else {
+        for (i in choices.indices) {
+            val ch = choices[i]
+            card(c, 34f, y, w - 68f, 62f, r.withAlpha(accent, 170), 14f)
+            r.text(c, ch.label, 48f, y + 26f, 14.5f, Palette.TEXT, true)
+            r.text(c, ch.detail, 48f, y + 47f, 11f, Palette.TEXT_DIM)
+            if (ch.gold > 0) {
+                val afford = p.gold >= ch.gold
+                r.text(c, "${ch.gold}💰", w - 52f, y + 26f, 12f, if (afford) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)
+            }
+            hit("evt_choice_$i", 34f, y, w - 68f, 62f).enabled = ch.gold <= 0 || p.gold >= ch.gold
+            y += 70f
+        }
+    }
+    if (fe.kind == "boss" || fe.kind == "combat_elite" || fe.kind == "combat_normal") {
+        val kindLabel = when (fe.kind) {
+            "boss" -> "首领战 · 奖励丰厚"
+            "combat_elite" -> "精英战 · 掉落提升"
+            else -> "普通战"
+        }
+        r.text(c, kindLabel, w / 2f, top + h - 150f, 12f, accent, true, Paint.Align.CENTER)
+    }
+}
+
+private fun GameView.drawBottomNav(c: Canvas) {
+    val p = run ?: return
+    val y = h - 92f
+    r.panel(c, 0f, y - 8f, w, 100f, 0f, r.withAlpha(0xFF170E36.toInt(), 240), r.withAlpha(0xFF0D0722.toInt(), 245), null)
+    val items = listOf(
+        Triple("tower_panel_bag", "背包", p.bag.size.toString()),
+        Triple("tower_panel_equip", "装备", p.equipped.size.toString()),
+        Triple("tower_panel_skills", "技能", p.skillPoints.toString()),
+        Triple("tower_panel_items", "道具", p.items.values.sum().toString()),
+        Triple("tower_panel_settings", "设置", "")
+    )
+    val cw = (w - 24f) / items.size
+    for (i in items.indices) {
+        val x = 12f + cw * i
+        val label = items[i].second
+        val badge = items[i].third
+        r.text(c, label, x + cw / 2f, y + 38f, 13f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
+        if (badge.isNotEmpty() && badge != "0") {
+            r.solid(c, x + cw / 2f + 14f, y + 16f, 22f, 16f, 8f, r.withAlpha(Palette.PINK, 230))
+            r.text(c, badge, x + cw / 2f + 25f, y + 28f, 10f, 0xFF1A0F2E.toInt(), true, Paint.Align.CENTER)
+        }
+        hit(items[i].first, x, y + 8f, cw, 62f)
+    }
+}
+
+internal fun tapTower(id: String) {
+    when {
+        id == "tower_menu" -> goMenu()
+        id == "tower_continue" -> continueAfterEvent()
+        id == "tower_next_floor" -> {
+            val p = run ?: return
+            TowerService.advanceFloor(p, perm)
+            if (p.waitingFloorTalent) {
+                p.waitingFloorTalent = false
+                beginDraft(1)
+            }
+        }
+        id.startsWith("tower_panel_") -> panel = id.removePrefix("tower_panel_")
+    }
+}
+
+internal fun tapEvent(id: String) {
+    when {
+        id == "evt_enter" -> enterCurrentEvent()
+        id.startsWith("evt_choice_") -> {
+            val idx = id.removePrefix("evt_choice_").toIntOrNull() ?: return
+            val p = run ?: return
+            val fe = TowerService.currentEvent(p) ?: return
+            val ch = fe.event?.choices?.getOrNull(idx) ?: return
+            resolveEvent(ch)
+        }
+    }
+}
+
+internal fun GameView.drawShopOverlay(c: Canvas) {
+    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 220))
+    card(c, 22f, 90f, w - 44f, h - 200f, r.withAlpha(Palette.CYAN, 200), 20f)
+    r.text(c, "道具商店", w / 2f, 140f, 22f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.text(c, "金币 ${run?.gold ?: 0}", w / 2f, 164f, 13f, Palette.GOLD, false, Paint.Align.CENTER)
+    val p = run ?: return
+    var y = 186f
+    for (i in shopStock.indices) {
+        val it = shopStock[i]
+        val afford = p.gold >= it.price
+        card(c, 40f, y, w - 80f, 76f, if (afford) r.withAlpha(Palette.BORDER, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 14f)
+        r.text(c, it.glyph, 62f, y + 44f, 26f, Palette.CYAN)
+        r.text(c, it.name, 96f, y + 30f, 15f, Palette.TEXT, true)
+        r.text(c, it.desc, 96f, y + 52f, 11f, Palette.TEXT_DIM)
+        r.text(c, "${it.price}💰", w - 60f, y + 44f, 14f, if (afford) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)
+        hit("shop_buy_$i", 40f, y, w - 80f, 76f).enabled = afford
+        y += 84f
+    }
+    ghostButton(c, "shop_close", "离开商店", 40f, h - 96f, w - 80f, 52f, Palette.TEXT_DIM)
+}
+
+internal fun tapShop(id: String) {
+    val p = run ?: return
+    when {
+        id == "shop_close" -> overlay = ""
+        id.startsWith("shop_buy_") -> {
+            val idx = id.removePrefix("shop_buy_").toIntOrNull() ?: return
+            val it = shopStock.getOrNull(idx) ?: return
+            if (p.gold < it.price) {
+                showToast("金币不足")
+                return
+            }
+            p.gold -= it.price
+            p.items[it.id] = (p.items[it.id] ?: 0) + 1
+            showToast("购买 ${it.name}")
+            audio.play("coins")
+        }
+    }
+}
+
+internal fun GameView.drawTavernOverlay(c: Canvas) {
+    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 220))
+    card(c, 22f, 90f, w - 44f, h - 200f, r.withAlpha(Palette.GREEN, 200), 20f)
+    r.text(c, "佣兵酒馆", w / 2f, 140f, 22f, Palette.GREEN, true, Paint.Align.CENTER)
+    val p = run ?: return
+    r.text(c, "队伍 ${p.party.size}/3 · 金币 ${p.gold}", w / 2f, 164f, 13f, Palette.GOLD, false, Paint.Align.CENTER)
+    var y = 186f
+    for (i in tavernList.indices) {
+        val u = tavernList[i]
+        val cost = TowerService.mercenaryCost(u)
+        val col = rarityColor(u.rarity)
+        val full = p.party.size >= 3
+        card(c, 40f, y, w - 80f, 96f, col, 14f)
+        drawPortrait(c, u.clsId, 84f, y + 48f, 56f, col)
+        r.text(c, u.name + " · " + (Data.classById[u.clsId]?.name ?: ""), 124f, y + 32f, 15f, Palette.TEXT, true)
+        r.text(c, u.rarity.cn + " · Lv.${u.level} · 攻击 ${u.base.atk.toInt()} 生命 ${u.base.maxHp.toInt()}", 124f, y + 54f, 11f, Palette.TEXT_DIM)
+        r.text(c, "$cost 💰", w - 60f, y + 60f, 15f, if (p.gold >= cost && !full) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)
+        hit("tavern_hire_$i", 40f, y, w - 80f, 96f).enabled = !full && p.gold >= cost
+        y += 104f
+    }
+    ghostButton(c, "tavern_close", "离开酒馆", 40f, h - 96f, w - 80f, 52f, Palette.TEXT_DIM)
+}
+
+internal fun tapTavern(id: String) {
+    val p = run ?: return
+    when {
+        id == "tavern_close" -> overlay = ""
+        id.startsWith("tavern_hire_") -> {
+            val idx = id.removePrefix("tavern_hire_").toIntOrNull() ?: return
+            val u = tavernList.getOrNull(idx) ?: return
+            if (TowerService.recruit(p, u)) {
+                RunService.recalcAll(p, perm)
+                tavernList.removeAt(idx)
+                showToast("${u.name} 加入了队伍")
+                audio.play("levelup")
+            } else {
+                showToast("无法招募（队伍已满或金币不足）")
+            }
+        }
+    }
+}

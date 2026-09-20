@@ -1,0 +1,322 @@
+package com.kaiju.awaken.ui
+
+import android.graphics.Canvas
+import android.graphics.Paint
+import com.kaiju.awaken.game.Data
+import com.kaiju.awaken.game.GameMode
+import com.kaiju.awaken.game.Rarity
+import com.kaiju.awaken.game.School
+import com.kaiju.awaken.game.Talent
+
+internal fun GameView.drawMenuScreen(c: Canvas) {
+    val titleY = h * 0.20f
+    // 主标题
+    r.text(c, "开局觉醒", w / 2f, titleY, 46f, Palette.TEXT, true, Paint.Align.CENTER)
+    r.text(c, "超神级天赋", w / 2f, titleY + 54f, 42f, Palette.PINK, true, Paint.Align.CENTER)
+    r.sparkle(c, w * 0.16f, titleY - 18f, 16f, Palette.CYAN)
+    r.sparkle(c, w * 0.85f, titleY + 30f, 12f, Palette.PINK)
+
+    r.text(c, "觉 醒 之 塔", w / 2f, titleY + 96f, 17f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.text(c, "让同系天赋相邻，结成共鸣链——这一次轮回更接近神明。", w / 2f, titleY + 128f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+
+    // 战绩面板
+    val pw = w - 48f
+    val py = titleY + 162f
+    card(c, 24f, py, pw, 96f, r.withAlpha(Palette.BORDER, 190))
+    val cols = 3
+    val cellW = pw / cols
+    val stats = listOf(
+        "最高层数" to "${perm.bestFloor}",
+        "天赋点" to "${perm.talentPoints}",
+        "轮回次数" to "${perm.totalRuns}"
+    )
+    for (i in 0 until cols) {
+        val cx = 24f + cellW * i + cellW / 2f
+        r.text(c, stats[i].first, cx, py + 36f, 12f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+        r.text(c, stats[i].second, cx, py + 70f, 24f, Palette.GOLD, true, Paint.Align.CENTER)
+        if (i > 0) {
+            r.fill.color = r.withAlpha(Palette.BORDER_SOFT, 180)
+            c.drawRect(24f + cellW * i, py + 22f, 24f + cellW * i + 1.5f, py + 76f, r.fill)
+        }
+    }
+
+    // 当前存档提示
+    val savedRun = run
+    var by = py + 118f
+    if (savedRun != null) {
+        card(c, 24f, by, pw, 62f, r.withAlpha(Palette.CYAN, 170))
+        r.text(c, "继续轮回", 40f, by + 27f, 14f, Palette.CYAN, true)
+        r.text(c, "${Data.classById[savedRun.classId]?.name ?: ""} · ${savedRun.mode.cn}模式 · 第 ${savedRun.floor} 层", 40f, by + 48f, 12f, Palette.TEXT_DIM)
+        ghostButton(c, "menu_continue", "继续", w - 122f, by + 12f, 78f, 38f, Palette.CYAN)
+        by += 76f
+    }
+
+    val bw = w - 96f
+    button(c, "menu_start", "开 始 觉 醒", 48f, h - 232f, bw, 58f, Palette.PINK)
+    ghostButton(c, "menu_growth", "永久成长", 48f, h - 160f, (bw - 12f) / 2f, 48f, Palette.CYAN)
+    ghostButton(c, "menu_codex", "天赋图鉴", 48f + (bw - 12f) / 2f + 12f, h - 160f, (bw - 12f) / 2f, 48f, Palette.GOLD)
+    ghostButton(c, "menu_settings", "设置", 48f, h - 100f, bw, 44f, Palette.TEXT_DIM)
+
+    r.text(c, "v1.1.6 · 共鸣盘重构版", w / 2f, h - 28f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+}
+
+internal fun tapMenu(id: String) {
+    when (id) {
+        "menu_start" -> {
+            screen = Screen.SETUP
+        }
+        "menu_continue" -> {
+            val p = run ?: return
+            RunService.recalcAll(p, perm)
+            if (p.floorEvents.isEmpty()) TowerService.generateFloor(p)
+            screen = Screen.TOWER
+            audio.playBgm("tower")
+        }
+        "menu_growth" -> screen = Screen.GROWTH
+        "menu_codex" -> screen = Screen.CODEX
+        "menu_settings" -> panel = "settings"
+    }
+}
+
+internal fun GameView.drawSetupScreen(c: Canvas) {
+    drawTopBar(c, "轮回配置", "选择模式与职业，随后觉醒天赋", "setup_back", null, null)
+
+    var y = 118f
+    r.text(c, "难度模式", 24f, y, 15f, Palette.CYAN, true)
+    y += 12f
+    val modes = GameMode.values()
+    val mw = (w - 48f - 12f) / 2f
+    for (i in modes.indices) {
+        val col = i % 2
+        val row = i / 2
+        val x = 24f + col * (mw + 12f)
+        val yy = y + row * 70f
+        val sel = setupMode == modes[i]
+        val border = if (sel) Palette.PINK else Palette.BORDER_SOFT
+        card(c, x, yy, mw, 60f, border, 14f)
+        if (sel) r.glowPanel(c, x, yy, mw, 60f, 14f, Palette.PINK, 46)
+        r.text(c, modes[i].glyph + " " + modes[i].cn, x + 14f, yy + 26f, 15f, if (sel) Palette.PINK else Palette.TEXT, true)
+        val sub = if (modes[i].endFloor == 0) "无尽 · 难度 ×${modes[i].mult}" else "目标 ${modes[i].endFloor} 层 · 难度 ×${modes[i].mult}"
+        r.text(c, sub, x + 14f, yy + 46f, 11f, Palette.TEXT_DIM)
+        hit("setup_mode_" + modes[i].id, x, yy, mw, 60f)
+    }
+    y += 70f * 3 + 14f
+
+    r.text(c, "职业", 24f, y, 15f, Palette.CYAN, true)
+    y += 12f
+    val cw = (w - 48f - 3 * 8f) / 4f
+    for (i in Data.classes.indices) {
+        val cls = Data.classes[i]
+        val col = i % 4
+        val row = i / 4
+        val x = 24f + col * (cw + 8f)
+        val yy = y + row * (cw + 26f)
+        val sel = setupClass == cls.id
+        val accent = classColor(cls.id)
+        card(c, x, yy, cw, cw + 18f, if (sel) accent else Palette.BORDER_SOFT, 14f)
+        if (sel) r.glowPanel(c, x, yy, cw, cw + 18f, 14f, accent, 52)
+        drawPortrait(c, cls.id, x + cw / 2f, yy + cw * 0.42f, cw * 0.66f, accent)
+        r.text(c, cls.name, x + cw / 2f, yy + cw + 6f, 13f, if (sel) accent else Palette.TEXT, true, Paint.Align.CENTER)
+        hit("setup_class_" + cls.id, x, yy, cw, cw + 18f)
+    }
+    y += (cw + 26f) * 2f + 6f
+
+    // 职业说明
+    val cls = Data.classById[setupClass] ?: Data.classes[0]
+    card(c, 24f, y, w - 48f, 74f, r.withAlpha(classColor(cls.id), 170))
+    r.text(c, "「${cls.title}」 ${cls.name}", 38f, y + 26f, 14f, classColor(cls.id), true)
+    r.wrap(c, cls.desc, 38f, y + 46f, w - 76f, 12f, Palette.TEXT_DIM, 16f)
+    r.text(c, "主属性：${primaryLabel(cls.primary)}   技能 ${cls.skills.size} 个", 38f, y + 66f, 11f, Palette.TEXT_FAINT)
+
+    button(c, "setup_go", "觉 醒 天 赋", 48f, h - 92f, w - 96f, 58f, Palette.PINK)
+}
+
+private fun primaryLabel(p: String): String = when (p) {
+    "str" -> "力量"
+    "agi" -> "敏捷"
+    "int" -> "智力"
+    else -> "体质"
+}
+
+internal fun tapSetup(id: String) {
+    when {
+        id == "setup_back" -> screen = Screen.MENU
+        id.startsWith("setup_mode_") -> setupMode = GameMode.byId(id.removePrefix("setup_mode_"))
+        id.startsWith("setup_class_") -> setupClass = id.removePrefix("setup_class_")
+        id == "setup_go" -> startRun()
+    }
+}
+
+internal fun GameView.drawDivinityScreen(c: Canvas) {
+    r.text(c, "超神级觉醒", w / 2f, 92f, 28f, Palette.GOLD, true, Paint.Align.CENTER)
+    r.text(c, "命运选中了你。三选一，它将占据神格位，永不掉落。", w / 2f, 120f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+
+    val cardW = w - 56f
+    val cardH = 132f
+    var y = 152f
+    for (i in divinityOptions.indices) {
+        val t = divinityOptions[i]
+        drawTalentCard(c, t, 28f, y, cardW, cardH, "div_pick_$i", 1)
+        y += cardH + 14f
+    }
+}
+
+internal fun tapDivinity(id: String) {
+    if (!id.startsWith("div_pick_")) return
+    val idx = id.removePrefix("div_pick_").toIntOrNull() ?: return
+    val t = divinityOptions.getOrNull(idx) ?: return
+    val p = run ?: return
+    com.kaiju.awaken.game.DraftService.applyDivinity(p, t)
+    audio.play("levelup")
+    beginDraft(3)
+}
+
+internal fun GameView.drawTalentCard(c: Canvas, t: Talent, x: Float, y: Float, ww: Float, hh: Float, id: String, star: Int) {
+    val col = rarityColor(t.rarity)
+    card(c, x, y, ww, hh, col, 16f)
+    r.glowPanel(c, x, y, ww, hh, 16f, col, if (t.rarity.rank >= 5) 60 else 30)
+    // 系别徽记
+    val hexCx = x + 40f
+    val hexCy = y + 40f
+    r.hexFrame(c, hexCx, hexCy, 24f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
+    r.text(c, t.school.glyph, hexCx, hexCy + 8f, 20f, col, true, Paint.Align.CENTER)
+
+    r.text(c, t.name, x + 74f, y + 32f, 18f, Palette.TEXT, true)
+    val rl = t.rarity.cn + " · " + t.school.cn + " · " + "★".repeat(star.coerceIn(1, 3))
+    r.text(c, rl, x + 74f, y + 52f, 11.5f, col)
+    r.wrap(c, t.desc, x + 74f, y + 74f, ww - 92f, 12f, Palette.TEXT_DIM, 16f)
+    hit(id, x, y, ww, hh)
+}
+
+internal fun GameView.drawDraftScreen(c: Canvas) {
+    if (replacePick && pendingOption != null) {
+        drawReplacePicker(c)
+        return
+    }
+    r.text(c, "天赋觉醒", w / 2f, 88f, 28f, Palette.PINK, true, Paint.Align.CENTER)
+    r.text(c, "剩余 ${picksLeft} / ${picksTotal} 次选择", w / 2f, 114f, 13f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    r.text(c, "同类天赋相邻放置会结成共鸣链，获得全局加成", w / 2f, 136f, 11.5f, Palette.CYAN, false, Paint.Align.CENTER)
+
+    val p = run
+    if (p != null) drawResonanceStrip(c, p, 158f)
+
+    val cardW = w - 56f
+    val cardH = 118f
+    var y = if (p != null) 262f else 168f
+    for (i in draftOptions.indices) {
+        val o = draftOptions[i]
+        drawTalentCard(c, o.talent, 28f, y, cardW, cardH, "draft_pick_$i", o.star)
+        if (p != null && p.grid.indexOf(o.talent.id) >= 0) {
+            r.solid(c, cardW - 66f, y + 12f, 54f, 22f, 11f, r.withAlpha(Palette.GOLD, 220))
+            r.text(c, "升星", cardW - 39f, y + 28f, 11f, 0xFF2A1A00.toInt(), true, Paint.Align.CENTER)
+        }
+        y += cardH + 12f
+    }
+}
+
+private fun GameView.drawReplacePicker(c: Canvas) {
+    val p = run ?: return
+    val opt = pendingOption ?: return
+    r.text(c, "共鸣盘已满", w / 2f, 88f, 26f, Palette.GOLD, true, Paint.Align.CENTER)
+    r.text(c, "选择要被【${opt.talent.name}】覆盖的天赋", w / 2f, 114f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+
+    val cw = (w - 48f - 12f) / 2f
+    for (i in 0 until 6) {
+        val t = p.grid.slots[i]
+        val x = 24f + (i % 2) * (cw + 12f)
+        val y = 140f + (i / 2) * 116f
+        if (t == null) {
+            card(c, x, y, cw, 104f, Palette.BORDER_SOFT)
+            r.text(c, "空槽位", x + cw / 2f, y + 56f, 13f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+            hit("draft_slot_$i", x, y, cw, 104f)
+        } else {
+            val col = rarityColor(t.rarity)
+            card(c, x, y, cw, 104f, col)
+            r.hexFrame(c, x + 34f, y + 34f, 20f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
+            r.text(c, t.school.glyph, x + 34f, y + 41f, 17f, col, true, Paint.Align.CENTER)
+            r.text(c, t.name, x + 62f, y + 28f, 14f, Palette.TEXT, true)
+            r.text(c, t.rarity.cn + " · ★".repeat(1) + "${p.grid.stars[i]}", x + 62f, y + 46f, 11f, col)
+            r.wrap(c, t.desc, x + 12f, y + 70f, cw - 24f, 10.5f, Palette.TEXT_DIM, 13f)
+            hit("draft_slot_$i", x, y, cw, 104f)
+        }
+    }
+    ghostButton(c, "draft_cancel_replace", "返回重选", 24f, h - 76f, w - 48f, 50f, Palette.TEXT_DIM)
+}
+
+internal fun GameView.drawResonanceStrip(c: Canvas, p: com.kaiju.awaken.game.RunState, top: Float) {
+    val bonus = p.grid.resonanceBonus()
+    val panelW = w - 48f
+    card(c, 24f, top, panelW, 92f, r.withAlpha(Palette.CYAN, 170), 14f)
+    r.text(c, "共鸣盘 · " + bonus.label(), 38f, top + 24f, 13.5f, Palette.CYAN, true)
+    val slotR = 15f
+    val gap = (panelW - 60f - slotR * 12f) / 5f
+    for (i in 0 until 6) {
+        val cx = 38f + slotR + i * (slotR * 2f + gap)
+        val cy = top + 62f
+        val t = p.grid.slots[i]
+        val edges = p.grid.resonanceEdges()
+        val linked = edges.any { it.first == i || it.second == i }
+        if (t == null) {
+            r.hexFrame(c, cx, cy, slotR, Palette.BORDER_SOFT, r.withAlpha(Palette.PANEL_DEEP, 255))
+        } else {
+            val col = rarityColor(t.rarity)
+            r.hexFrame(c, cx, cy, slotR, if (linked) Palette.CYAN else col, r.withAlpha(Palette.PANEL_SOFT, 255))
+            r.text(c, t.school.glyph, cx, cy + 5.5f, 14f, col, true, Paint.Align.CENTER)
+        }
+        if (i < 5) {
+            val lx = cx + slotR
+            val rx = cx + slotR + gap
+            val on = edges.any { it.first == i && it.second == i + 1 }
+            r.stroke.shader = null
+            r.stroke.color = if (on) Palette.CYAN else r.withAlpha(Palette.BORDER_SOFT, 160)
+            r.stroke.strokeWidth = if (on) 3f else 1.5f
+            c.drawLine(lx + 2f, cy, rx - 2f, cy, r.stroke)
+        }
+    }
+    val dv = p.grid.divinity
+    if (dv != null) {
+        r.text(c, "神格：${dv.name}", 38f, top + 86f, 11f, Palette.GOLD)
+    }
+    r.text(c, "伤害 +${(bonus.damage * 100).toInt()}% 生命 +${(bonus.hp * 100).toInt()}%", w - 38f, top + 86f, 11f, Palette.PINK, false, Paint.Align.RIGHT)
+}
+
+internal fun tapDraft(id: String) {
+    val p = run ?: return
+    if (id == "draft_cancel_replace") {
+        pendingOption = null
+        replacePick = false
+        return
+    }
+    if (id.startsWith("draft_slot_")) {
+        val idx = id.removePrefix("draft_slot_").toIntOrNull() ?: return
+        val opt = pendingOption ?: return
+        com.kaiju.awaken.game.DraftService.place(p, opt, idx)
+        com.kaiju.awaken.game.DraftService.notePicked(p, opt.talent)
+        pendingOption = null
+        replacePick = false
+        finishDraftStep()
+        return
+    }
+    if (!id.startsWith("draft_pick_")) return
+    val idx = id.removePrefix("draft_pick_").toIntOrNull() ?: return
+    val opt = draftOptions.getOrNull(idx) ?: return
+    if (p.grid.isFull() && p.grid.indexOf(opt.talent.id) < 0) {
+        pendingOption = opt
+        replacePick = true
+        return
+    }
+    com.kaiju.awaken.game.DraftService.place(p, opt, -1)
+    com.kaiju.awaken.game.DraftService.notePicked(p, opt.talent)
+    finishDraftStep()
+}
+
+private fun GameView.finishDraftStep() {
+    audio.play("levelup")
+    picksLeft--
+    if (picksLeft > 0) {
+        val p = run ?: return
+        draftOptions = com.kaiju.awaken.game.DraftService.roll(p, perm, com.kaiju.awaken.game.DraftService.optionCount(p, perm))
+    } else {
+        afterDraft()
+    }
+}
