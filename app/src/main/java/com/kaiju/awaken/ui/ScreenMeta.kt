@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import com.kaiju.awaken.game.Achievements
 import com.kaiju.awaken.game.Content
+import com.kaiju.awaken.game.Content2
 import com.kaiju.awaken.game.Data
 import com.kaiju.awaken.game.Meta
 import com.kaiju.awaken.game.Rarity
@@ -148,7 +149,7 @@ private fun monsterName(key: String): String {
     }
 }
 
-private fun codexFilterLabel(): String = when (codexTab) {
+private fun GameView.codexFilterLabel(): String = when (codexTab) {
     0 -> "星语"
     1 -> "遭遇"
     else -> "魔物"

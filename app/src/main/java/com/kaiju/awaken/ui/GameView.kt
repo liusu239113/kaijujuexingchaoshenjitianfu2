@@ -87,6 +87,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     // 成长
     var enhanceTarget = -1
+    var promoOptions: List<com.kaiju.awaken.game.PromotionDef> = emptyList()
+    var promoTier = 1
     var runStartMs = 0L
     var pendingAchievements = ArrayList<com.kaiju.awaken.game.AchDef>()
     var codexTab = 0

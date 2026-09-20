@@ -78,7 +78,7 @@ private fun pctText(v: Double): String {
     return (if (pct >= 0) "+" else "") + pct + "%"
 }
 
-internal fun tapPromotion(id: String) {
+internal fun GameView.tapPromotion(id: String) {
     if (!id.startsWith("promo_pick_")) return
     val idx = id.removePrefix("promo_pick_").toIntOrNull() ?: return
     val promo = promoOptions.getOrNull(idx) ?: return
