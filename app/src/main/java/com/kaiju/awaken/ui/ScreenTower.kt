@@ -274,7 +274,7 @@ internal fun GameView.drawTavernOverlay(c: Canvas) {
         val col = rarityColor(u.rarity)
         val full = p.party.size >= 3
         card(c, 40f, y, w - 80f, 96f, col, 14f)
-        drawPortrait(c, u.clsId, 84f, y + 48f, 56f, col)
+        drawPortrait(c, u.avatarKey.ifEmpty { u.clsId }, 84f, y + 48f, 56f, col)
         r.text(c, u.name + " · " + (Data.classById[u.clsId]?.name ?: ""), 124f, y + 32f, 15f, Palette.TEXT, true)
         r.text(c, u.rarity.cn + " · Lv.${u.level} · 攻击 ${u.base.atk.toInt()} 生命 ${u.base.maxHp.toInt()}", 124f, y + 54f, 11f, Palette.TEXT_DIM)
         r.text(c, "$cost 💰", w - 60f, y + 60f, 15f, if (p.gold >= cost && !full) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)

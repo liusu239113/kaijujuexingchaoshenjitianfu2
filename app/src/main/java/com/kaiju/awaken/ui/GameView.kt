@@ -265,15 +265,25 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         canvas.restore()
     }
 
+    private fun bgNameForScreen(): String = when (screen) {
+        Screen.MENU, Screen.SETUP, Screen.SHOP, Screen.ACHIEVEMENTS, Screen.ABOUT, Screen.SAVE_SLOTS -> "bg_menu"
+        Screen.TOWER, Screen.DRAFT, Screen.DIVINITY, Screen.PROMOTION -> "bg_corridor"
+        Screen.COMBAT -> "bg_battle"
+        Screen.REINCARNATION -> "bg_ending"
+        Screen.GROWTH, Screen.CODEX -> "bg_result"
+    }
+
     private fun drawBackground(c: Canvas) {
-        if (screen == Screen.MENU || screen == Screen.SETUP) {
-            val bmp = bitmap("bg_menu")
+        run {
+            val bmp = bitmap(bgNameForScreen())
             if (bmp != null) {
                 val src = android.graphics.Rect(0, 0, bmp.width, bmp.height)
                 val dst = android.graphics.RectF(0f, 0f, w, h)
                 r.fill.shader = null
                 r.fill.alpha = 255
                 c.drawBitmap(bmp, src, dst, r.fill)
+                r.fill.color = r.withAlpha(0xFF0B0620.toInt(), 120)
+                c.drawRect(0f, 0f, w, h, r.fill)
                 r.fill.color = r.withAlpha(0xFF0B0620.toInt(), if (screen == Screen.MENU) 132 else 196)
                 c.drawRect(0f, 0f, w, h, r.fill)
             }

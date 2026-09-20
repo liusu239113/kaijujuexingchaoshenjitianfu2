@@ -157,7 +157,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 val u = p.party[i]
                 val col = rarityColor(u.rarity)
                 card(c, 24f, y, w - 48f, 104f, col, 14f)
-                drawPortrait(c, u.clsId, 62f, y + 52f, 58f, col)
+                drawPortrait(c, u.avatarKey.ifEmpty { u.clsId }, 62f, y + 52f, 58f, col)
                 r.text(c, u.name + " · " + (Data.classById[u.clsId]?.name ?: ""), 104f, y + 30f, 14f, Palette.TEXT, true)
                 r.text(c, u.rarity.cn + " · Lv." + u.level + " · " + starText(u.star), 104f, y + 50f, 11.5f, col)
                 val tr = u.traitId?.let { Content2.traitById[it] }

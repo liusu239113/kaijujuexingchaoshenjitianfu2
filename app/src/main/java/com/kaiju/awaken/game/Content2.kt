@@ -25,9 +25,10 @@ object Content2 {
 
     // ---------------------------------------------------------------- 精锐怪与首领立绘
 
-    val eliteAvatars = listOf("e01", "e02", "e03", "e04")
-    val bossAvatars = listOf("b01", "b02", "b03", "b04", "b05", "b06", "b07", "b08", "b09", "b10")
-    val monsterAvatars = (1..24).map { "m" + it.toString().padStart(2, '0') }
+    val eliteAvatars = listOf("e01", "e02", "e03", "e04", "e05", "e06", "e07", "e08")
+    val bossAvatars = listOf("b01", "b02", "b03", "b04", "b05", "b06", "b07", "b08", "b09", "b10", "b11", "b12")
+    val monsterAvatars = (1..32).map { "m" + it.toString().padStart(2, '0') }
+    val companionAvatars = (1..12).map { "cp" + it.toString().padStart(2, '0') }
 
     // ---------------------------------------------------------------- 章节首领机制
 
