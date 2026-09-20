@@ -82,7 +82,23 @@ class Battle(
                     e.stats.statusRes = 999.0
                     e.stats.armorPen = 0.30
                 }
+                if (mode == GameMode.CLIMB && run.climbLevel >= 5) e.stats.statusRes += 10.0
+                if (mode == GameMode.CLIMB && run.climbLevel >= 20) e.stats.statusRes += 20.0
                 if (chapter >= 6) e.addBuff(Buff("cc_immune", "免控", 999, 1, 0.0, false))
+                if (mode == GameMode.CLIMB && run.climbLevel >= 30) {
+                    e.addBuff(Buff("boss_regen", "首领再生", 999, 1, 0.02, false))
+                }
+            }
+            if (mode == GameMode.CLIMB && run.climbLevel >= 49 && floor >= run.mode.endFloor) {
+                for (e in enemies) e.shield += e.stats.maxHp * 0.25
+                addLog("迭塔机制 · 终局护城：最终首领开场获得 25% 护盾。")
+            }
+            if (mode == GameMode.CLIMB && run.climbLevel >= 50 && floor >= run.mode.endFloor) {
+                for (e in enemies) {
+                    e.stats.atk *= 1.2
+                    e.stats.matk *= 1.2
+                }
+                addLog("迭塔机制 · 双王终局：首领攻击 +20%。")
             }
             val mech = Content2.mechanicFor(floor)
             if (mech != null) addLog("章节机制 · " + mech.name + "：" + mech.desc)
@@ -141,7 +157,11 @@ class Battle(
             "elite" -> 1.15
             else -> 1.0
         }
-        val eDef = enemyDef()
+        var eDef = enemyDef()
+        if (mode == GameMode.CLIMB) {
+            val lv = run.climbLevel
+            if (lv >= 25) eDef *= 1.25
+        }
         val heroBasicDmg = hero.stats.atk * hero.stats.atk / (hero.stats.atk + eDef * 1.2)
         val actions = 3.0 + floor * 0.02
         var hpBase = heroBasicDmg * actions * kindHp * (0.7 + 0.3 * adapt)
@@ -151,6 +171,7 @@ class Battle(
             hpBase *= 1.0 + 0.06 * (lv - 1)
             desiredHit *= 1.0 + 0.04 * (lv - 1)
         }
+        if (mode == GameMode.CLIMB && run.climbLevel >= 2) hpBase *= 1.05
         if (isChapterBoss) {
             if (chapter >= 2) hpBase *= 1.15
             if (chapter >= 4) desiredHit *= 1.30
@@ -220,11 +241,12 @@ class Battle(
     )
 
     private fun applyAffixes(e: Unit) {
-        val n = when (kind) {
+        var n = when (kind) {
             "boss" -> 3
             "elite" -> 2
             else -> if (floor >= 10) 1 else 0
         }
+        if (mode == GameMode.CLIMB && run.climbLevel >= 10) n++
         val pool = Content.enemyAffixes.shuffled(Random)
         for (i in 0 until min(n, pool.size)) {
             val a = pool[i]

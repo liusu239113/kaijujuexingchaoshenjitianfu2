@@ -26,6 +26,24 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
     // 路径
     drawFloorPath(c, 118f)
 
+    if (perm.seenIntro == false) {
+        r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 234))
+        card(c, 26f, 150f, w - 52f, h - 320f, r.withAlpha(Palette.CYAN, 210), 20f)
+        r.text(c, "回廊入门", w / 2f, 200f, 24f, Palette.CYAN, true, Paint.Align.CENTER)
+        var iy = 240f
+        val tips = listOf(
+            "① 每层由「设施 + 若干遭遇 + 层末首领」组成。",
+            "② 每 5 层获得一次星语觉醒，同源星语相邻会结成共鸣链。",
+            "③ 神格环满 6 格后，新星语必须覆盖旧星语——这是构筑的核心取舍。",
+            "④ 第 3 层可一转，第 30 层可二转，转职会带来专属战技。",
+            "⑤ 战斗中可点击敌方卡锁定目标，单体战技会优先打锁定目标。",
+            "⑥ 倒下不是结束：轮回会把层数折算成神格点，用于永久淬炼。"
+        )
+        for (t in tips) {
+            iy = r.wrap(c, t, 44f, iy, w - 88f, 12f, Palette.TEXT_DIM, 18f) + 6f
+        }
+        button(c, "tower_intro_ok", "开 始 探 索", 48f, h - 180f, w - 96f, 54f, Palette.PINK)
+    }
     // 事件舞台
     val stageY = 214f
     val fe = TowerService.currentEvent(p)
@@ -167,6 +185,10 @@ private fun GameView.drawBottomNav(c: Canvas) {
 internal fun GameView.tapTower(id: String) {
     when {
         id == "tower_menu" -> goMenu()
+        id == "tower_intro_ok" -> {
+            perm.seenIntro = true
+            Save.savePerm(context, perm)
+        }
         id == "tower_continue" -> continueAfterEvent()
         id == "tower_next_floor" -> {
             val p = run ?: return

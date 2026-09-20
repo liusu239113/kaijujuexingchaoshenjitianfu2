@@ -146,6 +146,34 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             }
             ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
+        "merc" -> {
+            if (p == null) return
+            if (p.party.size <= 1) {
+                r.text(c, "尚未招募伙伴。", w / 2f, y + 40f, 14f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+                r.wrap(c, "在「游侠营地」事件或酒肆中可以花金币招募伙伴。伙伴拥有独立专长、星级与装备。", 44f, y + 70f, w - 88f, 12f, Palette.TEXT_DIM, 18f)
+            }
+            for (i in 1 until p.party.size) {
+                val u = p.party[i]
+                val col = rarityColor(u.rarity)
+                card(c, 24f, y, w - 48f, 104f, col, 14f)
+                drawPortrait(c, u.clsId, 62f, y + 52f, 58f, col)
+                r.text(c, u.name + " · " + (Data.classById[u.clsId]?.name ?: ""), 104f, y + 30f, 14f, Palette.TEXT, true)
+                r.text(c, u.rarity.cn + " · Lv." + u.level + " · " + starText(u.star), 104f, y + 50f, 11.5f, col)
+                val tr = u.traitId?.let { Content2.traitById[it] }
+                r.text(c, "专长：" + (tr?.name ?: "无"), 104f, y + 68f, 11f, Palette.CYAN)
+                r.text(c, "攻 " + u.stats.atk.toInt() + "  防 " + u.stats.def.toInt() + "  生命 " + u.stats.maxHp.toInt(), 104f, y + 86f, 10.5f, Palette.TEXT_DIM)
+                if (u.star < 5) {
+                    val cost = 60 * u.star * u.rarity.rank
+                    ghostButton(c, "panel_merc_star_" + i, "升星 " + cost, w - 126f, y + 14f, 90f, 36f, Palette.GOLD)
+                } else {
+                    r.text(c, "满星", w - 62f, y + 36f, 12f, Palette.GOLD, true, Paint.Align.RIGHT)
+                }
+                ghostButton(c, "panel_merc_fire_" + i, "解雇", w - 126f, y + 56f, 90f, 34f, Palette.RED)
+                y += 112f
+            }
+            r.text(c, "队伍上限 3 人（含主角）", 24f, bottom - 76f, 11f, Palette.TEXT_FAINT)
+            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
+        }
         "settings" -> {
             r.text(c, "🎵 乐曲音量 ${perm.musicVolume}%", 40f, y + 20f, 14f, Palette.TEXT)
             for (i in 0 until 4) {
@@ -155,6 +183,17 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 92f
             ghostButton(c, "panel_toggle_music", "乐曲：${if (perm.musicOn) "开启" else "关闭"}", 40f, y, w - 80f, 46f, if (perm.musicOn) Palette.GREEN else Palette.TEXT_DIM)
             y += 56f
+            ghostButton(c, "panel_toggle_vib", "震动反馈：" + (if (perm.settingsVibration) "开启" else "关闭"), 40f, y, w - 80f, 46f, if (perm.settingsVibration) Palette.GREEN else Palette.TEXT_DIM)
+            y += 56f
+            ghostButton(c, "panel_toggle_target", "目标锁定：" + (if (perm.settingsManualTarget) "手动" else "自动"), 40f, y, w - 80f, 46f, if (perm.settingsManualTarget) Palette.CYAN else Palette.TEXT_DIM)
+            y += 56f
+            ghostButton(c, "panel_toggle_colorblind", "色弱模式：" + (if (perm.settingsColorBlind) "开启" else "关闭"), 40f, y, w - 80f, 46f, if (perm.settingsColorBlind) Palette.GREEN else Palette.TEXT_DIM)
+            y += 56f
+            r.text(c, "战斗速度", 40f, y, 13f, Palette.TEXT)
+            ghostButton(c, "panel_speed_0", "慢", 40f, y + 12f, (w - 96f) / 3f, 42f, if (perm.settingsBattleSpeed == 0) Palette.CYAN else Palette.TEXT_DIM)
+            ghostButton(c, "panel_speed_1", "中", 40f + (w - 96f) / 3f + 8f, y + 12f, (w - 96f) / 3f, 42f, if (perm.settingsBattleSpeed == 1) Palette.CYAN else Palette.TEXT_DIM)
+            ghostButton(c, "panel_speed_2", "快", 40f + ((w - 96f) / 3f + 8f) * 2f, y + 12f, (w - 96f) / 3f, 42f, if (perm.settingsBattleSpeed == 2) Palette.CYAN else Palette.TEXT_DIM)
+            y += 64f
             ghostButton(c, "panel_toggle_sfx", "音效：${if (perm.sfxOn) "开启" else "关闭"}", 40f, y, w - 80f, 46f, if (perm.sfxOn) Palette.GREEN else Palette.TEXT_DIM)
             y += 66f
             r.wrap(c, "本作完全离线运行：无账号、无登录、无广告、无联网权限，存档仅保存在本机。", 40f, y, w - 80f, 12f, Palette.TEXT_DIM, 18f)
@@ -178,6 +217,8 @@ private fun GameView.drawEquipRow(c: Canvas, e: Equip, x: Float, y: Float, ww: F
     if (affixTxt.isNotEmpty()) r.text(c, affixTxt, x + 12f, y + 62f, 9.5f, Palette.TEXT_DIM)
     ghostButton(c, id, action, x + ww - 84f, y + 18f, 72f, 36f, accent)
 }
+
+private fun starText(n: Int): String = "\u2605".repeat(n.coerceIn(0, 5))
 
 private fun mainLabel(key: String): String = when (key) {
     "atk" -> "攻击"
@@ -207,6 +248,24 @@ internal fun GameView.tapPanel(id: String) {
             audio.sfxOn = perm.sfxOn
             return
         }
+        "panel_toggle_vib" -> {
+            perm.settingsVibration = perm.settingsVibration.not()
+            Save.savePerm(context, perm)
+            return
+        }
+        "panel_toggle_target" -> {
+            perm.settingsManualTarget = perm.settingsManualTarget.not()
+            Save.savePerm(context, perm)
+            return
+        }
+        "panel_toggle_colorblind" -> {
+            perm.settingsColorBlind = perm.settingsColorBlind.not()
+            Save.savePerm(context, perm)
+            return
+        }
+        "panel_speed_0" -> { perm.settingsBattleSpeed = 0; Save.savePerm(context, perm); return }
+        "panel_speed_1" -> { perm.settingsBattleSpeed = 1; Save.savePerm(context, perm); return }
+        "panel_speed_2" -> { perm.settingsBattleSpeed = 2; Save.savePerm(context, perm); return }
         "panel_reset" -> {
             Save.clearRun(context)
             perm = com.kaiju.awaken.game.PermState()
@@ -263,6 +322,27 @@ internal fun GameView.tapPanel(id: String) {
             RunService.recalcAll(p, perm)
             audio.play("levelup")
             showToast("战技已锻铸")
+        }
+        id.startsWith("panel_merc_star_") -> {
+            val idx = id.removePrefix("panel_merc_star_").toIntOrNull() ?: return
+            val u = p.party.getOrNull(idx) ?: return
+            if (u.star >= 5) { showToast("已满星"); return }
+            val cost = 60 * u.star * u.rarity.rank
+            if (p.gold < cost) { showToast("金币不足（需要 " + cost + "）"); return }
+            p.gold -= cost
+            u.star++
+            RunService.recalcAll(p, perm)
+            audio.play("levelup")
+            showToast(u.name + " 升至 " + u.star + " 星")
+        }
+        id.startsWith("panel_merc_fire_") -> {
+            val idx = id.removePrefix("panel_merc_fire_").toIntOrNull() ?: return
+            if (idx in 1 until p.party.size) {
+                val u = p.party.removeAt(idx)
+                val refund = 20 * u.level
+                p.gold += refund
+                showToast("已解雇 " + u.name + "，返还 " + refund + " 金币")
+            }
         }
         id.startsWith("panel_star_") -> {
             val idx = id.removePrefix("panel_star_").toIntOrNull() ?: return
