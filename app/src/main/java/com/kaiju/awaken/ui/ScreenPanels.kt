@@ -10,6 +10,7 @@ import com.kaiju.awaken.game.Rarity
 import com.kaiju.awaken.game.RunService
 import com.kaiju.awaken.game.Save
 import com.kaiju.awaken.game.TowerService
+import com.kaiju.awaken.ui.GameView.Screen
 
 internal fun GameView.drawPanelOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 226))
