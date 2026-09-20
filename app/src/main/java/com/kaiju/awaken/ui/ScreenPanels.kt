@@ -3,6 +3,7 @@ package com.kaiju.awaken.ui
 import android.graphics.Canvas
 import android.graphics.Paint
 import com.kaiju.awaken.game.Content
+import com.kaiju.awaken.game.Content2
 import com.kaiju.awaken.game.Data
 import com.kaiju.awaken.game.DraftService
 import com.kaiju.awaken.game.Equip
