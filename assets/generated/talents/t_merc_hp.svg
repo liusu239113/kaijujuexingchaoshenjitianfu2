@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="同袍之谊">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="36%" r="70%">
+      <stop offset="0%" stop-color="#242321"/>
+      <stop offset="64%" stop-color="#11100f"/>
+      <stop offset="100%" stop-color="#070606"/>
+    </radialGradient>
+    <linearGradient id="mainGrad" x1="30" y1="20" x2="94" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fff1cf"/>
+      <stop offset="48%" stop-color="#ffb85d"/>
+      <stop offset="100%" stop-color="#5b3110"/>
+    </linearGradient>
+    <linearGradient id="edgeGrad" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#d8d4ca"/>
+      <stop offset="100%" stop-color="#ffb85d"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#d8d4ca" flood-opacity=".45"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect x="5" y="5" width="118" height="118" rx="24" fill="#080706"/>
+  <circle cx="64" cy="64" r="56" fill="url(#bgGrad)" stroke="#d8d4ca" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="47" fill="none" stroke="#d8d4ca" stroke-width="1.5" opacity=".36"/>
+  <path d="M27 34 C44 17 84 17 101 34" fill="none" stroke="#fff4c8" stroke-width="3" opacity=".12" stroke-linecap="round"/>
+  <g opacity=".95"><circle cx="25" cy="27" r="2.5" fill="#d8d4ca" opacity=".72"/>
+<path d="M103 26.5 L105.5 29 L103 31.5 L100.5 29 Z" fill="#d8d4ca" opacity=".68"/>
+<path d="M104 93.5 L108.5 98 L104 102.5 L99.5 98 Z" fill="#d8d4ca" opacity=".68"/>
+<circle cx="64" cy="17" r="5.5" fill="#d8d4ca" opacity=".72"/>
+<path d="M64 107.5 L67.5 111 L64 114.5 L60.5 111 Z" fill="#d8d4ca" opacity=".68"/></g>
+  <g filter="url(#softGlow)" transform="rotate(0 64 64) scale(0.97) translate(1.9200000000000017 1.9200000000000017)">
+    
+    <path d="M39 21 V108" stroke="#fff1cf" stroke-width="7" stroke-linecap="round"/>
+    <path d="M43 25 H94 L83 45 L94 65 H43 Z" fill="url(#mainGrad)" stroke="#fff1cf" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M47 76 C59 70 71 70 83 76" fill="none" stroke="url(#edgeGrad)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="39" cy="21" r="8" fill="#fff1cf" stroke="#5b3110" stroke-width="3"/>
+  </g>
+  <path d="M24 104 C44 114 84 114 104 104" fill="none" stroke="#000000" stroke-width="8" opacity=".18" stroke-linecap="round"/>
+</svg>

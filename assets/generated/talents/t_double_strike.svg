@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="双刃斩">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="36%" r="70%">
+      <stop offset="0%" stop-color="#2b1d3f"/>
+      <stop offset="64%" stop-color="#140d1e"/>
+      <stop offset="100%" stop-color="#070606"/>
+    </radialGradient>
+    <linearGradient id="mainGrad" x1="30" y1="20" x2="94" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fff0a2"/>
+      <stop offset="48%" stop-color="#ffd25d"/>
+      <stop offset="100%" stop-color="#66410e"/>
+    </linearGradient>
+    <linearGradient id="edgeGrad" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#b586ff"/>
+      <stop offset="100%" stop-color="#ffd25d"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#b586ff" flood-opacity=".45"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect x="5" y="5" width="118" height="118" rx="24" fill="#080706"/>
+  <circle cx="64" cy="64" r="56" fill="url(#bgGrad)" stroke="#b586ff" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="47" fill="none" stroke="#b586ff" stroke-width="1.5" opacity=".36"/>
+  <path d="M27 34 C44 17 84 17 101 34" fill="none" stroke="#fff4c8" stroke-width="3" opacity=".12" stroke-linecap="round"/>
+  <g opacity=".95"><path d="M64 106.5 L68.5 111 L64 115.5 L59.5 111 Z" fill="#b586ff" opacity=".68"/>
+<circle cx="18" cy="64" r="5.5" fill="#b586ff" opacity=".72"/></g>
+  <g filter="url(#softGlow)" transform="rotate(1 64 64) scale(1.02) translate(-1.2800000000000011 -1.2800000000000011)">
+    
+    <path d="M31 54 H97 V96 Q97 103 90 103 H38 Q31 103 31 96 Z" fill="url(#mainGrad)" stroke="#fff0a2" stroke-width="3"/>
+    <path d="M33 54 C38 36 50 27 64 27 C78 27 90 36 95 54 Z" fill="#6b3d12" stroke="url(#edgeGrad)" stroke-width="3"/>
+    <path d="M31 68 H97 M64 54 V103" stroke="#5b3510" stroke-width="5" opacity=".55"/>
+    <circle cx="64" cy="77" r="9" fill="#fff0a2" stroke="#6b3d12" stroke-width="3"/>
+  </g>
+  <path d="M24 104 C44 114 84 114 104 104" fill="none" stroke="#000000" stroke-width="8" opacity=".18" stroke-linecap="round"/>
+</svg>

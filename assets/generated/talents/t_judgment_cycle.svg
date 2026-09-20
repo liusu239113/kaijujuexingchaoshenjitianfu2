@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="神罚循环">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="36%" r="70%">
+      <stop offset="0%" stop-color="#3d2912"/>
+      <stop offset="64%" stop-color="#1d1309"/>
+      <stop offset="100%" stop-color="#070606"/>
+    </radialGradient>
+    <linearGradient id="mainGrad" x1="30" y1="20" x2="94" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fffbe1"/>
+      <stop offset="48%" stop-color="#ffe775"/>
+      <stop offset="100%" stop-color="#5b4510"/>
+    </linearGradient>
+    <linearGradient id="edgeGrad" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffc15b"/>
+      <stop offset="100%" stop-color="#ffe775"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ffc15b" flood-opacity=".45"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect x="5" y="5" width="118" height="118" rx="24" fill="#080706"/>
+  <circle cx="64" cy="64" r="56" fill="url(#bgGrad)" stroke="#ffc15b" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="47" fill="none" stroke="#ffc15b" stroke-width="1.5" opacity=".36"/>
+  <path d="M27 34 C44 17 84 17 101 34" fill="none" stroke="#fff4c8" stroke-width="3" opacity=".12" stroke-linecap="round"/>
+  <g opacity=".95"><path d="M103 23.5 L108.5 29 L103 34.5 L97.5 29 Z" fill="#ffc15b" opacity=".68"/>
+<circle cx="24" cy="99" r="3.5" fill="#ffc15b" opacity=".72"/>
+<circle cx="64" cy="17" r="4.5" fill="#ffc15b" opacity=".72"/>
+<path d="M64 107.5 L67.5 111 L64 114.5 L60.5 111 Z" fill="#ffc15b" opacity=".68"/></g>
+  <g filter="url(#softGlow)" transform="rotate(-2 64 64) scale(0.96) translate(2.5600000000000023 2.5600000000000023)">
+    
+    <path d="M64 18 L74 51 L108 52 L80 71 L91 104 L64 84 L37 104 L48 71 L20 52 L54 51 Z" fill="url(#mainGrad)" stroke="#fffbe1" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="64" cy="64" r="16" fill="#fffbe1" opacity=".86"/>
+    <path d="M64 16 V5 M64 123 V112 M16 64 H5 M123 64 H112" stroke="url(#edgeGrad)" stroke-width="5" opacity=".55" stroke-linecap="round"/>
+  </g>
+  <path d="M24 104 C44 114 84 114 104 104" fill="none" stroke="#000000" stroke-width="8" opacity=".18" stroke-linecap="round"/>
+</svg>

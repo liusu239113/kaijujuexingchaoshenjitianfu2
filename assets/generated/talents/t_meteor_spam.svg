@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="陨星连发">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="36%" r="70%">
+      <stop offset="0%" stop-color="#3d1619"/>
+      <stop offset="64%" stop-color="#190b0e"/>
+      <stop offset="100%" stop-color="#070606"/>
+    </radialGradient>
+    <linearGradient id="mainGrad" x1="30" y1="20" x2="94" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffe05d"/>
+      <stop offset="48%" stop-color="#ff7a3d"/>
+      <stop offset="100%" stop-color="#62180c"/>
+    </linearGradient>
+    <linearGradient id="edgeGrad" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff6b72"/>
+      <stop offset="100%" stop-color="#ff7a3d"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ff6b72" flood-opacity=".45"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect x="5" y="5" width="118" height="118" rx="24" fill="#080706"/>
+  <circle cx="64" cy="64" r="56" fill="url(#bgGrad)" stroke="#ff6b72" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="47" fill="none" stroke="#ff6b72" stroke-width="1.5" opacity=".36"/>
+  <path d="M27 34 C44 17 84 17 101 34" fill="none" stroke="#fff4c8" stroke-width="3" opacity=".12" stroke-linecap="round"/>
+  <g opacity=".95"><circle cx="25" cy="27" r="5.5" fill="#ff6b72" opacity=".72"/>
+<path d="M110 61.5 L112.5 64 L110 66.5 L107.5 64 Z" fill="#ff6b72" opacity=".68"/></g>
+  <g filter="url(#softGlow)" transform="rotate(-4 64 64) scale(0.99) translate(0.6400000000000006 0.6400000000000006)">
+    
+    <path d="M65 109 C43 101 32 86 35 66 C38 48 54 39 55 20 C73 35 91 48 92 70 C93 91 82 103 65 109 Z" fill="url(#mainGrad)" stroke="#fff2a4" stroke-width="3"/>
+    <path d="M63 99 C52 91 51 78 57 67 C62 58 66 52 65 42 C79 55 83 67 81 80 C79 92 73 98 63 99 Z" fill="#ffe05d" opacity=".88"/>
+    <path d="M47 82 C43 68 49 58 58 49" fill="none" stroke="#65190c" stroke-width="4" opacity=".42" stroke-linecap="round"/>
+  </g>
+  <path d="M24 104 C44 114 84 114 104 104" fill="none" stroke="#000000" stroke-width="8" opacity=".18" stroke-linecap="round"/>
+</svg>

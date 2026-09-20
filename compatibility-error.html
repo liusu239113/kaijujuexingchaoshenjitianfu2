@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>游戏启动提示</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #eadcc7;
+      font-family: sans-serif;
+      background: #0b0908;
+    }
+    main {
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 24px 28px;
+      text-align: center;
+      background: #1d1612;
+      border: 1px solid #6d5132;
+      border-radius: 12px;
+    }
+    .sigil {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 24px;
+      border: 2px solid #c9a760;
+      transform: rotate(45deg);
+    }
+    h1 { margin: 0 0 14px; color: #f0d89b; font-size: 24px; }
+    p { margin: 8px 0; color: #cbb79a; font-size: 16px; line-height: 1.7; }
+    button {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 20px;
+      color: #1a120d;
+      font: inherit;
+      font-weight: 800;
+      background: #d6b862;
+      border: 1px solid #f3dfa4;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="sigil" aria-hidden="true"></div>
+    <h1>系统组件需要更新</h1>
+    <p>当前 Android System WebView 或 Chrome 版本过旧，暂时无法启动游戏。</p>
+    <p>请完成系统组件更新后，返回并重新打开游戏。</p>
+    <button type="button" onclick="location.reload()">重新检查</button>
+  </main>
+</body>
+</html>

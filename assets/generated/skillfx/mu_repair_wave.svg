@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="44%" r="65%"><stop offset="0" stop-color="#29304c"/><stop offset="1" stop-color="#090b14"/></radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f1d892"/><stop offset=".5" stop-color="#8c75e8"/><stop offset="1" stop-color="#53d9d0"/></linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="22" fill="url(#bg)"/>
+  <circle cx="64" cy="64" r="45" fill="none" stroke="#8d7cff" stroke-width="3" opacity=".35"/>
+  <path d="M64 27v74M27 64h74" stroke="#202740" stroke-width="18" stroke-linecap="round"/>
+  <path d="M64 34v60M34 64h60" stroke="url(#metal)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M30 42c12-18 29-24 50-16M98 86c-12 18-29 24-50 16" fill="none" stroke="#66e6da" stroke-width="4" stroke-linecap="round"/>
+  <path d="m79 20 6 10-12 1M49 108l-6-10 12-1" fill="none" stroke="#66e6da" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="64" r="10" fill="#15182a" stroke="#ffe09a" stroke-width="3"/>
+  <circle cx="64" cy="64" r="4" fill="#8df5e4"/>
+</svg>
