@@ -19,7 +19,8 @@ class ClassDef(
     val energyRegen: Double,
     val dodge: Double,
     val primary: String,
-    val skills: List<Skill>
+    /** 该职业的技能 id 列表，实际 Skill 由 Data.skillById 解析。 */
+    val skills: List<String>
 )
 
 object Data {

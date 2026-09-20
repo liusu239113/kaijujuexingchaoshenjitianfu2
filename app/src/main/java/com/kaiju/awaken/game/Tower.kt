@@ -547,16 +547,22 @@ object TowerService {
         run.bag.filter { it.slot == slot }.maxByOrNull { equipPower(it) }
 
     fun autoEquipUpgrades(run: RunState, perm: PermState) {
-        val toRemove = ArrayList<Equip>()
-        for (e in run.bag) {
-            val cur = run.equipped[e.slot]
-            if (cur == null || equipPower(e) > equipPower(cur)) {
-                if (cur != null) run.bag.add(cur)
-                run.equipped[e.slot] = e
-                toRemove.add(e)
+        var guard = 0
+        while (guard < 30) {
+            guard++
+            var swapped = false
+            for (e in ArrayList(run.bag)) {
+                val cur = run.equipped[e.slot]
+                if (cur == null || equipPower(e) > equipPower(cur)) {
+                    run.bag.remove(e)
+                    if (cur != null) run.bag.add(cur)
+                    run.equipped[e.slot] = e
+                    swapped = true
+                    break
+                }
             }
+            if (!swapped) break
         }
-        for (e in toRemove) run.bag.remove(e)
         RunService.recalcAll(run, perm)
     }
 

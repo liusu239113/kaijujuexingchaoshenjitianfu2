@@ -188,27 +188,25 @@ private fun mainLabel(key: String): String = when (key) {
 }
 
 internal fun tapPanel(id: String) {
-    val p = run ?: return
-    when {
-        id == "panel_close" -> panel = ""
-        id == "panel_auto" -> {
-            TowerService.autoEquipUpgrades(p, perm)
-            showToast("已自动装备更强的装备")
-        }
-        id == "panel_vol_25" -> setVol(25)
-        id == "panel_vol_50" -> setVol(50)
-        id == "panel_vol_75" -> setVol(75)
-        id == "panel_vol_100" -> setVol(100)
-        id == "panel_toggle_music" -> {
-            perm.musicOn = !perm.musicOn
+    // 这些操作不依赖本轮进度（主菜单也能打开设置）
+    when (id) {
+        "panel_close" -> { panel = ""; return }
+        "panel_vol_25" -> { setVol(25); return }
+        "panel_vol_50" -> { setVol(50); return }
+        "panel_vol_75" -> { setVol(75); return }
+        "panel_vol_100" -> { setVol(100); return }
+        "panel_toggle_music" -> {
+            perm.musicOn = perm.musicOn.not()
             audio.setMusicEnabled(perm.musicOn)
             if (perm.musicOn && run != null) audio.playBgm(if (screen == Screen.COMBAT) "battle" else "tower")
+            return
         }
-        id == "panel_toggle_sfx" -> {
-            perm.sfxOn = !perm.sfxOn
+        "panel_toggle_sfx" -> {
+            perm.sfxOn = perm.sfxOn.not()
             audio.sfxOn = perm.sfxOn
+            return
         }
-        id == "panel_reset" -> {
+        "panel_reset" -> {
             Save.clearRun(context)
             perm = com.kaiju.awaken.game.PermState()
             Save.savePerm(context, perm)
@@ -217,6 +215,14 @@ internal fun tapPanel(id: String) {
             panel = ""
             screen = Screen.MENU
             showToast("存档已清空")
+            return
+        }
+    }
+    val p = run ?: return
+    when {
+        id == "panel_auto" -> {
+            TowerService.autoEquipUpgrades(p, perm)
+            showToast("已自动装备更强的装备")
         }
         id.startsWith("panel_equip_") -> {
             val idx = id.removePrefix("panel_equip_").toIntOrNull() ?: return

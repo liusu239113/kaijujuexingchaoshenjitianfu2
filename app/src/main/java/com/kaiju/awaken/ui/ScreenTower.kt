@@ -214,7 +214,15 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
 internal fun tapShop(id: String) {
     val p = run ?: return
     when {
-        id == "shop_close" -> overlay = ""
+        id == "shop_close" -> {
+            overlay = ""
+            val fe = TowerService.currentEvent(p)
+            if (fe != null) {
+                fe.resolved = true
+                fe.result = "你带着补给离开了商店。"
+            }
+            continueAfterEvent()
+        }
         id.startsWith("shop_buy_") -> {
             val idx = id.removePrefix("shop_buy_").toIntOrNull() ?: return
             val it = shopStock.getOrNull(idx) ?: return
@@ -256,7 +264,15 @@ internal fun GameView.drawTavernOverlay(c: Canvas) {
 internal fun tapTavern(id: String) {
     val p = run ?: return
     when {
-        id == "tavern_close" -> overlay = ""
+        id == "tavern_close" -> {
+            overlay = ""
+            val fe = TowerService.currentEvent(p)
+            if (fe != null) {
+                fe.resolved = true
+                fe.result = "你离开了喧闹的酒馆。"
+            }
+            continueAfterEvent()
+        }
         id.startsWith("tavern_hire_") -> {
             val idx = id.removePrefix("tavern_hire_").toIntOrNull() ?: return
             val u = tavernList.getOrNull(idx) ?: return

@@ -222,6 +222,18 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     }
 
     private fun drawBackground(c: Canvas) {
+        if (screen == Screen.MENU || screen == Screen.SETUP) {
+            val bmp = bitmap("bg_menu")
+            if (bmp != null) {
+                val src = android.graphics.Rect(0, 0, bmp.width, bmp.height)
+                val dst = android.graphics.RectF(0f, 0f, w, h)
+                r.fill.shader = null
+                r.fill.alpha = 255
+                c.drawBitmap(bmp, src, dst, r.fill)
+                r.fill.color = r.withAlpha(0xFF0B0620.toInt(), if (screen == Screen.MENU) 132 else 196)
+                c.drawRect(0f, 0f, w, h, r.fill)
+            }
+        }
         r.fill.shader = LinearGradient(0f, 0f, w * 0.4f, h, Palette.BG_TOP, Palette.BG_BOTTOM, Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, w, h, r.fill)
         r.fill.shader = null
@@ -476,7 +488,6 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             fe.result = msg
         }
         eventResult = msg
-        p.eventIdx++
         audio.play("coins")
         Save.saveRun(context, p, perm)
         Save.savePerm(context, perm)
@@ -485,6 +496,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     fun continueAfterEvent() {
         eventResult = ""
         val p = run ?: return
+        p.eventIdx++
         if (TowerService.isFloorClear(p)) {
             TowerService.updateBest(perm, p)
             if (TowerService.isComplete(p)) {
