@@ -217,7 +217,37 @@ object Data {
         tl("t_xp_up", "领悟", Rarity.COMMON, School.FATE, "经验获取 +20%。", passive = "xp_up"),
         tl("t_dmg_s", "战技", Rarity.COMMON, School.EDGE, "造成伤害 +5%。", mods = mapOf("dmgBonus" to 0.05)),
         tl("t_red_s", "韧性", Rarity.COMMON, School.WARD, "受到伤害 -4%。", mods = mapOf("dmgReduction" to 0.04)),
-        tl("t_heal_s", "怜悯", Rarity.COMMON, School.VITA, "治疗效果 +15%。", flat = mapOf("healPower" to 0.15))
+        tl("t_heal_s", "怜悯", Rarity.COMMON, School.VITA, "治疗效果 +15%。", flat = mapOf("healPower" to 0.15)),
+
+        // ===== 扩展天赋池 =====
+        tl("t_world_breaker", "破界者", Rarity.MYTHIC, School.EDGE, "攻击与法强 +28%，无视 30% 防御。",
+            mods = mapOf("atk" to 0.28, "matk" to 0.28), flat = mapOf("armorPen" to 0.30)),
+        tl("t_eternal_ward", "永恒守望", Rarity.MYTHIC, School.WARD, "受到伤害 -22%，每回合回复 3% 最大生命。",
+            mods = mapOf("dmgReduction" to 0.22), passive = "regen3"),
+        tl("t_executioner", "处刑人", Rarity.LEGENDARY, School.EDGE, "对生命低于 35% 的敌人伤害 +60%。", passive = "execute"),
+        tl("t_blood_rain", "血雨", Rarity.LEGENDARY, School.VITA, "吸血 +20%，最大生命 +15%。",
+            mods = mapOf("maxHp" to 0.15), flat = mapOf("lifesteal" to 20.0)),
+        tl("t_arcane_resonance", "奥能谐振", Rarity.LEGENDARY, School.ARC, "技能伤害 +22%，能量回复 +6。",
+            mods = mapOf("dmgBonus" to 0.22), flat = mapOf("energyRegen" to 6.0)),
+        tl("t_iron_body", "铁躯", Rarity.EPIC, School.WARD, "防御 +18%，状态抗性 +25。",
+            mods = mapOf("def" to 0.18), flat = mapOf("statusRes" to 25.0)),
+        tl("t_wild_instinct", "野性直觉", Rarity.EPIC, School.FATE, "闪避 +12%，暴击 +8%。",
+            mods = mapOf("dodge" to 12.0, "crit" to 8.0)),
+        tl("t_soul_armor", "灵魂护甲", Rarity.EPIC, School.VITA, "最大生命 +15%，护盾效果 +30%。",
+            mods = mapOf("maxHp" to 0.15), flat = mapOf("shieldPower" to 0.30)),
+        tl("t_venom_edge", "毒刃", Rarity.EPIC, School.EDGE, "攻击 +12%，无视 12% 防御。",
+            mods = mapOf("atk" to 0.12), flat = mapOf("armorPen" to 0.12)),
+        tl("t_hp_flat", "坚石", Rarity.RARE, School.VITA, "最大生命 +110。", flat = mapOf("maxHp" to 110.0)),
+        tl("t_atk_flat", "锐锋", Rarity.RARE, School.EDGE, "攻击 +18。", flat = mapOf("atk" to 18.0)),
+        tl("t_matk_flat", "秘银", Rarity.RARE, School.ARC, "法强 +18。", flat = mapOf("matk" to 18.0)),
+        tl("t_def_flat", "重甲", Rarity.RARE, School.WARD, "防御 +10。", flat = mapOf("def" to 10.0)),
+        tl("t_critdmg_s", "精准", Rarity.RARE, School.FATE, "暴击伤害 +30%。", mods = mapOf("critDmg" to 30.0)),
+        tl("t_hp_xs", "血肉", Rarity.COMMON, School.VITA, "最大生命 +5%。", mods = mapOf("maxHp" to 0.05)),
+        tl("t_def_xs", "护佑", Rarity.COMMON, School.WARD, "防御 +5%。", mods = mapOf("def" to 0.05)),
+        tl("t_dodge_xs", "灵步", Rarity.COMMON, School.FATE, "闪避 +3%。", mods = mapOf("dodge" to 3.0)),
+        tl("t_critdmg_xs", "锐利", Rarity.COMMON, School.FATE, "暴击伤害 +12%。", mods = mapOf("critDmg" to 12.0)),
+        tl("t_regen_flat", "回复", Rarity.COMMON, School.VITA, "每回合回复 14 点生命。", flat = mapOf("hpRegen" to 14.0)),
+        tl("t_energy_flat", "灵脉", Rarity.COMMON, School.ARC, "能量回复 +2。", flat = mapOf("energyRegen" to 2.0))
     )
 
     val hiddenTalents: List<Talent> = talents.filter { it.rarity == Rarity.HIDDEN }

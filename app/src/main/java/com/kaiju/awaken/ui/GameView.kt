@@ -109,6 +109,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Choreographer.getInstance().postFrameCallback(this)
         }
         audio.resumeAll()
+        // 标题界面默认播放主城 BGM；playBgm 内部会跳过同一首
+        if (screen == Screen.MENU || screen == Screen.SETUP) audio.playBgm("city")
     }
 
     fun onPauseGame() {

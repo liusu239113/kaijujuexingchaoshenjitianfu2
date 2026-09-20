@@ -256,6 +256,7 @@ class Battle(
         var extraRegen = 0.0
         if (u.id == "player") {
             if (run.grid.slots.any { it?.passive == "regen4" }) extraRegen += 0.04
+            if (run.grid.slots.any { it?.passive == "regen3" }) extraRegen += 0.03
             if (run.grid.slots.any { it?.passive == "regen1_5" }) extraRegen += 0.015
             if (dv?.passive == "iron_heart") UnitSizes.noop()
         }
@@ -567,7 +568,9 @@ class Battle(
         if (dv?.passive == "god_slayer" && (isBoss || isElite)) bonus += 0.35
         if (attacker.id == "player") {
             for (t in run.grid.allTalents()) {
-                if (t.passive == "death_mark") bonus += 0.18 * t.scale(run.grid.stars[run.grid.indexOf(t.id)])
+                val star = run.grid.stars[run.grid.indexOf(t.id)]
+                if (t.passive == "death_mark") bonus += 0.18 * t.scale(star)
+                if (t.passive == "execute" && target.hpPct() < 0.35) bonus += 0.60 * t.scale(star)
             }
         }
         if (run.nextBattleBonus.containsKey("dmg")) bonus += run.nextBattleBonus["dmg"] ?: 0.0

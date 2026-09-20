@@ -222,6 +222,56 @@ object Content {
             c("跃入裂隙", "获得 90 金币与一件紫装", "time_rift"),
             c("窥视未来", "下一场战斗伤害 +40%", "buff_dmg", amount = 0.40),
             c("封印裂隙", "获得 1 点技能点与 30 金币", "skill_gold")
+        )),
+        GameEvent("evt_crossroads", "迷雾岔路", "🌫", "两条路都被雾气吞没。", weight = 12, choices = listOf(
+            c("走左边的光路", "全队恢复 30% 生命", "heal_all", amount = 0.30),
+            c("走右边的暗路", "获得 40 金币", "gold_fixed", amount = 40.0),
+            c("原地扎营", "下一场战斗伤害 +20%", "buff_dmg", amount = 0.20)
+        )),
+        GameEvent("evt_lost_cart", "失落的补给车", "🛞", "车轮陷在泥里，货箱半开着。", minFloor = 3, weight = 11, choices = listOf(
+            c("搜刮物资", "获得 2 个随机道具", "get_random_item", amount = 2.0),
+            c("寻找主人", "获得 1 点技能点", "skill_point", amount = 1.0),
+            c("拆解车架", "获得 50 金币", "gold_fixed", amount = 50.0)
+        )),
+        GameEvent("evt_grove", "地下林地", "🌿", "发光的蘑菇照亮了地下溪谷。", minFloor = 4, weight = 11, choices = listOf(
+            c("采摘草药", "全队恢复 40% 生命", "heal_all", amount = 0.40),
+            c("砍伐古木", "获得一件蓝装，最大生命 -8%", "loot_relic"),
+            c("静坐冥想", "法强永久 +8", "train_matk", amount = 8.0)
+        )),
+        GameEvent("evt_sealed_chest", "封印宝箱", "📦", "锁孔里透出微弱的蓝光。", minFloor = 6, weight = 12, choices = listOf(
+            c("直接打开", "获得装备与一些金币", "loot_random"),
+            c("撬锁赌一把", "押 50 金币，50% 概率翻倍", "gamble", gold = 50),
+            c("不去碰它", "继续前进", "none")
+        )),
+        GameEvent("evt_wandering_monk", "云游武僧", "🧘", "老者闭目坐在断墙上。", minFloor = 8, weight = 10, choices = listOf(
+            c("请求指点", "攻击与法强永久 +7", "train_atk", amount = 7.0),
+            c("切磋一场", "下一场战斗伤害 +30%", "buff_dmg", amount = 0.30),
+            c("静候身旁", "全队能量回满", "energy_all")
+        )),
+        GameEvent("evt_war_room", "作战室", "🗺", "桌上摊着这座塔的残缺地图。", minFloor = 5, weight = 10, choices = listOf(
+            c("制定战术", "下一场战斗伤害 +25%", "buff_dmg", amount = 0.25),
+            c("加固阵地", "全队恢复 25% 生命", "heal_all", amount = 0.25),
+            c("检阅部队", "防御永久 +5", "train_def", amount = 5.0)
+        )),
+        GameEvent("evt_unstable_alchemy", "不稳定炼金", "⚗", "坩埚里的液体正在自行翻涌。", minFloor = 12, weight = 9, choices = listOf(
+            c("购买成品药剂", "花费 90 金币，攻击与法强永久 +15", "train_atk", gold = 90, amount = 15.0),
+            c("打翻药锅", "获得 1 个随机道具", "get_random_item", amount = 1.0),
+            c("观察反应", "下一场战斗伤害 +20%", "buff_dmg", amount = 0.20)
+        )),
+        GameEvent("evt_blood_banner", "血旗", "🚩", "旗面吸饱了血，仍在无风中飘动。", minFloor = 15, weight = 8, choices = listOf(
+            c("拔起血旗", "攻击与法强永久 +12", "train_atk", amount = 12.0),
+            c("焚烧血旗", "全队恢复 30% 生命", "heal_all", amount = 0.30),
+            c("绕道而行", "获得 45 金币", "gold_fixed", amount = 45.0)
+        )),
+        GameEvent("evt_ancient_tome", "远古典籍", "📖", "书页在自己翻动。", minFloor = 18, weight = 9, choices = listOf(
+            c("研读典籍", "获得 2 点技能点", "skill_point", amount = 2.0),
+            c("抄录符文", "获得大量经验", "fragment_exp"),
+            c("撕下书页", "获得 60 金币", "gold_fixed", amount = 60.0)
+        )),
+        GameEvent("evt_star_altar", "星辰祭坛", "🌠", "祭坛上悬着一颗缓慢旋转的星核。", minFloor = 22, weight = 8, choices = listOf(
+            c("献上 100 金币", "全属性提升 6%", "train_all", gold = 100, amount = 0.06),
+            c("虔诚祈祷", "获得 1 技能点与 40 金币", "skill_gold"),
+            c("触碰星核", "下一场战斗伤害 +35%", "buff_dmg", amount = 0.35)
         ))
     )
 
