@@ -229,7 +229,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 66f
             r.wrap(c, "本作完全离线运行：无账号、无登录、无广告、无联网权限，存档仅保存在本机。", 40f, y, w - 80f, 12f, Palette.TEXT_DIM, 18f)
             y += 62f
-            ghostButton(c, "panel_reset", "清空存档并返回标题", 40f, y, w - 80f, 46f, Palette.RED)
+            ghostButton(c, "panel_export", "导出存档文本", 40f, y, (w - 88f) / 2f, 46f, Palette.CYAN)
+            ghostButton(c, "panel_reset", "清空存档", 40f + (w - 88f) / 2f + 8f, y, (w - 88f) / 2f, 46f, Palette.RED)
         }
     }
     panelScrollMax = (y + panelScroll - scrollBottom).coerceAtLeast(0f)
@@ -315,7 +316,21 @@ internal fun GameView.tapPanel(id: String) {
         "panel_speed_0" -> { perm.settingsBattleSpeed = 0; Save.savePerm(context, perm); return }
         "panel_speed_1" -> { perm.settingsBattleSpeed = 1; Save.savePerm(context, perm); return }
         "panel_speed_2" -> { perm.settingsBattleSpeed = 2; Save.savePerm(context, perm); return }
+        "panel_export" -> {
+            confirmAction = "export"
+            val txt = Save.exportSlot(context)
+            if (txt.isEmpty()) {
+                showToast("导出失败")
+            } else {
+                exportText = txt
+            }
+            return
+        }
         "panel_reset" -> {
+            showConfirm("将清空当前存档槽的全部进度（含轮回淬炼、星尘、成就、图鉴），此操作不可撤销。", "reset")
+            return
+        }
+        "panel_reset_do" -> {
             Save.clearRun(context)
             perm = com.kaiju.awaken.game.PermState()
             Save.savePerm(context, perm)
@@ -404,7 +419,7 @@ internal fun GameView.tapPanel(id: String) {
             p.gold -= cost
             u.star++
             RunService.recalcAll(p, perm)
-            audio.play("levelup")
+            audio.play("starup")
             showToast(u.name + " 升至 " + u.star + " 星")
         }
         id.startsWith("panel_merc_fire_") -> {
@@ -420,7 +435,7 @@ internal fun GameView.tapPanel(id: String) {
             val idx = id.removePrefix("panel_star_").toIntOrNull() ?: return
             if (DraftService.enhance(p, perm, idx)) {
                 RunService.recalcAll(p, perm)
-                audio.play("levelup")
+                audio.play("starup")
             } else {
                 showToast("神格点不足或已满星")
             }
@@ -434,11 +449,79 @@ private fun GameView.setVol(v: Int) {
 }
 
 internal fun GameView.drawOverlay(c: Canvas) {
+    if (exportText.isNotEmpty()) {
+        drawExportOverlay(c)
+        return
+    }
     when (overlay) {
         "shop" -> drawShopOverlay(c)
         "tavern" -> drawTavernOverlay(c)
         "battle_end" -> drawBattleEndOverlay(c)
+        "confirm" -> drawConfirmOverlay(c)
     }
+}
+
+internal fun GameView.tapConfirm(id: String) {
+    when (id) {
+        "confirm_no" -> {
+            overlay = ""
+            confirmAction = ""
+            exportText = ""
+        }
+        "confirm_yes" -> {
+            val act = confirmAction
+            overlay = ""
+            confirmAction = ""
+            when (act) {
+                "reset" -> {
+                    Save.clearRun(context)
+                    perm = com.kaiju.awaken.game.PermState()
+                    Save.savePerm(context, perm)
+                    run = null
+                    battle = null
+                    panel = ""
+                    screen = GameView.Screen.MENU
+                    showToast("存档已清空")
+                }
+                "abandon" -> {
+                    pendingAchievements = ArrayList()
+                    finishRun()
+                }
+                "export" -> {
+                    exportText = Save.exportSlot(context)
+                    overlay = ""
+                }
+            }
+        }
+    }
+}
+
+private fun GameView.drawConfirmOverlay(c: Canvas) {
+    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 220))
+    val top = h * 0.34f
+    card(c, 34f, top, w - 68f, 168f, r.withAlpha(Palette.RED, 200), 18f)
+    r.text(c, "请 确 认", w / 2f, top + 40f, 19f, Palette.RED, true, Paint.Align.CENTER)
+    r.wrap(c, confirmMsg, 54f, top + 70f, w - 108f, 12.5f, Palette.TEXT_DIM, 18f)
+    button(c, "confirm_yes", "确 定", 52f, top + 108f, (w - 120f) / 2f, 44f, Palette.RED)
+    ghostButton(c, "confirm_no", "取消", 52f + (w - 120f) / 2f + 16f, top + 108f, (w - 120f) / 2f, 44f, Palette.TEXT_DIM)
+}
+
+private fun GameView.drawExportOverlay(c: Canvas) {
+    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 234))
+    card(c, 20f, 90f, w - 40f, h - 200f, r.withAlpha(Palette.CYAN, 200), 18f)
+    r.text(c, "存档导出文本", w / 2f, 134f, 19f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.text(c, "长按可复制；粘贴到新设备的导入框即可恢复", w / 2f, 158f, 11f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    var y = 182f
+    val chunk = 46
+    var i = 0
+    while (i < exportText.length && y < h - 140f) {
+        val end = (i + chunk).coerceAtMost(exportText.length)
+        r.text(c, exportText.substring(i, end), 34f, y, 9.5f, Palette.TEXT_DIM)
+        y += 13f
+        i = end
+    }
+    r.text(c, "共 " + exportText.length + " 字符", 34f, y + 10f, 10.5f, Palette.TEXT_FAINT)
+    button(c, "confirm_no", "关 闭", 40f, h - 92f, w - 80f, 50f, Palette.CYAN)
 }
 
 private fun GameView.drawBattleEndOverlay(c: Canvas) {

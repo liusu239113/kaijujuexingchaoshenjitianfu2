@@ -19,7 +19,7 @@ internal fun GameView.drawHubScreen(c: Canvas) {
     val hero = p?.party?.firstOrNull()
     card(c, 20f, y, w - 40f, 128f, r.withAlpha(Palette.BORDER, 200), 18f)
     if (hero != null) {
-        drawPortrait(c, hero.clsId, 76f, y + 64f, 96f, classColor(hero.clsId))
+        drawPortrait(c, hero.avatarKey.ifEmpty { hero.clsId }, 76f, y + 64f, 96f, classColor(hero.clsId))
         r.text(c, Data.classById[hero.clsId]?.name ?: "", 138f, y + 36f, 19f, Palette.TEXT, true)
         val promo = RunService.promotionOf(p).joinToString(" → ") { it.name }
         if (promo.isNotEmpty()) r.text(c, promo, 138f, y + 56f, 11f, Palette.GOLD)
@@ -98,8 +98,7 @@ internal fun GameView.tapHub(id: String) {
         }
         "hub_abandon" -> {
             if (p != null && p.floor > 1) {
-                pendingAchievements = ArrayList()
-                finishRun()
+                showConfirm("放弃本轮将立即按当前层数结算神格点，无法继续深入。", "abandon")
             } else {
                 showToast("尚未深入，无需结算")
             }

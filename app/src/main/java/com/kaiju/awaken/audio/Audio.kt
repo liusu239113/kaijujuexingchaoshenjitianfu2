@@ -32,8 +32,41 @@ class Audio(private val ctx: Context) {
 
     private val sfxFiles = listOf(
         "click", "hit", "crit", "heal", "shield", "levelup",
-        "victory", "defeat", "draw", "draft", "coins", "skill"
+        "victory", "defeat", "draw", "draft", "coins", "skill",
+        "unlock", "error", "page", "starup", "ult", "revive",
+        "amb_campfire", "amb_wind", "amb_water", "amb_bell"
     )
+
+    private val ambienceFiles = listOf("amb_campfire", "amb_wind", "amb_water", "amb_bell")
+    private var ambience: MediaPlayer? = null
+    private var currentAmbience = ""
+
+    /** 环境音（与 BGM 并行播放）。 */
+    fun playAmbience(name: String) {
+        if (!sfxOn) return
+        if (currentAmbience == name && ambience?.isPlaying == true) return
+        val id = rawId("sfx_" + name)
+        if (id == 0) return
+        try {
+            ambience?.release()
+            ambience = MediaPlayer.create(ctx, id)?.apply {
+                isLooping = true
+                setVolume(0.25f, 0.25f)
+                start()
+            }
+            currentAmbience = name
+        } catch (t: Throwable) {
+        }
+    }
+
+    fun stopAmbience() {
+        try {
+            ambience?.release()
+            ambience = null
+            currentAmbience = ""
+        } catch (t: Throwable) {
+        }
+    }
 
     fun init() {
         try {
@@ -74,6 +107,12 @@ class Audio(private val ctx: Context) {
                 start()
             }
             currentTrack = track
+            when (track) {
+                "city" -> playAmbience("amb_campfire")
+                "tower" -> playAmbience("amb_wind")
+                "battle", "boss" -> playAmbience("amb_water")
+                else -> stopAmbience()
+            }
         } catch (t: Throwable) {
             Log.w("KaijuAudio", "bgm failed: $track", t)
         }
@@ -126,6 +165,7 @@ class Audio(private val ctx: Context) {
             bgm = null
         } catch (t: Throwable) {
         }
+        stopAmbience()
         try {
             pool?.release()
             pool = null

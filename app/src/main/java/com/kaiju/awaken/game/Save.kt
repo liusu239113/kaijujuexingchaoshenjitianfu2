@@ -28,6 +28,36 @@ object Save {
             .edit().putInt(KEY_SLOT, n).apply()
     }
 
+    /** 导出当前槽为可复制的 Base64 文本。 */
+    fun exportSlot(ctx: Context): String {
+        return try {
+            val pr = prefs(ctx)
+            val perm = pr.getString(KEY_PERM, "") ?: ""
+            val runS = pr.getString(KEY_RUN, "") ?: ""
+            val raw = "KAIJU1|" + perm + "|" + runS
+            android.util.Base64.encodeToString(raw.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP)
+        } catch (t: Throwable) {
+            ""
+        }
+    }
+
+    /** 从导出的 Base64 文本恢复当前槽。 */
+    fun importSlot(ctx: Context, text: String): Boolean {
+        return try {
+            val raw = String(android.util.Base64.decode(text.trim(), android.util.Base64.DEFAULT), Charsets.UTF_8)
+            if (!raw.startsWith("KAIJU1|")) return false
+            val parts = raw.split("|")
+            if (parts.size < 3) return false
+            val ed = prefs(ctx).edit()
+            if (parts[1].isNotEmpty()) ed.putString(KEY_PERM, parts[1])
+            if (parts[2].isNotEmpty()) ed.putString(KEY_RUN, parts[2]) else ed.remove(KEY_RUN)
+            ed.apply()
+            true
+        } catch (t: Throwable) {
+            false
+        }
+    }
+
     class SlotInfo(val isEmpty: Boolean, val summary: String, val detail: String)
 
     fun slotSummaries(ctx: Context): List<SlotInfo> {
@@ -217,6 +247,7 @@ object Save {
                 ju.put("rarity", u.rarity.name)
                 ju.put("hp", u.hp)
                 ju.put("energy", u.energy)
+                ju.put("avatarKey", u.avatarKey)
                 ju.put("star", u.star)
                 ju.put("traitId", u.traitId ?: "")
                 party.put(ju)
@@ -308,6 +339,7 @@ object Save {
                 for (i in 0 until arr.length()) {
                     val ju = arr.optJSONObject(i) ?: continue
                     if (ju.optString("id") == "player") {
+                        hero.avatarKey = ju.optString("avatarKey", hero.clsId)
                         hero.level = ju.optInt("level", 1)
                         hero.hp = ju.optDouble("hp", hero.stats.maxHp)
                         hero.energy = ju.optDouble("energy", 0.0)
@@ -322,6 +354,7 @@ object Save {
                         m.id = ju.optString("id", m.id)
                         m.hp = ju.optDouble("hp", 1.0)
                         m.energy = ju.optDouble("energy", 0.0)
+                        m.avatarKey = ju.optString("avatarKey", m.avatarKey)
                         m.star = ju.optInt("star", 1)
                         val tid = ju.optString("traitId", "")
                         m.traitId = if (tid.isEmpty()) null else tid

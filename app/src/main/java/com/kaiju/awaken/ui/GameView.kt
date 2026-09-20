@@ -94,6 +94,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var codexTab = 0
     var panelScroll = 0f
     var bagSelected = 0
+    var confirmMsg = ""
+    var confirmAction = ""
+    var exportText = ""
     var panelScrollMax = 0f
     private var dragLastY = 0f
     private var dragMoved = 0f
@@ -336,6 +339,12 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         r.text(c, toast, w / 2f, y + 27f, 15f, r.withAlpha(Palette.TEXT, a), true, Paint.Align.CENTER)
     }
 
+    fun showConfirm(msg: String, action: String) {
+        confirmMsg = msg
+        confirmAction = action
+        overlay = "confirm"
+    }
+
     fun showToast(msg: String) {
         toast = msg
         toastTime = 2.4f
@@ -450,7 +459,15 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 "evt_campfire", "evt_mercenary_camp" -> "pt_ev_camp"
                 "evt_library", "evt_talent_fragment" -> "pt_ev_library"
                 "evt_treasury", "evt_sealed_treasury", "evt_cursed_chest", "evt_dragon_hoard", "evt_immortal_throne" -> "pt_ev_treasure"
-                "evt_merchant", "evt_arcane_merchant" -> "pt_ev_shop"
+                "evt_merchant", "evt_arcane_merchant", "evt_lost_supply_cart" -> "pt_ev_shop"
+                "evt_training", "evt_merc_training", "evt_merc_trial" -> "pt_ev_train"
+                "evt_gamble" -> "pt_ev_gamble"
+                "evt_oracle" -> "pt_ev_oracle"
+                "evt_arena" -> "pt_ev_arena"
+                "evt_underground_grove", "evt_life_spring", "evt_fountain" -> "pt_ev_grove"
+                "evt_time_rift", "evt_void_rift", "evt_unstable_alchemy" -> "pt_ev_rift"
+                "evt_moonwell" -> "pt_ev_well"
+                "evt_old_battlefield", "evt_ancient_tomb", "evt_blood_banner" -> "pt_ev_gate"
                 else -> null
             }
         }
@@ -528,6 +545,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("codex_") -> tapCodex(id)
             id.startsWith("dust_") -> tapDust(id)
             id.startsWith("slot_") -> tapSlot(id)
+            id.startsWith("confirm_") -> tapConfirm(id)
         }
     }
 

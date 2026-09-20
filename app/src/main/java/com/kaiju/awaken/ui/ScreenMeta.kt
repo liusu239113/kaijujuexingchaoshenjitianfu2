@@ -170,6 +170,7 @@ internal fun GameView.tapMeta(id: String) {
 internal fun GameView.tapCodex(id: String) {
     if (id == "codex_filter") {
         codexTab = (codexTab + 1) % 3
+        audio.play("page")
     }
 }
 
@@ -188,7 +189,7 @@ internal fun GameView.tapDust(id: String) {
     perm.dust -= u.cost
     perm.unlocked.add(u.kind + ":" + u.key)
     Save.savePerm(context, perm)
-    audio.play("levelup")
+    audio.play("unlock")
     showToast("已解锁：" + u.name)
 }
 

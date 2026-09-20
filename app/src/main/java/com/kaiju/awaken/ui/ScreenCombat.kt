@@ -88,7 +88,7 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, isEnem
             r.text(c, "战殁", x + cw / 2f, gridTop + ch / 2f, 14f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
             continue
         }
-        val key = if (isEnemy) u.avatarKey else if (u.id == "player") u.clsId else u.avatarKey.ifEmpty { u.clsId }
+        val key = u.avatarKey.ifEmpty { u.clsId }
         val psize = if (cw < 110f) 44f else 54f
         drawPortrait(c, key, x + cw / 2f, gridTop + psize * 0.52f, psize, if (isEnemy) Palette.RED else classColor(u.clsId))
         r.text(c, u.name, x + cw / 2f, gridTop + psize + 18f, if (cw < 110f) 10.5f else 12f, Palette.TEXT, true, Paint.Align.CENTER)
@@ -223,7 +223,7 @@ internal fun GameView.tapCombat(id: String) {
                 else -> actor
             }
             b.playerAct(s, target)
-            audio.play(if (s.isUltimate) "crit" else "skill")
+            audio.play(if (s.isUltimate) "ult" else "skill")
             combatDelay = 0.32f
         }
     }

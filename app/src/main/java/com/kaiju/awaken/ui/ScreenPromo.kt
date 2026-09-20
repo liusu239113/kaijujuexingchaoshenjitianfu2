@@ -23,12 +23,13 @@ internal fun GameView.drawPromotionScreen(c: Canvas) {
         val col = if (promoTier == 1) Palette.PINK else Palette.GOLD
         card(c, 22f, y, w - 44f, cardH, col, 18f)
         r.glowPanel(c, 22f, y, w - 44f, cardH, 18f, col, 42)
-        r.text(c, promo.glyph + " " + promo.name, 40f, y + 34f, 20f, Palette.TEXT, true)
+        drawPortrait(c, "pc_" + promo.id, 64f, y + 54f, 78f, col)
+        r.text(c, promo.name, 116f, y + 40f, 20f, Palette.TEXT, true)
         r.text(c, if (promoTier == 1) "一转路线" else "二转路线", w - 42f, y + 32f, 11.5f, col, false, Paint.Align.RIGHT)
-        r.wrap(c, promo.desc, 40f, y + 58f, w - 80f, 12f, Palette.TEXT_DIM, 17f)
+        r.wrap(c, promo.desc, 116f, y + 60f, w - 154f, 11.5f, Palette.TEXT_DIM, 16f)
 
         // 面板加成
-        var by = y + 96f
+        var by = y + 104f
         val mods = promo.statMod.entries.joinToString("  ") { statLabel(it.key) + " " + pctText(it.value) }
         if (mods.isNotEmpty()) {
             r.text(c, mods, 40f, by, 11.5f, Palette.GREEN)
@@ -84,6 +85,7 @@ internal fun GameView.tapPromotion(id: String) {
     val promo = promoOptions.getOrNull(idx) ?: return
     val p = run ?: return
     if (promo.tier == 1) p.promotionId = promo.id else p.tier2Id = promo.id
+    p.hero().avatarKey = "pc_" + promo.id
     RunService.rebuildSkills(p.hero(), p.classId, p.promotionId, p.tier2Id)
     RunService.recalcAll(p, perm)
     audio.play("levelup")
