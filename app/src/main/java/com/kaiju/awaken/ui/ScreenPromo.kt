@@ -89,5 +89,5 @@ internal fun GameView.tapPromotion(id: String) {
     audio.play("levelup")
     notePromotion(promo.tier)
     showToast("转职为 " + promo.name)
-    screen = Screen.TOWER
+    screen = GameView.Screen.TOWER
 }

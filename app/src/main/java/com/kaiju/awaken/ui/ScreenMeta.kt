@@ -157,13 +157,13 @@ private fun GameView.codexFilterLabel(): String = when (codexTab) {
 
 internal fun GameView.tapMeta(id: String) {
     when (id) {
-        "meta_back" -> screen = Screen.MENU
-        "meta_growth" -> screen = Screen.GROWTH
-        "meta_codex" -> screen = Screen.CODEX
-        "meta_ach" -> screen = Screen.ACHIEVEMENTS
-        "meta_shop" -> screen = Screen.SHOP
-        "meta_about" -> screen = Screen.ABOUT
-        "meta_slots" -> screen = Screen.SAVE_SLOTS
+        "meta_back" -> screen = GameView.Screen.MENU
+        "meta_growth" -> screen = GameView.Screen.GROWTH
+        "meta_codex" -> screen = GameView.Screen.CODEX
+        "meta_ach" -> screen = GameView.Screen.ACHIEVEMENTS
+        "meta_shop" -> screen = GameView.Screen.SHOP
+        "meta_about" -> screen = GameView.Screen.ABOUT
+        "meta_slots" -> screen = GameView.Screen.SAVE_SLOTS
     }
 }
 
@@ -197,7 +197,7 @@ internal fun GameView.tapSlot(id: String) {
     val n = id.removePrefix("slot_pick_").toIntOrNull() ?: return
     Save.setSlot(context, perm, n)
     showToast("已切换到存档 " + (n + 1))
-    screen = Screen.MENU
+    screen = GameView.Screen.MENU
 }
 
 internal fun GameView.drawSaveSlotsScreen(c: Canvas) {
