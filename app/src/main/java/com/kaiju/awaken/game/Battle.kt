@@ -364,7 +364,7 @@ class Battle(
             "shield_scroll" -> allies.forEach { if (it.alive) it.addShield(it.stats.maxHp * 0.3) }
             "bomb" -> enemies.filter { it.alive }.forEach { e ->
                 val d = e.stats.maxHp * 0.12
-                applyDamage(e, d, null, null)
+                applyDamage(e, d, null, 0xFFFF6B6B.toInt())
             }
             "cleanse_potion" -> allies.forEach { if (it.alive) it.clearDebuffs() }
             "rage_potion" -> allies.forEach { if (it.alive) it.addBuff(Buff("rage", "狂暴", 3, 1, 0.30, false)) }

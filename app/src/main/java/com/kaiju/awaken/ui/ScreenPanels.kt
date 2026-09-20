@@ -187,7 +187,7 @@ private fun mainLabel(key: String): String = when (key) {
     else -> key
 }
 
-internal fun tapPanel(id: String) {
+internal fun GameView.tapPanel(id: String) {
     // 这些操作不依赖本轮进度（主菜单也能打开设置）
     when (id) {
         "panel_close" -> { panel = ""; return }
@@ -326,7 +326,7 @@ private fun GameView.drawBattleEndOverlay(c: Canvas) {
     }
 }
 
-internal fun tapOverlay(id: String) {
+internal fun GameView.tapOverlay(id: String) {
     when (id) {
         "over_continue" -> {
             overlay = ""
@@ -380,7 +380,7 @@ internal fun GameView.drawReincarnationScreen(c: Canvas) {
     ghostButton(c, "reinc_menu", "回到标题", 48f, h - 90f, w - 96f, 44f, Palette.TEXT_DIM)
 }
 
-internal fun tapReincarnation(id: String) {
+internal fun GameView.tapReincarnation(id: String) {
     val p = run ?: return
     when (id) {
         "reinc_claim" -> {
@@ -431,7 +431,7 @@ internal fun GameView.drawGrowthScreen(c: Canvas) {
     button(c, "growth_start", "开 始 新 一 轮", 40f, h - 82f, w - 80f, 56f, Palette.PINK)
 }
 
-internal fun tapGrowth(id: String) {
+internal fun GameView.tapGrowth(id: String) {
     when {
         id == "growth_back" -> screen = Screen.MENU
         id == "growth_start" -> screen = Screen.SETUP

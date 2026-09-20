@@ -186,7 +186,7 @@ private fun GameView.drawCommandBar(c: Canvas, b: Battle) {
     }
 }
 
-internal fun tapCombat(id: String) {
+internal fun GameView.tapCombat(id: String) {
     val b = battle ?: return
     when {
         id == "cb_auto" -> {

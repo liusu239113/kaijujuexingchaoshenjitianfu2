@@ -46,8 +46,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     // 选人 / 抽卡
     var setupMode = GameMode.NORMAL
     var setupClass = "warrior"
-    var draftOptions = ArrayList<DraftOption>()
-    var divinityOptions = ArrayList<Talent>()
+    var draftOptions: List<DraftOption> = emptyList()
+    var divinityOptions: List<Talent> = emptyList()
     var picksLeft = 0
     var picksTotal = 3
     var replacePick = false
@@ -59,7 +59,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var toastTime = 0f
     var panel = ""
     var eventResult = ""
-    var shopStock = ArrayList<com.kaiju.awaken.game.ItemDef>()
+    var shopStock: List<com.kaiju.awaken.game.ItemDef> = emptyList()
     var tavernList = ArrayList<Unit>()
     var overlay = ""
     var lastRewards: TowerService.Rewards? = null
@@ -536,7 +536,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 overlay = "shop"
             }
             "tavern" -> {
-                tavernList = TowerService.tavernCandidates(p.floor)
+                tavernList = ArrayList(TowerService.tavernCandidates(p.floor))
                 overlay = "tavern"
             }
             "event" -> {

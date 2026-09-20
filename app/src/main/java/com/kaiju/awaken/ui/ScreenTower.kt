@@ -161,7 +161,7 @@ private fun GameView.drawBottomNav(c: Canvas) {
     }
 }
 
-internal fun tapTower(id: String) {
+internal fun GameView.tapTower(id: String) {
     when {
         id == "tower_menu" -> goMenu()
         id == "tower_continue" -> continueAfterEvent()
@@ -177,7 +177,7 @@ internal fun tapTower(id: String) {
     }
 }
 
-internal fun tapEvent(id: String) {
+internal fun GameView.tapEvent(id: String) {
     when {
         id == "evt_enter" -> enterCurrentEvent()
         id.startsWith("evt_choice_") -> {
@@ -211,7 +211,7 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
     ghostButton(c, "shop_close", "离开商店", 40f, h - 96f, w - 80f, 52f, Palette.TEXT_DIM)
 }
 
-internal fun tapShop(id: String) {
+internal fun GameView.tapShop(id: String) {
     val p = run ?: return
     when {
         id == "shop_close" -> {
@@ -261,7 +261,7 @@ internal fun GameView.drawTavernOverlay(c: Canvas) {
     ghostButton(c, "tavern_close", "离开酒馆", 40f, h - 96f, w - 80f, 52f, Palette.TEXT_DIM)
 }
 
-internal fun tapTavern(id: String) {
+internal fun GameView.tapTavern(id: String) {
     val p = run ?: return
     when {
         id == "tavern_close" -> {

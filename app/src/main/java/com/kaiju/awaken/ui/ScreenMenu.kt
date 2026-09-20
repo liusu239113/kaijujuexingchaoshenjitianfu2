@@ -60,7 +60,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     r.text(c, "v1.1.6 · 共鸣盘重构版", w / 2f, h - 28f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
 }
 
-internal fun tapMenu(id: String) {
+internal fun GameView.tapMenu(id: String) {
     when (id) {
         "menu_start" -> {
             screen = Screen.SETUP
@@ -138,7 +138,7 @@ private fun primaryLabel(p: String): String = when (p) {
     else -> "体质"
 }
 
-internal fun tapSetup(id: String) {
+internal fun GameView.tapSetup(id: String) {
     when {
         id == "setup_back" -> screen = Screen.MENU
         id.startsWith("setup_mode_") -> setupMode = GameMode.byId(id.removePrefix("setup_mode_"))
@@ -161,7 +161,7 @@ internal fun GameView.drawDivinityScreen(c: Canvas) {
     }
 }
 
-internal fun tapDivinity(id: String) {
+internal fun GameView.tapDivinity(id: String) {
     if (!id.startsWith("div_pick_")) return
     val idx = id.removePrefix("div_pick_").toIntOrNull() ?: return
     val t = divinityOptions.getOrNull(idx) ?: return
@@ -280,7 +280,7 @@ internal fun GameView.drawResonanceStrip(c: Canvas, p: com.kaiju.awaken.game.Run
     r.text(c, "伤害 +${(bonus.damage * 100).toInt()}% 生命 +${(bonus.hp * 100).toInt()}%", w - 38f, top + 86f, 11f, Palette.PINK, false, Paint.Align.RIGHT)
 }
 
-internal fun tapDraft(id: String) {
+internal fun GameView.tapDraft(id: String) {
     val p = run ?: return
     if (id == "draft_cancel_replace") {
         pendingOption = null
