@@ -69,14 +69,11 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
 internal fun GameView.tapMenu(id: String) {
     when (id) {
         "menu_start" -> {
-            screen = Screen.SETUP
+            screen = GameView.Screen.HUB
         }
         "menu_continue" -> {
-            val p = run ?: return
-            RunService.recalcAll(p, perm)
-            if (p.floorEvents.isEmpty()) TowerService.generateFloor(p)
-            screen = Screen.TOWER
-            audio.playBgm("tower")
+            run?.let { RunService.recalcAll(it, perm) }
+            screen = GameView.Screen.HUB
         }
         "menu_growth" -> screen = Screen.GROWTH
         "menu_codex" -> screen = Screen.CODEX

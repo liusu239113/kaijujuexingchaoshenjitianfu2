@@ -136,7 +136,7 @@ class Battle(
         enemies.clear()
         val (expAtk, expHp) = expectedPower()
         val hero = allies.firstOrNull() ?: return
-        val heroPower = (hero.stats.atk + hero.stats.matk) * 0.6 + hero.stats.maxHp * 0.05
+        val heroPower = max(hero.stats.atk, hero.stats.matk) * 1.1 + hero.stats.maxHp * 0.05
         val expectedPower = (expAtk * 1.2) + expHp * 0.05
         val adapt = (heroPower / max(1.0, expectedPower)).coerceIn(0.75, 1.25)
 
@@ -162,7 +162,8 @@ class Battle(
             val lv = run.climbLevel
             if (lv >= 25) eDef *= 1.25
         }
-        val heroBasicDmg = hero.stats.atk * hero.stats.atk / (hero.stats.atk + eDef * 1.2)
+        val refStat = max(hero.stats.atk, hero.stats.matk)
+        val heroBasicDmg = refStat * refStat / (refStat + eDef * 1.2)
         val actions = 3.0 + floor * 0.02
         var hpBase = heroBasicDmg * actions * kindHp * (0.7 + 0.3 * adapt)
         var desiredHit = expHp * (0.035 + floor * 0.0006) * kindAtk * (0.75 + 0.25 * adapt)

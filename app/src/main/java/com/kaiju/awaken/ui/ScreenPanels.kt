@@ -32,20 +32,55 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
     r.text(c, title, w / 2f, top + 42f, 21f, Palette.CYAN, true, Paint.Align.CENTER)
     if (p != null) r.text(c, "💰 ${p.gold}    ✨ ${perm.talentPoints}", w / 2f, top + 64f, 12f, Palette.GOLD, false, Paint.Align.CENTER)
 
-    var y = top + 84f
+    val scrollTop = top + 78f
+    val scrollBottom = bottom - 58f
+    c.save()
+    c.clipRect(20f, scrollTop, w - 20f, scrollBottom)
+    panelScrollMax = 0f
+    var y = scrollTop + 8f - panelScroll
     when (panel) {
         "bag" -> {
             if (p == null) return
-            if (p.bag.isEmpty()) {
-                r.text(c, "行囊是空的。", w / 2f, y + 40f, 14f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+            val gridTop = y
+            val cols = 5
+            val gap = 6f
+            val cell = (w - 44f - gap * (cols - 1)) / cols
+            r.text(c, "行囊 " + p.bag.size + " / 40   ·   点击格子查看", 24f, gridTop + 14f, 11f, Palette.TEXT_DIM)
+            val gy = gridTop + 24f
+            val rows = 8
+            for (i in 0 until rows * cols) {
+                val col = i % cols
+                val row = i / cols
+                val x = 22f + col * (cell + gap)
+                val yy = gy + row * (cell + gap)
+                val e = p.bag.getOrNull(i)
+                val sel = bagSelected == i
+                if (e == null) {
+                    r.panel(c, x, yy, cell, cell, 10f, r.withAlpha(Palette.PANEL_DEEP, 220), r.withAlpha(Palette.PANEL_DEEP, 220), r.withAlpha(Palette.BORDER_SOFT, 120), 1.2f)
+                } else {
+                    val col2 = rarityColor(e.rarity)
+                    card(c, x, yy, cell, cell, if (sel) Palette.GOLD else col2, 10f)
+                    if (sel) r.glowPanel(c, x, yy, cell, cell, 10f, Palette.GOLD, 70)
+                    r.text(c, slotGlyph(e.slot), x + cell / 2f, yy + cell * 0.44f, cell * 0.44f, col2, true, Paint.Align.CENTER)
+                    r.text(c, e.name.take(4), x + cell / 2f, yy + cell * 0.72f, 9f, Palette.TEXT, false, Paint.Align.CENTER)
+                    if (e.enhance > 0) r.text(c, "+" + e.enhance, x + cell / 2f, yy + cell * 0.9f, 9.5f, Palette.GOLD, true, Paint.Align.CENTER)
+                    hit("panel_bagsel_" + i, x, yy, cell, cell)
+                }
             }
-            for (i in p.bag.indices) {
-                if (y > bottom - 90f) break
-                val e = p.bag[i]
-                drawEquipRow(c, e, 36f, y, w - 72f, "panel_equip_$i", "装备", Palette.CYAN)
-                y += 82f
+            y = gy + rows * (cell + gap) + 10f
+            val sel = p.bag.getOrNull(bagSelected)
+            card(c, 22f, y, w - 44f, 104f, if (sel == null) r.withAlpha(Palette.BORDER_SOFT, 140) else rarityColor(sel.rarity), 12f)
+            if (sel == null) {
+                r.text(c, "选择一个格子查看详情", w / 2f, y + 56f, 12f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+            } else {
+                r.text(c, sel.name, 36f, y + 26f, 14f, Palette.TEXT, true)
+                r.text(c, sel.rarity.cn + " · " + mainLabel(sel.mainKey) + " +" + sel.mainValue.toInt() + (if (sel.enhance > 0) "  ·  锻铸 +" + sel.enhance else ""), 36f, y + 46f, 11f, rarityColor(sel.rarity))
+                r.text(c, sel.affixes.take(3).joinToString("  ") { it.label + " +" + it.value.toInt() }, 36f, y + 64f, 10f, Palette.TEXT_DIM)
+                r.text(c, "变卖 " + sel.sellValue + " 金币", 36f, y + 86f, 10.5f, Palette.GOLD)
+                button(c, "panel_bag_equip", "装 备", w - 190f, y + 64f, 76f, 34f, Palette.CYAN)
+                ghostButton(c, "panel_bag_sell", "变卖", w - 106f, y + 64f, 76f, 34f, Palette.GOLD)
             }
-            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
+            y += 116f
         }
         "equip" -> {
             if (p == null) return
@@ -78,7 +113,6 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 }
                 y += 80f
             }
-            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
         "talents" -> {
             if (p == null) return
@@ -104,7 +138,6 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 y += 72f
             }
             r.text(c, "神格点：${perm.talentPoints}", 36f, bottom - 76f, 12f, Palette.GOLD)
-            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
         "attrs" -> {
             if (p == null) return
@@ -133,7 +166,6 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             }
             y += ((rows.size + 1) / 2) * 34f + 8f
             r.text(c, "共鸣：" + p.grid.resonanceBonus().label() + " · " + (Data.classById[p.classId]?.name ?: ""), 36f, y + 16f, 12f, Palette.CYAN, true)
-            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
         "items" -> {
             if (p == null) return
@@ -145,7 +177,6 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 r.text(c, it.desc, 88f, y + 46f, 10.5f, Palette.TEXT_DIM)
                 y += 70f
             }
-            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
         "merc" -> {
             if (p == null) return
@@ -173,7 +204,6 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 y += 112f
             }
             r.text(c, "队伍上限 3 人（含主角）", 24f, bottom - 76f, 11f, Palette.TEXT_FAINT)
-            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
         "settings" -> {
             r.text(c, "🎵 乐曲音量 ${perm.musicVolume}%", 40f, y + 20f, 14f, Palette.TEXT)
@@ -200,13 +230,31 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             r.wrap(c, "本作完全离线运行：无账号、无登录、无广告、无联网权限，存档仅保存在本机。", 40f, y, w - 80f, 12f, Palette.TEXT_DIM, 18f)
             y += 62f
             ghostButton(c, "panel_reset", "清空存档并返回标题", 40f, y, w - 80f, 46f, Palette.RED)
-            ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
     }
+    panelScrollMax = (y + panelScroll - scrollBottom).coerceAtLeast(0f)
+    panelScroll = panelScroll.coerceIn(0f, panelScrollMax)
+    c.restore()
+    if (panelScrollMax > 0f) {
+        r.solid(c, w - 14f, scrollTop + 6f, 3f, scrollBottom - scrollTop - 12f, 1.5f, r.withAlpha(Palette.BORDER_SOFT, 150))
+        val viewH = scrollBottom - scrollTop
+        val frac = viewH / (viewH + panelScrollMax)
+        val barH = (viewH * frac).coerceAtLeast(24f)
+        val barY = scrollTop + (viewH - barH) * (panelScroll / panelScrollMax)
+        r.solid(c, w - 14f, barY, 3f, barH, 1.5f, Palette.CYAN)
+    }
+    ghostButton(c, "panel_close", "关 闭", 36f, bottom - 52f, w - 72f, 44f, Palette.TEXT_DIM)
 }
-
 private fun heroSkillLevel(p: com.kaiju.awaken.game.RunState, skillId: String): Int =
     p.hero().cooldowns.keys.size.let { 1 }
+
+internal fun slotGlyph(slot: String): String = when (slot) {
+    "weapon" -> "\u2694"
+    "helmet" -> "\u26d1"
+    "chest" -> "\u25c6"
+    "amulet" -> "\u25cf"
+    else -> "\u25cb"
+}
 
 private fun GameView.drawEquipRow(c: Canvas, e: Equip, x: Float, y: Float, ww: Float, id: String, action: String, accent: Int) {
     val col = rarityColor(e.rarity)
@@ -323,6 +371,29 @@ internal fun GameView.tapPanel(id: String) {
             RunService.recalcAll(p, perm)
             audio.play("levelup")
             showToast("战技已锻铸")
+        }
+        id.startsWith("panel_bagsel_") -> {
+            bagSelected = id.removePrefix("panel_bagsel_").toIntOrNull() ?: 0
+            return
+        }
+        "panel_bag_equip" -> {
+            val e = p.bag.getOrNull(bagSelected) ?: return
+            val cur = p.equipped[e.slot]
+            p.bag.removeAt(bagSelected)
+            p.equipped[e.slot] = e
+            if (cur != null) p.bag.add(cur)
+            bagSelected = 0
+            RunService.recalcAll(p, perm)
+            audio.play("levelup")
+            showToast("已装备 " + e.name)
+        }
+        "panel_bag_sell" -> {
+            val e = p.bag.getOrNull(bagSelected) ?: return
+            p.gold += e.sellValue
+            p.bag.removeAt(bagSelected)
+            bagSelected = 0
+            audio.play("coins")
+            showToast("变卖 " + e.name + " 获得 " + e.sellValue + " 金币")
         }
         id.startsWith("panel_merc_star_") -> {
             val idx = id.removePrefix("panel_merc_star_").toIntOrNull() ?: return

@@ -34,7 +34,7 @@ import kotlin.random.Random
 class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     enum class Screen {
-        MENU, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
+        MENU, HUB, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
         GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS
     }
 
@@ -92,6 +92,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var runStartMs = 0L
     var pendingAchievements = ArrayList<com.kaiju.awaken.game.AchDef>()
     var codexTab = 0
+    var panelScroll = 0f
+    var bagSelected = 0
+    var panelScrollMax = 0f
+    private var dragLastY = 0f
+    private var dragMoved = 0f
     var preferredTargetId: String? = null
 
     private var lastFrame = 0L
@@ -168,6 +173,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.MENU -> false
             Screen.SETUP -> { screen = Screen.MENU; true }
             Screen.GROWTH -> { screen = Screen.MENU; true }
+            Screen.HUB -> { goMenu(); true }
             Screen.CODEX -> { screen = Screen.MENU; true }
             Screen.ACHIEVEMENTS -> { screen = Screen.MENU; true }
             Screen.SHOP -> { screen = Screen.MENU; true }
@@ -201,14 +207,16 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         battle?.tickVisuals(dt)
         val b = battle
         if (b != null && screen == Screen.COMBAT && !b.finished && !b.awaitingInput) {
-            if (autoBattle || b.currentActor()?.id != "player") {
-                combatDelay -= dt
-                if (combatDelay <= 0f) {
-                    combatDelay = if (autoBattle) 0.18f else 0.5f
-                    b.auto = autoBattle
-                    b.advance()
-                    playCombatSfx(b)
-                }
+            combatDelay -= dt
+            if (combatDelay <= 0f) {
+                val spd = perm.settingsBattleSpeed.coerceIn(0, 2)
+                var d0 = if (autoBattle) 0.30f else 0.55f
+                if (spd == 2) d0 *= 0.5f
+                if (spd == 0) d0 *= 1.8f
+                combatDelay = d0
+                b.auto = autoBattle
+                b.advance()
+                playCombatSfx(b)
             }
         }
         if (b != null && b.finished && battleResult.isEmpty()) {
@@ -245,6 +253,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         drawBackground(canvas)
         when (screen) {
             Screen.MENU -> drawMenuScreen(canvas)
+            Screen.HUB -> drawHubScreen(canvas)
             Screen.SETUP -> drawSetupScreen(canvas)
             Screen.DIVINITY -> drawDivinityScreen(canvas)
             Screen.DRAFT -> drawDraftScreen(canvas)
@@ -266,6 +275,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     }
 
     private fun bgNameForScreen(): String = when (screen) {
+        Screen.HUB -> "bg_corridor"
         Screen.MENU, Screen.SETUP, Screen.SHOP, Screen.ACHIEVEMENTS, Screen.ABOUT, Screen.SAVE_SLOTS -> "bg_menu"
         Screen.TOWER, Screen.DRAFT, Screen.DIVINITY, Screen.PROMOTION -> "bg_corridor"
         Screen.COMBAT -> "bg_battle"
@@ -464,18 +474,34 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     // ------------------------------------------------------------ 输入
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.action == MotionEvent.ACTION_DOWN) {
-            val x = event.x / scale
-            val y = event.y / scale
-            var i = hits.size - 1
-            while (i >= 0) {
-                val hh = hits[i]
-                if (hh.enabled && hh.contains(x, y)) {
-                    audio.play("click")
-                    handleTap(hh.id)
-                    return true
+        val vx = event.x / scale
+        val vy = event.y / scale
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                dragLastY = vy
+                dragMoved = 0f
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dy = vy - dragLastY
+                dragLastY = vy
+                dragMoved += kotlin.math.abs(dy)
+                if (panel.isNotEmpty() && panelScrollMax > 0f) {
+                    panelScroll = (panelScroll - dy).coerceIn(0f, panelScrollMax)
                 }
-                i--
+            }
+            MotionEvent.ACTION_UP -> {
+                if (dragMoved < 14f) {
+                    var i = hits.size - 1
+                    while (i >= 0) {
+                        val hh = hits[i]
+                        if (hh.enabled && hh.contains(vx, vy)) {
+                            audio.play("click")
+                            handleTap(hh.id)
+                            return true
+                        }
+                        i--
+                    }
+                }
             }
         }
         return true
@@ -498,6 +524,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("reinc_") -> tapReincarnation(id)
             id.startsWith("promo_") -> tapPromotion(id)
             id.startsWith("meta_") -> tapMeta(id)
+            id.startsWith("hub_") -> tapHub(id)
             id.startsWith("codex_") -> tapCodex(id)
             id.startsWith("dust_") -> tapDust(id)
             id.startsWith("slot_") -> tapSlot(id)

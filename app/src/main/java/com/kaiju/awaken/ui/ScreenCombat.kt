@@ -32,7 +32,7 @@ internal fun GameView.drawCombatScreen(c: Canvas) {
     val enemyTop = TOP_H + 6f
     val allyTop = enemyTop + ROW_H + 10f
     val logTop = allyTop + ROW_H + 8f
-    val logBottom = h - CMD_H - 6f
+    val logBottom = minOf(h - CMD_H - 6f, logTop + 96f)
 
     drawUnitRow(c, b.enemies, enemyTop, true, b, accent)
     drawUnitRow(c, b.allies, allyTop, false, b, Palette.CYAN)

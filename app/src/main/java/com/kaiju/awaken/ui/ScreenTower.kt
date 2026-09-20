@@ -190,7 +190,10 @@ private fun GameView.drawBottomNav(c: Canvas) {
 
 internal fun GameView.tapTower(id: String) {
     when {
-        id == "tower_menu" -> goMenu()
+        id == "tower_menu" -> {
+            screen = GameView.Screen.HUB
+            Save.saveRun(context, run, perm)
+        }
         id == "tower_intro_ok" -> {
             perm.seenIntro = true
             Save.savePerm(context, perm)
@@ -201,7 +204,10 @@ internal fun GameView.tapTower(id: String) {
             TowerService.advanceFloor(p, perm)
             afterFloorAdvance()
         }
-        id.startsWith("tower_panel_") -> panel = id.removePrefix("tower_panel_")
+        id.startsWith("tower_panel_") -> {
+            panel = id.removePrefix("tower_panel_")
+            panelScroll = 0f
+        }
     }
 }
 
