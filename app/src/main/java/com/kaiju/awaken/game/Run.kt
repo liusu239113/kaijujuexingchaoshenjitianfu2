@@ -8,6 +8,29 @@ import kotlin.random.Random
 class PermState {
     var talentPoints = 0
     var bestFloor = 0
+    var climbMaxUnlocked = 1
+    var climbBest = 0
+    /** 星尘：长期解锁货币 */
+    var dust = 0
+    var dustTotal = 0
+    /** 已解锁内容（class:xxx / pool:xxx） */
+    val unlocked = HashSet<String>()
+    /** 成就进度 */
+    val achProgress = HashMap<String, Int>()
+    /** 累计统计 */
+    val stats = HashMap<String, Int>()
+    /** 图鉴已见条目 */
+    val codexSeen = HashSet<String>()
+    /** 已通关的模式 */
+    val clearedModes = HashSet<String>()
+    val classPlayed = HashSet<String>()
+    val classCleared = HashSet<String>()
+    var settingsVibration = true
+    var settingsAutoBattle = false
+    var settingsManualTarget = true
+    var settingsFontScale = 100
+    var settingsColorBlind = false
+    var settingsBattleSpeed = 1
     var totalRuns = 0
     var pity = 0
     var musicOn = true
@@ -52,6 +75,7 @@ class RunState {
     /** 仅下一场遭遇战生效的加成。 */
     val nextBattleBonus = HashMap<String, Double>()
 
+    var climbLevel = 1
     var phoenixUsed = false
     var adReviveUsed = false
     var pityCounter = 0
@@ -77,7 +101,7 @@ class RunState {
         var base = 0
         for (i in 1..floor) base += min(10, (i - 1) / 5 + 1)
         val mult = when (mode) {
-            GameMode.CLIMB -> 2.0
+            GameMode.CLIMB -> 2.0 + 0.1 * climbLevel
             GameMode.ENDLESS -> 1.6
             else -> mode.mult
         }

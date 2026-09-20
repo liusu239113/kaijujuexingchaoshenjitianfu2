@@ -6,9 +6,57 @@ import org.json.JSONObject
 
 object Save {
 
-    private const val PREF = "kaiju_awakening_save"
+    private const val PREF_BASE = "kaiju_awakening_save"
     private const val KEY_PERM = "perm_v1"
     private const val KEY_RUN = "run_v1"
+    private const val KEY_SLOT = "current_slot"
+    const val SLOT_COUNT = 3
+
+    var currentSlot = 0
+        private set
+
+    fun init(ctx: Context) {
+        currentSlot = ctx.getSharedPreferences(PREF_BASE + "_meta", Context.MODE_PRIVATE)
+            .getInt(KEY_SLOT, 0).coerceIn(0, SLOT_COUNT - 1)
+    }
+
+    fun setSlot(ctx: Context, perm: PermState, n: Int) {
+        if (n < 0 || n >= SLOT_COUNT) return
+        savePerm(ctx, perm)
+        currentSlot = n
+        ctx.getSharedPreferences(PREF_BASE + "_meta", Context.MODE_PRIVATE)
+            .edit().putInt(KEY_SLOT, n).apply()
+    }
+
+    class SlotInfo(val isEmpty: Boolean, val summary: String, val detail: String)
+
+    fun slotSummaries(ctx: Context): List<SlotInfo> {
+        val out = ArrayList<SlotInfo>()
+        for (i in 0 until SLOT_COUNT) {
+            val pr = ctx.getSharedPreferences(PREF_BASE + "_s" + i, Context.MODE_PRIVATE)
+            val raw = pr.getString(KEY_PERM, null)
+            if (raw == null) {
+                out.add(SlotInfo(true, "", ""))
+                continue
+            }
+            try {
+                val o = JSONObject(raw)
+                val best = o.optInt("bestFloor", 0)
+                val runs = o.optInt("totalRuns", 0)
+                val dust = o.optInt("dustTotal", 0)
+                out.add(
+                    SlotInfo(
+                        false,
+                        "最高 " + best + " 层 · 轮回 " + runs + " 次",
+                        "累计星尘 " + dust + " · 神格点 " + o.optInt("talentPoints", 0)
+                    )
+                )
+            } catch (t: Throwable) {
+                out.add(SlotInfo(true, "", ""))
+            }
+        }
+        return out
+    }
 
     // ------------------------------------------------------------ 永久存档
 
@@ -19,6 +67,21 @@ object Save {
         o.put("totalRuns", perm.totalRuns)
         o.put("pity", perm.pity)
         o.put("climbMaxUnlocked", perm.climbMaxUnlocked)
+        o.put("dust", perm.dust)
+        o.put("dustTotal", perm.dustTotal)
+        o.put("settingsVibration", perm.settingsVibration)
+        o.put("settingsAutoBattle", perm.settingsAutoBattle)
+        o.put("settingsManualTarget", perm.settingsManualTarget)
+        o.put("settingsFontScale", perm.settingsFontScale)
+        o.put("settingsColorBlind", perm.settingsColorBlind)
+        o.put("settingsBattleSpeed", perm.settingsBattleSpeed)
+        o.put("unlocked", strSet(perm.unlocked))
+        o.put("clearedModes", strSet(perm.clearedModes))
+        o.put("classPlayed", strSet(perm.classPlayed))
+        o.put("classCleared", strSet(perm.classCleared))
+        o.put("codexSeen", strSet(perm.codexSeen))
+        o.put("achProgress", intMap(perm.achProgress))
+        o.put("stats", intMap(perm.stats))
         o.put("climbBest", perm.climbBest)
         o.put("musicOn", perm.musicOn)
         o.put("musicVolume", perm.musicVolume)
@@ -50,6 +113,21 @@ object Save {
             perm.totalRuns = o.optInt("totalRuns", 0)
             perm.pity = o.optInt("pity", 0)
             perm.climbMaxUnlocked = o.optInt("climbMaxUnlocked", 1)
+            perm.dust = o.optInt("dust", 0)
+            perm.dustTotal = o.optInt("dustTotal", 0)
+            perm.settingsVibration = o.optBoolean("settingsVibration", true)
+            perm.settingsAutoBattle = o.optBoolean("settingsAutoBattle", false)
+            perm.settingsManualTarget = o.optBoolean("settingsManualTarget", true)
+            perm.settingsFontScale = o.optInt("settingsFontScale", 100)
+            perm.settingsColorBlind = o.optBoolean("settingsColorBlind", false)
+            perm.settingsBattleSpeed = o.optInt("settingsBattleSpeed", 1)
+            readStrSet(o.optJSONArray("unlocked"), perm.unlocked)
+            readStrSet(o.optJSONArray("clearedModes"), perm.clearedModes)
+            readStrSet(o.optJSONArray("classPlayed"), perm.classPlayed)
+            readStrSet(o.optJSONArray("classCleared"), perm.classCleared)
+            readStrSet(o.optJSONArray("codexSeen"), perm.codexSeen)
+            readIntMap(o.optJSONObject("achProgress"), perm.achProgress)
+            readIntMap(o.optJSONObject("stats"), perm.stats)
             perm.climbBest = o.optInt("climbBest", 0)
             perm.musicOn = o.optBoolean("musicOn", true)
             perm.musicVolume = o.optInt("musicVolume", 70)
@@ -277,7 +355,32 @@ object Save {
 
     // ------------------------------------------------------------ 工具
 
-    private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+    private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF_BASE + "_s" + currentSlot, Context.MODE_PRIVATE)
+
+    private fun strSet(set: Set<String>): JSONArray {
+        val a = JSONArray()
+        for (x in set) a.put(x)
+        return a
+    }
+
+    private fun intMap(m: Map<String, Int>): JSONObject {
+        val o = JSONObject()
+        for ((k, v) in m) o.put(k, v)
+        return o
+    }
+
+    private fun readStrSet(a: JSONArray?, target: MutableSet<String>) {
+        if (a == null) return
+        for (i in 0 until a.length()) {
+            val v = a.optString(i, "")
+            if (v.isNotEmpty()) target.add(v)
+        }
+    }
+
+    private fun readIntMap(o: JSONObject?, target: MutableMap<String, Int>) {
+        if (o == null) return
+        for (k in o.keys()) target[k] = o.optInt(k, 0)
+    }
 
     private fun mapToJson(m: Map<String, Double>): JSONObject {
         val o = JSONObject()

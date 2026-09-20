@@ -55,10 +55,13 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     }
 
     val bw = w - 96f
-    button(c, "menu_start", "开 始 觉 醒", 48f, h - 232f, bw, 58f, Palette.PINK)
-    ghostButton(c, "menu_growth", "轮回淬炼", 48f, h - 160f, (bw - 12f) / 2f, 48f, Palette.CYAN)
-    ghostButton(c, "menu_codex", "神格图鉴", 48f + (bw - 12f) / 2f + 12f, h - 160f, (bw - 12f) / 2f, 48f, Palette.GOLD)
-    ghostButton(c, "menu_settings", "设定", 48f, h - 100f, bw, 44f, Palette.TEXT_DIM)
+    button(c, "menu_start", "开 始 觉 醒", 48f, h - 276f, bw, 56f, Palette.PINK)
+    ghostButton(c, "menu_growth", "轮回淬炼", 48f, h - 212f, (bw - 12f) / 2f, 46f, Palette.CYAN)
+    ghostButton(c, "menu_codex", "星语图鉴", 48f + (bw - 12f) / 2f + 12f, h - 212f, (bw - 12f) / 2f, 46f, Palette.GOLD)
+    ghostButton(c, "menu_ach", "成就", 48f, h - 158f, (bw - 12f) / 2f, 46f, Palette.GREEN)
+    ghostButton(c, "menu_shop", "星尘兑换", 48f + (bw - 12f) / 2f + 12f, h - 158f, (bw - 12f) / 2f, 46f, Palette.PINK)
+    ghostButton(c, "menu_slots", "存档", 48f, h - 104f, (bw - 12f) / 2f, 44f, Palette.CYAN)
+    ghostButton(c, "menu_about", "关于", 48f + (bw - 12f) / 2f + 12f, h - 104f, (bw - 12f) / 2f, 44f, Palette.TEXT_DIM)
 
     r.text(c, "v1.1.6 · 神格共鸣版", w / 2f, h - 28f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
 }
@@ -77,6 +80,10 @@ internal fun GameView.tapMenu(id: String) {
         }
         "menu_growth" -> screen = Screen.GROWTH
         "menu_codex" -> screen = Screen.CODEX
+        "menu_ach" -> screen = Screen.ACHIEVEMENTS
+        "menu_shop" -> screen = Screen.SHOP
+        "menu_slots" -> screen = Screen.SAVE_SLOTS
+        "menu_about" -> screen = Screen.ABOUT
         "menu_settings" -> panel = "settings"
     }
 }
@@ -127,12 +134,18 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
         val row = i / 4
         val x = 24f + col * (cw + 8f)
         val yy = y + row * (cw + 26f)
-        val sel = setupClass == cls.id
-        val accent = classColor(cls.id)
+        val unlocked = com.kaiju.awaken.game.Meta.classUnlocked(perm, cls.id)
+        val sel = setupClass == cls.id && unlocked
+        val accent = if (unlocked) classColor(cls.id) else Palette.TEXT_FAINT
         card(c, x, yy, cw, cw + 18f, if (sel) accent else Palette.BORDER_SOFT, 14f)
         if (sel) r.glowPanel(c, x, yy, cw, cw + 18f, 14f, accent, 52)
-        drawPortrait(c, cls.id, x + cw / 2f, yy + cw * 0.42f, cw * 0.66f, accent)
-        r.text(c, cls.name, x + cw / 2f, yy + cw + 6f, 13f, if (sel) accent else Palette.TEXT, true, Paint.Align.CENTER)
+        if (unlocked) {
+            drawPortrait(c, cls.id, x + cw / 2f, yy + cw * 0.42f, cw * 0.66f, accent)
+        } else {
+            r.hexFrame(c, x + cw / 2f, yy + cw * 0.42f, cw * 0.3f, Palette.TEXT_FAINT, r.withAlpha(Palette.PANEL_SOFT, 255))
+            r.text(c, "锁", x + cw / 2f, yy + cw * 0.46f, 14f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
+        }
+        r.text(c, if (unlocked) cls.name else "未解锁", x + cw / 2f, yy + cw + 6f, 13f, if (sel) accent else Palette.TEXT_DIM, true, Paint.Align.CENTER)
         hit("setup_class_" + cls.id, x, yy, cw, cw + 18f)
     }
     y += (cw + 26f) * 2f + 6f
@@ -158,7 +171,14 @@ internal fun GameView.tapSetup(id: String) {
     when {
         id == "setup_back" -> screen = Screen.MENU
         id.startsWith("setup_mode_") -> setupMode = GameMode.byId(id.removePrefix("setup_mode_"))
-        id.startsWith("setup_class_") -> setupClass = id.removePrefix("setup_class_")
+        id.startsWith("setup_class_") -> {
+            val cid = id.removePrefix("setup_class_")
+            if (com.kaiju.awaken.game.Meta.classUnlocked(perm, cid)) {
+                setupClass = cid
+            } else {
+                showToast("该职阶未解锁，可在「星尘兑换」中解锁")
+            }
+        }
         id == "setup_go" -> startRun()
         id == "setup_climb_up" -> {
             if (setupClimbLevel < perm.climbMaxUnlocked) setupClimbLevel++

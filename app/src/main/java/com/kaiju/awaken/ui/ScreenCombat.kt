@@ -63,7 +63,7 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, isEnem
     val n = list.size.coerceAtLeast(1)
     val pad = 8f
     val cw = (w - pad * (n + 1)) / n
-    r.text(c, if (isEnemy) "敌方" else "我方", 14f, top + 12f, 12f, accent, true)
+    r.text(c, if (isEnemy) "敌方 · 点击锁定目标" else "我方", 14f, top + 12f, 12f, accent, true)
     val gridTop = top + 18f
     val ch = ROW_H - 22f
     for (i in list.indices) {
@@ -78,6 +78,11 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, isEnem
         }
         card(c, x, gridTop, cw, ch, border, 12f)
         if (actor && u.alive) r.glowPanel(c, x, gridTop, cw, ch, 12f, Palette.PINK, 70)
+        if (isEnemy && u.alive) {
+            val preferred = preferredTargetId == u.id
+            if (preferred) r.glowPanel(c, x, gridTop, cw, ch, 12f, Palette.GOLD, 90)
+            hit("cb_target_" + u.id, x, gridTop, cw, ch)
+        }
         if (!u.alive) {
             r.solid(c, x, gridTop, cw, ch, 12f, r.withAlpha(0xFF0A0618.toInt(), 180))
             r.text(c, "战殁", x + cw / 2f, gridTop + ch / 2f, 14f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
@@ -194,6 +199,10 @@ internal fun tapCombat(id: String) {
             b.auto = autoBattle
         }
         id == "cb_finish" -> overlay = "battle_end"
+        id.startsWith("cb_target_") -> {
+            preferredTargetId = id.removePrefix("cb_target_")
+            showToast("已锁定目标")
+        }
         id.startsWith("cb_item_") -> {
             b.useItem(id.removePrefix("cb_item_"))
             selectedSkill = null
@@ -207,8 +216,9 @@ internal fun tapCombat(id: String) {
                 showToast("能量不足")
                 return
             }
+            val preferred = b.aliveEnemies().firstOrNull { it.id == preferredTargetId }
             val target = when (s.target) {
-                TargetKind.ENEMY_ONE -> b.aliveEnemies().minByOrNull { it.hp }
+                TargetKind.ENEMY_ONE -> preferred ?: b.aliveEnemies().minByOrNull { it.hp }
                 TargetKind.ALLY_ONE -> b.aliveAllies().minByOrNull { it.hpPct() }
                 else -> actor
             }

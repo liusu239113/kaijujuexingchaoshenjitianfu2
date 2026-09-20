@@ -147,6 +147,7 @@ private fun GameView.drawBottomNav(c: Canvas) {
         Triple("tower_panel_equip", "装备", p.equipped.size.toString()),
         Triple("tower_panel_skills", "战技", p.skillPoints.toString()),
         Triple("tower_panel_items", "道具", p.items.values.sum().toString()),
+        Triple("tower_panel_merc", "佣兵", (p.party.size - 1).toString()),
         Triple("tower_panel_settings", "设定", "")
     )
     val cw = (w - 24f) / items.size

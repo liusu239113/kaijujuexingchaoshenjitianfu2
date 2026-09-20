@@ -11,6 +11,10 @@ import android.graphics.Shader
 import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
+import com.kaiju.awaken.game.Data
+import com.kaiju.awaken.game.Tracker
+import com.kaiju.awaken.game.DraftService
+import com.kaiju.awaken.game.Promotions
 import com.kaiju.awaken.audio.Audio
 import com.kaiju.awaken.game.Battle
 import com.kaiju.awaken.game.DraftOption
@@ -29,7 +33,15 @@ import kotlin.random.Random
 
 class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
-    enum class Screen { MENU, SETUP, DIVINITY, DRAFT, TOWER, COMBAT, GROWTH, REINCARNATION, CODEX }
+    enum class Screen {
+        MENU, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
+        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS
+    }
+
+    companion object {
+        const val DESIGN_W = 400f
+        const val DESIGN_H_DEFAULT = 860f
+    }
 
     val r = Renderer()
     val audio = Audio(context)
@@ -39,8 +51,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var battle: Battle? = null
     var screen = Screen.MENU
 
-    var w = 0f
-    var h = 0f
+    val w: Float get() = DESIGN_W
+    var h = DESIGN_H_DEFAULT
+    var scale = 1f
     var time = 0f
 
     // 选人 / 抽卡
@@ -74,9 +87,15 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     // 成长
     var enhanceTarget = -1
+    var runStartMs = 0L
+    var pendingAchievements = ArrayList<com.kaiju.awaken.game.AchDef>()
+    var codexTab = 0
+    var preferredTargetId: String? = null
 
     private var lastFrame = 0L
     private var running = false
+    private var physW = 0f
+    private var physH = 0f
     private val bitmaps = HashMap<String, Bitmap?>()
     private val rand = Random(20260920)
     private val particles = ArrayList<Particle>()
@@ -85,6 +104,12 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     init {
         setBackgroundColor(Color.BLACK)
+        try {
+            val tf = android.graphics.Typeface.createFromAsset(context.assets, "fonts/game_font.ttf")
+            r.setTypeface(tf)
+        } catch (t: Throwable) {
+        }
+        Save.init(context)
         perm = Save.loadPerm(context)
         audio.init()
         audio.musicOn = perm.musicOn
@@ -142,6 +167,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.SETUP -> { screen = Screen.MENU; true }
             Screen.GROWTH -> { screen = Screen.MENU; true }
             Screen.CODEX -> { screen = Screen.MENU; true }
+            Screen.ACHIEVEMENTS -> { screen = Screen.MENU; true }
+            Screen.SHOP -> { screen = Screen.MENU; true }
+            Screen.ABOUT -> { screen = Screen.MENU; true }
+            Screen.SAVE_SLOTS -> { screen = Screen.MENU; true }
             Screen.TOWER -> { screen = Screen.MENU; true }
             Screen.REINCARNATION -> { screen = Screen.MENU; true }
             else -> false
@@ -169,7 +198,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         }
         battle?.tickVisuals(dt)
         val b = battle
-        if (b != null && screen == Screen.COMBAT && !b.finished) {
+        if (b != null && screen == Screen.COMBAT && !b.finished && !b.awaitingInput) {
             if (autoBattle || b.currentActor()?.id != "player") {
                 combatDelay -= dt
                 if (combatDelay <= 0f) {
@@ -197,31 +226,41 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     override fun onSizeChanged(nw: Int, nh: Int, ow: Int, oh: Int) {
         super.onSizeChanged(nw, nh, ow, oh)
-        w = nw.toFloat()
-        h = nh.toFloat()
+        physW = nw.toFloat()
+        physH = nh.toFloat()
+        scale = if (physW <= 0f) 1f else physW / DESIGN_W
+        h = if (scale <= 0f) DESIGN_H_DEFAULT else physH / scale
     }
 
     // ------------------------------------------------------------ 绘制
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        if (w <= 0f) return
+        if (physW <= 0f) return
         hits.clear()
+        canvas.save()
+        canvas.scale(scale, scale)
         drawBackground(canvas)
         when (screen) {
             Screen.MENU -> drawMenuScreen(canvas)
             Screen.SETUP -> drawSetupScreen(canvas)
             Screen.DIVINITY -> drawDivinityScreen(canvas)
             Screen.DRAFT -> drawDraftScreen(canvas)
+            Screen.PROMOTION -> drawPromotionScreen(canvas)
             Screen.TOWER -> drawTowerScreen(canvas)
             Screen.COMBAT -> drawCombatScreen(canvas)
             Screen.GROWTH -> drawGrowthScreen(canvas)
             Screen.REINCARNATION -> drawReincarnationScreen(canvas)
-            Screen.CODEX -> drawCodexScreen(canvas)
+            Screen.CODEX -> drawCodexFullScreen(canvas)
+            Screen.ACHIEVEMENTS -> drawAchievementsScreen(canvas)
+            Screen.SHOP -> drawShopScreen(canvas)
+            Screen.ABOUT -> drawAboutScreen(canvas)
+            Screen.SAVE_SLOTS -> drawSaveSlotsScreen(canvas)
         }
         if (panel.isNotEmpty()) drawPanelOverlay(canvas)
         if (overlay.isNotEmpty()) drawOverlay(canvas)
         drawToast(canvas)
+        canvas.restore()
     }
 
     private fun drawBackground(c: Canvas) {
@@ -380,8 +419,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
-            val x = event.x
-            val y = event.y
+            val x = event.x / scale
+            val y = event.y / scale
             var i = hits.size - 1
             while (i >= 0) {
                 val hh = hits[i]
@@ -411,6 +450,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("shop_") -> tapShop(id)
             id.startsWith("tavern_") -> tapTavern(id)
             id.startsWith("reinc_") -> tapReincarnation(id)
+            id.startsWith("promo_") -> tapPromotion(id)
+            id.startsWith("meta_") -> tapMeta(id)
+            id.startsWith("codex_") -> tapCodex(id)
+            id.startsWith("dust_") -> tapDust(id)
+            id.startsWith("slot_") -> tapSlot(id)
         }
     }
 
@@ -419,9 +463,13 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     fun startRun() {
         val p = RunService.newRun(setupMode, setupClass, perm)
         p.climbLevel = if (setupMode == GameMode.CLIMB) setupClimbLevel.coerceIn(1, perm.climbMaxUnlocked) else 1
+        runStartMs = System.currentTimeMillis()
+        perm.classPlayed.add(setupClass)
+        Save.savePerm(context, perm)
         run = p
         RunService.recalcAll(p, perm)
         divinityOptions = com.kaiju.awaken.game.DraftService.rollDivinityChoices()
+        for (t in divinityOptions) perm.codexSeen.add("t:" + t.id)
         screen = Screen.DIVINITY
         audio.playBgm("city")
     }
@@ -431,6 +479,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         picksTotal = picks
         picksLeft = picks
         draftOptions = com.kaiju.awaken.game.DraftService.roll(p, perm, com.kaiju.awaken.game.DraftService.optionCount(p, perm))
+        for (o in draftOptions) perm.codexSeen.add("t:" + o.talent.id)
         replacePick = false
         pendingOption = null
         screen = Screen.DRAFT
@@ -450,6 +499,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         RunService.recalcAll(p, perm)
         val b = Battle(p, perm, p.floor, kind, p.mode)
         b.start()
+        for (en in b.enemies) perm.codexSeen.add("m:" + en.avatarKey)
+        for (sk in p.hero().skills) perm.codexSeen.add("t:" + sk.id)
         battle = b
         battleResult = ""
         lastRewards = null
@@ -468,6 +519,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             lastRewards = rw
             battleResult = if (b.timedOut) "回合耗尽 · 按胜利结算（奖励减半）" else "遭遇战告捷"
             audio.play("victory")
+            Tracker.bump(perm, "chapterBoss", if (b.kind == "boss" && b.floor % 10 == 0) 1 else 0)
+            if (b.timedOut) Tracker.bump(perm, "timeout")
+            if (b.allies.all { it.hp >= it.stats.maxHp }) Tracker.bump(perm, "perfect")
             val fe = TowerService.currentEvent(p)
             if (fe != null) fe.resolved = true
             p.eventIdx++
@@ -485,6 +539,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     fun resolveEvent(choice: com.kaiju.awaken.game.EventChoice) {
         val p = run ?: return
+        TowerService.currentEvent(p)?.event?.let { perm.codexSeen.add("e:" + it.id) }
         val msg = TowerService.resolveChoice(p, perm, choice)
         val fe = TowerService.currentEvent(p)
         if (fe != null) {
@@ -492,6 +547,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             fe.result = msg
         }
         eventResult = msg
+        Tracker.bump(perm, "events")
+        if (TowerService.currentEvent(p)?.kind == "story") Tracker.bump(perm, "story")
+        Tracker.sampleRun(perm, p)
         audio.play("coins")
         Save.saveRun(context, p, perm)
         Save.savePerm(context, perm)
@@ -550,11 +608,41 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         audio.play("draft")
     }
 
+    fun notePromotion(tier: Int) {
+        Tracker.bump(perm, if (tier == 1) "promote" else "tier2")
+        run?.let { Tracker.sampleRun(perm, it) }
+    }
+
+    fun popAchievements(): List<com.kaiju.awaken.game.AchDef> {
+        if (pendingAchievements.isEmpty()) return emptyList()
+        val l = ArrayList(pendingAchievements)
+        pendingAchievements.clear()
+        return l
+    }
+
     fun finishRun() {
         val p = run ?: return
         TowerService.updateBest(perm, p)
         TowerService.tryUnlockClimb(perm, p)
         perm.totalRuns++
+        Tracker.bump(perm, "runs")
+        if (p.mode.endFloor > 0 && p.floor > p.mode.endFloor) {
+            perm.clearedModes.add(p.mode.id)
+            perm.classCleared.add(p.classId)
+            if (p.mode == GameMode.CLIMB) {
+                val cur = perm.stats["climbCleared"] ?: 0
+                if (p.climbLevel > cur) perm.stats["climbCleared"] = p.climbLevel
+            }
+            if (p.mode == GameMode.NORMAL && runStartMs > 0L && System.currentTimeMillis() - runStartMs < 30 * 60 * 1000L) {
+                Tracker.bump(perm, "speedrun")
+            }
+        }
+        Tracker.sampleRun(perm, p)
+        val seenTalents = p.grid.allTalents().size
+        val curSeen = perm.stats["talentsSeen"] ?: 0
+        if (seenTalents > curSeen) perm.stats["talentsSeen"] = seenTalents
+        val newly = Tracker.evaluate(perm)
+        if (newly.isNotEmpty()) pendingAchievements = ArrayList(newly)
         p.runOver = true
         screen = Screen.REINCARNATION
         audio.play("levelup")

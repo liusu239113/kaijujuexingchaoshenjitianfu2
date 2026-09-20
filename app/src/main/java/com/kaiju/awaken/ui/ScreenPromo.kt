@@ -87,6 +87,7 @@ internal fun tapPromotion(id: String) {
     RunService.rebuildSkills(p.hero(), p.classId, p.promotionId, p.tier2Id)
     RunService.recalcAll(p, perm)
     audio.play("levelup")
+    notePromotion(promo.tier)
     showToast("转职为 " + promo.name)
     screen = Screen.TOWER
 }
