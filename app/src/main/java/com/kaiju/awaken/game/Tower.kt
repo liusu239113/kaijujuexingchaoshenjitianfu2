@@ -60,6 +60,8 @@ object TowerService {
             merged.add(pick)
         }
         slots.addAll(merged)
+        val story = Content2.storyFor(f)
+        if (story != null) slots.add(FloorEvent("story", story))
         slots.add(FloorEvent("boss"))
 
         run.floorEvents = slots
@@ -67,8 +69,8 @@ object TowerService {
     }
 
     private fun pickEvent(f: Int): GameEvent {
-        val pool = Content.events.filter { it.minFloor <= f }
-        if (pool.isEmpty()) return Content.events[0]
+        val pool = Content.allEvents.filter { it.minFloor <= f }
+        if (pool.isEmpty()) return Content.allEvents[0]
         var total = 0
         for (e in pool) total += e.weight
         var r = Random.nextInt(max(1, total))
@@ -97,6 +99,8 @@ object TowerService {
         generateFloor(run)
         // 每 5 层额外觉醒
         if (run.floor % 5 == 0) run.waitingFloorTalent = true
+        if (run.floor == 3 && run.promotionId == null) run.pendingPromotion = 1
+        if (run.floor == 30 && run.tier2Id == null) run.pendingPromotion = 2
     }
 
     // ------------------------------------------------------------ 事件结算
@@ -124,7 +128,7 @@ object TowerService {
                     gold(choice.gold)
                 }
                 run.nextBattleBonus["dmg"] = (run.nextBattleBonus["dmg"] ?: 0.0) + choice.amount
-                msg = "下一场战斗伤害 +${(choice.amount * 100).roundToInt()}%"
+                msg = "下一场遭遇战增伤 +${(choice.amount * 100).roundToInt()}%"
             }
             "buff_atk" -> {
                 if (choice.gold > 0) {
@@ -132,28 +136,28 @@ object TowerService {
                     gold(choice.gold)
                 }
                 run.nextBattleBonus["dmg"] = (run.nextBattleBonus["dmg"] ?: 0.0) + choice.amount
-                msg = "下一场战斗伤害提升。"
+                msg = "下一场遭遇战伤害提升。"
             }
             "enhance" -> {
                 if (!canPay(choice.gold)) return "金币不足。"
                 val e = run.equipped[choice.key]
-                if (e == null) return "你没有可强化的该部位装备。"
-                if (e.enhance >= Content.enhanceMax(perm)) return "${e.name} 已达强化上限。"
+                if (e == null) return "你没有可锻铸的该部位装备。"
+                if (e.enhance >= Content.enhanceMax(perm)) return "${e.name} 已达锻铸上限。"
                 gold(choice.gold)
                 e.enhance++
                 RunService.recalcAll(run, perm)
-                msg = "${e.name} 强化至 +${e.enhance}"
+                msg = "${e.name} 锻铸至 +${e.enhance}"
             }
             "enhance_random" -> {
                 if (!canPay(choice.gold)) return "金币不足。"
                 val list = run.equipped.values.toList()
-                if (list.isEmpty()) return "你没有可强化的装备。"
+                if (list.isEmpty()) return "你没有可锻铸的装备。"
                 gold(choice.gold)
                 val e = list.random()
                 val step = choice.amount.roundToInt().coerceAtLeast(1)
                 e.enhance = min(Content.enhanceMax(perm), e.enhance + step)
                 RunService.recalcAll(run, perm)
-                msg = "${e.name} 强化至 +${e.enhance}"
+                msg = "${e.name} 锻铸至 +${e.enhance}"
             }
             "enchant" -> {
                 if (!canPay(choice.gold)) return "金币不足。"
@@ -176,7 +180,7 @@ object TowerService {
             "shrine_pray" -> {
                 if (Random.nextDouble() < 0.6) {
                     run.nextBattleBonus["dmg"] = (run.nextBattleBonus["dmg"] ?: 0.0) + 0.15
-                    msg = "神龛回应了你：下一场战斗伤害 +15%。"
+                    msg = "神龛回应了你：下一场遭遇战增伤 +15%。"
                 } else {
                     run.permBonus["maxHpPct"] = (run.permBonus["maxHpPct"] ?: 0.0) - 0.10
                     RunService.recalcAll(run, perm)
@@ -268,7 +272,7 @@ object TowerService {
                 run.permBonus["maxHpPct"] = (run.permBonus["maxHpPct"] ?: 0.0) + choice.amount
                 run.permBonus["defPct"] = (run.permBonus["defPct"] ?: 0.0) + choice.amount
                 RunService.recalcAll(run, perm)
-                msg = "全属性提升 ${(choice.amount * 100).roundToInt()}%。"
+                msg = "全面板提升 ${(choice.amount * 100).roundToInt()}%。"
             }
             "buff_hp" -> {
                 run.permBonus["maxHpPct"] = (run.permBonus["maxHpPct"] ?: 0.0) + choice.amount
@@ -286,12 +290,12 @@ object TowerService {
             "skill_point" -> {
                 val n = max(1, choice.amount.roundToInt())
                 run.skillPoints += n
-                msg = "获得 $n 点技能点。"
+                msg = "获得 $n 点战技点。"
             }
             "skill_gold" -> {
                 run.skillPoints += 1
                 run.gold += 30
-                msg = "获得 1 技能点与 30 金币。"
+                msg = "获得 1 战技点与 30 金币。"
             }
             "fragment_stats" -> {
                 run.permBonus["atk"] = (run.permBonus["atk"] ?: 0.0) + 10
@@ -332,11 +336,11 @@ object TowerService {
             }
             "bounty_elite" -> {
                 run.nextBattleBonus["bounty"] = 1.0
-                msg = "下一场战斗将变为精英战，奖励提升。"
+                msg = "下一场遭遇战将变为精锐战，奖励提升。"
             }
             "bounty_intel" -> {
                 run.nextBattleBonus["dmg"] = (run.nextBattleBonus["dmg"] ?: 0.0) + 0.25
-                msg = "下一场战斗伤害 +25%。"
+                msg = "下一场遭遇战增伤 +25%。"
             }
             "mourn" -> {
                 for (u in run.party) { u.alive = true; u.heal(u.stats.maxHp * 0.40) }
@@ -420,7 +424,7 @@ object TowerService {
         return Affix(base.key, base.label, v)
     }
 
-    // ------------------------------------------------------------ 战斗奖励
+    // ------------------------------------------------------------ 遭遇战奖励
 
     class Rewards(
         var gold: Int = 0,
@@ -453,7 +457,10 @@ object TowerService {
         }
         // 天赋金币/经验加成
         if (run.grid.slots.any { it?.passive == "gold_find" }) gold = (gold * 1.2).roundToInt()
+        if (run.grid.slots.any { it?.passive == "gold_find2" }) gold = (gold * 1.35).roundToInt()
         if (run.grid.slots.any { it?.passive == "xp_up" }) exp = (exp * 1.2).roundToInt()
+        if (run.grid.slots.any { it?.passive == "xp_up2" }) exp = (exp * 1.35).roundToInt()
+        if (run.mode == GameMode.CLIMB && run.climbLevel >= 15) gold = (gold * 0.9).roundToInt()
 
         if (b.timedOut) {
             gold = gold / 2
@@ -479,9 +486,9 @@ object TowerService {
         if (run.grid.slots.any { it?.passive == "item_magnet" }) itemChance += 0.15
         if (Random.nextDouble() < itemChance) {
             var total = 0
-            for (it in Content.items) total += it.weight
+            for (it in Content.allItems) total += it.weight
             var roll = Random.nextInt(max(1, total))
-            for (it in Content.items) {
+            for (it in Content.allItems) {
                 roll -= it.weight
                 if (roll < 0) {
                     run.items[it.id] = (run.items[it.id] ?: 0) + 1
@@ -496,7 +503,7 @@ object TowerService {
 
     // ------------------------------------------------------------ 商店 / 酒馆
 
-    fun shopItems(): List<ItemDef> = Content.items.shuffled(Random).take(4)
+    fun shopItems(): List<ItemDef> = Content.allItems.shuffled(Random).take(4)
 
     fun tavernCandidates(floorNum: Int): List<Unit> {
         val n = 2 + Random.nextInt(0, 2)
@@ -570,7 +577,7 @@ object TowerService {
 
     fun floorBonusLabel(f: Int): String {
         val parts = ArrayList<String>()
-        if (f % 5 == 0) parts.add("楼层觉醒")
+        if (f % 5 == 0) parts.add("层间觉醒")
         if (f % 10 == 0) parts.add("守塔剧情")
         return parts.joinToString(" · ")
     }
@@ -582,6 +589,15 @@ object TowerService {
     }
 
     fun floorOf(perm: PermState, mode: GameMode): Int = perm.modeBest[mode.id] ?: 0
+
+    /** 迭塔通关后解锁下一档。 */
+    fun tryUnlockClimb(perm: PermState, run: RunState) {
+        if (run.mode != GameMode.CLIMB) return
+        if (run.floor > perm.climbBest) perm.climbBest = run.floor
+        if (run.floor >= 100 && run.climbLevel >= perm.climbMaxUnlocked && perm.climbMaxUnlocked < 50) {
+            perm.climbMaxUnlocked = run.climbLevel + 1
+        }
+    }
 
     fun updateBest(perm: PermState, run: RunState) {
         val cur = perm.modeBest[run.mode.id] ?: 0

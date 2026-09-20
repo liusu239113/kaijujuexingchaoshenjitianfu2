@@ -49,6 +49,12 @@ class Renderer {
         textAlign = Paint.Align.LEFT
     }
 
+    /** 注入游戏字体（打包在 assets/fonts 下的中文黑体）。 */
+    fun setTypeface(tf: Typeface) {
+        textPaint.typeface = tf
+        boldPaint.typeface = tf
+    }
+
     private val rect = RectF()
     private val path = Path()
 

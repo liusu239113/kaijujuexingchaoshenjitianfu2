@@ -3,25 +3,25 @@ package com.kaiju.awaken.game
 import kotlin.math.max
 import kotlin.math.min
 
-/** 天赋稀有度。超神级为开局必得且唯一。 */
+/** 天赋品阶。曜神级为开局必得且唯一。 */
 enum class Rarity(val cn: String, val rank: Int, val weight: Int, val color: Int, val affixSlots: Int) {
-    COMMON("普通", 1, 38, 0xFFB9C4D8.toInt(), 1),
-    RARE("稀有", 2, 25, 0xFF6FD3FF.toInt(), 2),
-    EPIC("史诗", 3, 14, 0xFFC08BFF.toInt(), 3),
-    LEGENDARY("传说", 4, 7, 0xFFFFB454.toInt(), 4),
-    MYTHIC("神级", 5, 3, 0xFFFF6FA8.toInt(), 5),
-    HIDDEN("超神级", 6, 0, 0xFFFFE066.toInt(), 6);
+    COMMON("凡庸", 1, 38, 0xFFB9C4D8.toInt(), 1),
+    RARE("精巧", 2, 25, 0xFF6FD3FF.toInt(), 2),
+    EPIC("灿烂", 3, 14, 0xFFC08BFF.toInt(), 3),
+    LEGENDARY("辉耀", 4, 7, 0xFFFFB454.toInt(), 4),
+    MYTHIC("神话", 5, 3, 0xFFFF6FA8.toInt(), 5),
+    HIDDEN("曜神级", 6, 0, 0xFFFFE066.toInt(), 6);
 
     val stars: Int get() = rank
 }
 
-/** 天赋共鸣盘上的元素系。相邻同系会结成共鸣链。 */
+/** 神格亲和盘上的元素系。相邻同系会结成共鸣链。 */
 enum class School(val cn: String, val glyph: String, val stat: String) {
-    EDGE("锋锐", "锋", "atk"),
-    WARD("坚壁", "壁", "def"),
-    ARC("灵能", "灵", "matk"),
+    EDGE("裂界", "锋", "atk"),
+    WARD("磐垒", "壁", "def"),
+    ARC("星轨", "灵", "matk"),
     VITA("生命", "生", "maxHp"),
-    FATE("命运", "运", "crit");
+    FATE("命途", "运", "crit");
 
     companion object {
         fun of(index: Int): School = values()[((index % 5) + 5) % 5]
@@ -30,7 +30,7 @@ enum class School(val cn: String, val glyph: String, val stat: String) {
 
 enum class TargetKind { ENEMY_ONE, ENEMY_ALL, SELF, ALLY_ONE, ALLY_ALL }
 
-/** 技能标签，战斗结算依据。 */
+/** 战技标签，遭遇战结算依据。 */
 enum class Tag {
     DAMAGE, HEAL, SHIELD, BUFF_ATK, BUFF_DEF, BUFF_CRIT, BUFF_DODGE, BUFF_REGEN,
     DOT_BURN, DOT_POISON, STUN, SILENCE, ARMOR_BREAK, WEAKEN, HUNTED, TAUNT,
@@ -163,6 +163,8 @@ class Unit(
     val cooldowns = HashMap<String, Int>()
     var actionCount = 0
     var kills = 0
+    var star = 1
+    var traitId: String? = null
     var damageDealt = 0.0
     var damageTaken = 0.0
     var ultimateId: String? = null
@@ -211,7 +213,7 @@ class Unit(
     }
 }
 
-/** 天赋共鸣盘：6 个环形槽 + 1 个中心神格位。 */
+/** 神格亲和盘：6 个环形槽 + 1 个中心神格位。 */
 class TalentGrid {
     val slots = arrayOfNulls<Talent>(6)
     val stars = IntArray(6) { 1 }
@@ -307,12 +309,12 @@ class ResonanceBonus(
 }
 
 enum class GameMode(val id: String, val cn: String, val glyph: String, val mult: Double, val endFloor: Int) {
-    NORMAL("normal", "普通", "🏰", 1.0, 50),
-    ADVENTURE("adventure", "冒险", "🧭", 1.3, 100),
-    HERO("hero", "勇士", "⚔", 1.6, 150),
-    KING("king", "王者", "👑", 2.0, 200),
-    ENDLESS("endless", "无尽", "∞", 2.0, 0),
-    CLIMB("climb", "攀登", "⛰", 2.1, 100);
+    NORMAL("normal", "凡庸", "🏰", 1.0, 50),
+    ADVENTURE("adventure", "进阶", "🧭", 1.3, 100),
+    HERO("hero", "试炼", "⚔", 1.6, 150),
+    KING("king", "霸者", "👑", 2.0, 200),
+    ENDLESS("endless", "无界", "∞", 2.0, 0),
+    CLIMB("climb", "迭塔", "⛰", 2.1, 100);
 
     companion object {
         fun byId(id: String): GameMode = values().firstOrNull { it.id == id } ?: NORMAL

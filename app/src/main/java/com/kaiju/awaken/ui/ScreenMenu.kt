@@ -14,13 +14,13 @@ import com.kaiju.awaken.ui.GameView.Screen
 internal fun GameView.drawMenuScreen(c: Canvas) {
     val titleY = h * 0.20f
     // 主标题
-    r.text(c, "开局觉醒", w / 2f, titleY, 46f, Palette.TEXT, true, Paint.Align.CENTER)
-    r.text(c, "超神级天赋", w / 2f, titleY + 54f, 42f, Palette.PINK, true, Paint.Align.CENTER)
+    r.text(c, "觉醒", w / 2f, titleY, 46f, Palette.TEXT, true, Paint.Align.CENTER)
+    r.text(c, "曜神天赋", w / 2f, titleY + 54f, 42f, Palette.PINK, true, Paint.Align.CENTER)
     r.sparkle(c, w * 0.16f, titleY - 18f, 16f, Palette.CYAN)
     r.sparkle(c, w * 0.85f, titleY + 30f, 12f, Palette.PINK)
 
-    r.text(c, "觉 醒 之 塔", w / 2f, titleY + 96f, 17f, Palette.CYAN, true, Paint.Align.CENTER)
-    r.text(c, "让同系天赋相邻，结成共鸣链——这一次轮回更接近神明。", w / 2f, titleY + 128f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    r.text(c, "曜 界 回 廊", w / 2f, titleY + 96f, 17f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.text(c, "神格环上同源共鸣，这一次轮回更接近晨曦。", w / 2f, titleY + 128f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
 
     // 战绩面板
     val pw = w - 48f
@@ -30,7 +30,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     val cellW = pw / cols
     val stats = listOf(
         "最高层数" to "${perm.bestFloor}",
-        "天赋点" to "${perm.talentPoints}",
+        "神格点" to "${perm.talentPoints}",
         "轮回次数" to "${perm.totalRuns}"
     )
     for (i in 0 until cols) {
@@ -48,7 +48,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     var by = py + 118f
     if (savedRun != null) {
         card(c, 24f, by, pw, 62f, r.withAlpha(Palette.CYAN, 170))
-        r.text(c, "继续轮回", 40f, by + 27f, 14f, Palette.CYAN, true)
+        r.text(c, "延续轮回", 40f, by + 27f, 14f, Palette.CYAN, true)
         r.text(c, "${Data.classById[savedRun.classId]?.name ?: ""} · ${savedRun.mode.cn}模式 · 第 ${savedRun.floor} 层", 40f, by + 48f, 12f, Palette.TEXT_DIM)
         ghostButton(c, "menu_continue", "继续", w - 122f, by + 12f, 78f, 38f, Palette.CYAN)
         by += 76f
@@ -56,11 +56,11 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
 
     val bw = w - 96f
     button(c, "menu_start", "开 始 觉 醒", 48f, h - 232f, bw, 58f, Palette.PINK)
-    ghostButton(c, "menu_growth", "永久成长", 48f, h - 160f, (bw - 12f) / 2f, 48f, Palette.CYAN)
-    ghostButton(c, "menu_codex", "天赋图鉴", 48f + (bw - 12f) / 2f + 12f, h - 160f, (bw - 12f) / 2f, 48f, Palette.GOLD)
-    ghostButton(c, "menu_settings", "设置", 48f, h - 100f, bw, 44f, Palette.TEXT_DIM)
+    ghostButton(c, "menu_growth", "轮回淬炼", 48f, h - 160f, (bw - 12f) / 2f, 48f, Palette.CYAN)
+    ghostButton(c, "menu_codex", "神格图鉴", 48f + (bw - 12f) / 2f + 12f, h - 160f, (bw - 12f) / 2f, 48f, Palette.GOLD)
+    ghostButton(c, "menu_settings", "设定", 48f, h - 100f, bw, 44f, Palette.TEXT_DIM)
 
-    r.text(c, "v1.1.6 · 共鸣盘重构版", w / 2f, h - 28f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.1.6 · 神格共鸣版", w / 2f, h - 28f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
 }
 
 internal fun GameView.tapMenu(id: String) {
@@ -82,10 +82,10 @@ internal fun GameView.tapMenu(id: String) {
 }
 
 internal fun GameView.drawSetupScreen(c: Canvas) {
-    drawTopBar(c, "轮回配置", "选择模式与职业，随后觉醒天赋", "setup_back", null, null)
+    drawTopBar(c, "轮回编成", "选择模式与职阶，随后觉醒神格", "setup_back", null, null)
 
     var y = 118f
-    r.text(c, "难度模式", 24f, y, 15f, Palette.CYAN, true)
+    r.text(c, "试炼强度", 24f, y, 15f, Palette.CYAN, true)
     y += 12f
     val modes = GameMode.values()
     val mw = (w - 48f - 12f) / 2f
@@ -99,13 +99,26 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
         card(c, x, yy, mw, 60f, border, 14f)
         if (sel) r.glowPanel(c, x, yy, mw, 60f, 14f, Palette.PINK, 46)
         r.text(c, modes[i].glyph + " " + modes[i].cn, x + 14f, yy + 26f, 15f, if (sel) Palette.PINK else Palette.TEXT, true)
-        val sub = if (modes[i].endFloor == 0) "无尽 · 难度 ×${modes[i].mult}" else "目标 ${modes[i].endFloor} 层 · 难度 ×${modes[i].mult}"
+        val sub = if (modes[i].endFloor == 0) "无界 · 难度 ×${modes[i].mult}" else "目标 ${modes[i].endFloor} 层 · 难度 ×${modes[i].mult}"
         r.text(c, sub, x + 14f, yy + 46f, 11f, Palette.TEXT_DIM)
         hit("setup_mode_" + modes[i].id, x, yy, mw, 60f)
     }
-    y += 70f * 3 + 14f
+    y += 70f * 3 + 6f
 
-    r.text(c, "职业", 24f, y, 15f, Palette.CYAN, true)
+    if (setupMode == GameMode.CLIMB) {
+        val tier = com.kaiju.awaken.game.Content2.climbTiers[(setupClimbLevel - 1).coerceIn(0, 49)]
+        card(c, 24f, y, w - 48f, 62f, r.withAlpha(Palette.GOLD, 210), 14f)
+        r.text(c, "迭塔难度 Lv." + tier.level, 38f, y + 22f, 13f, Palette.GOLD, true)
+        r.text(c, tier.name + " · 敌军 ×" + String.format("%.1f", tier.enemyMul) + " · 神格点 ×" + String.format("%.1f", tier.tpMul), 38f, y + 40f, 10.5f, Palette.TEXT_DIM)
+        r.text(c, tier.desc, 38f, y + 56f, 10f, Palette.TEXT_FAINT)
+        ghostButton(c, "setup_climb_down", "－", w - 144f, y + 14f, 42f, 34f, Palette.TEXT_DIM)
+        ghostButton(c, "setup_climb_up", "＋", w - 96f, y + 14f, 42f, 34f, Palette.CYAN)
+        r.text(c, "已解锁 " + perm.climbMaxUnlocked + " 档", w - 154f, y + 34f, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)
+        y += 70f
+    }
+    y += 8f
+
+    r.text(c, "职阶", 24f, y, 15f, Palette.CYAN, true)
     y += 12f
     val cw = (w - 48f - 3 * 8f) / 4f
     for (i in Data.classes.indices) {
@@ -124,12 +137,12 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
     }
     y += (cw + 26f) * 2f + 6f
 
-    // 职业说明
+    // 职阶说明
     val cls = Data.classById[setupClass] ?: Data.classes[0]
     card(c, 24f, y, w - 48f, 74f, r.withAlpha(classColor(cls.id), 170))
     r.text(c, "「${cls.title}」 ${cls.name}", 38f, y + 26f, 14f, classColor(cls.id), true)
     r.wrap(c, cls.desc, 38f, y + 46f, w - 76f, 12f, Palette.TEXT_DIM, 16f)
-    r.text(c, "主属性：${primaryLabel(cls.primary)}   技能 ${cls.skills.size} 个", 38f, y + 66f, 11f, Palette.TEXT_FAINT)
+    r.text(c, "主面板：${primaryLabel(cls.primary)}   战技 ${cls.skills.size} 个", 38f, y + 66f, 11f, Palette.TEXT_FAINT)
 
     button(c, "setup_go", "觉 醒 天 赋", 48f, h - 92f, w - 96f, 58f, Palette.PINK)
 }
@@ -147,12 +160,19 @@ internal fun GameView.tapSetup(id: String) {
         id.startsWith("setup_mode_") -> setupMode = GameMode.byId(id.removePrefix("setup_mode_"))
         id.startsWith("setup_class_") -> setupClass = id.removePrefix("setup_class_")
         id == "setup_go" -> startRun()
+        id == "setup_climb_up" -> {
+            if (setupClimbLevel < perm.climbMaxUnlocked) setupClimbLevel++
+            else showToast("通关当前档位后解锁下一档")
+        }
+        id == "setup_climb_down" -> {
+            if (setupClimbLevel > 1) setupClimbLevel--
+        }
     }
 }
 
 internal fun GameView.drawDivinityScreen(c: Canvas) {
-    r.text(c, "超神级觉醒", w / 2f, 92f, 28f, Palette.GOLD, true, Paint.Align.CENTER)
-    r.text(c, "命运选中了你。三选一，它将占据神格位，永不掉落。", w / 2f, 120f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    r.text(c, "曜神觉醒", w / 2f, 92f, 28f, Palette.GOLD, true, Paint.Align.CENTER)
+    r.text(c, "命途选中了你。三选一，它将占据神格位，永不掉落。", w / 2f, 120f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
 
     val cardW = w - 56f
     val cardH = 132f
@@ -196,8 +216,8 @@ internal fun GameView.drawDraftScreen(c: Canvas) {
         drawReplacePicker(c)
         return
     }
-    r.text(c, "天赋觉醒", w / 2f, 88f, 28f, Palette.PINK, true, Paint.Align.CENTER)
-    r.text(c, "剩余 ${picksLeft} / ${picksTotal} 次选择", w / 2f, 114f, 13f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    r.text(c, "神格觉醒", w / 2f, 88f, 28f, Palette.PINK, true, Paint.Align.CENTER)
+    r.text(c, "剩余 ${picksLeft} / ${picksTotal} 次抉择", w / 2f, 114f, 13f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
     r.text(c, "同类天赋相邻放置会结成共鸣链，获得全局加成", w / 2f, 136f, 11.5f, Palette.CYAN, false, Paint.Align.CENTER)
 
     val p = run
@@ -220,8 +240,8 @@ internal fun GameView.drawDraftScreen(c: Canvas) {
 private fun GameView.drawReplacePicker(c: Canvas) {
     val p = run ?: return
     val opt = pendingOption ?: return
-    r.text(c, "共鸣盘已满", w / 2f, 88f, 26f, Palette.GOLD, true, Paint.Align.CENTER)
-    r.text(c, "选择要被【${opt.talent.name}】覆盖的天赋", w / 2f, 114f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    r.text(c, "神格环已满", w / 2f, 88f, 26f, Palette.GOLD, true, Paint.Align.CENTER)
+    r.text(c, "选择被【${opt.talent.name}】覆盖的神格", w / 2f, 114f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
 
     val cw = (w - 48f - 12f) / 2f
     for (i in 0 until 6) {
@@ -230,7 +250,7 @@ private fun GameView.drawReplacePicker(c: Canvas) {
         val y = 140f + (i / 2) * 116f
         if (t == null) {
             card(c, x, y, cw, 104f, Palette.BORDER_SOFT)
-            r.text(c, "空槽位", x + cw / 2f, y + 56f, 13f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+            r.text(c, "空位", x + cw / 2f, y + 56f, 13f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
             hit("draft_slot_$i", x, y, cw, 104f)
         } else {
             val col = rarityColor(t.rarity)
@@ -250,7 +270,7 @@ internal fun GameView.drawResonanceStrip(c: Canvas, p: com.kaiju.awaken.game.Run
     val bonus = p.grid.resonanceBonus()
     val panelW = w - 48f
     card(c, 24f, top, panelW, 92f, r.withAlpha(Palette.CYAN, 170), 14f)
-    r.text(c, "共鸣盘 · " + bonus.label(), 38f, top + 24f, 13.5f, Palette.CYAN, true)
+    r.text(c, "神格环 · " + bonus.label(), 38f, top + 24f, 13.5f, Palette.CYAN, true)
     val slotR = 15f
     val gap = (panelW - 60f - slotR * 12f) / 5f
     for (i in 0 until 6) {
@@ -280,7 +300,7 @@ internal fun GameView.drawResonanceStrip(c: Canvas, p: com.kaiju.awaken.game.Run
     if (dv != null) {
         r.text(c, "神格：${dv.name}", 38f, top + 86f, 11f, Palette.GOLD)
     }
-    r.text(c, "伤害 +${(bonus.damage * 100).toInt()}% 生命 +${(bonus.hp * 100).toInt()}%", w - 38f, top + 86f, 11f, Palette.PINK, false, Paint.Align.RIGHT)
+    r.text(c, "增伤 +${(bonus.damage * 100).toInt()}% 生命 +${(bonus.hp * 100).toInt()}%", w - 38f, top + 86f, 11f, Palette.PINK, false, Paint.Align.RIGHT)
 }
 
 internal fun GameView.tapDraft(id: String) {

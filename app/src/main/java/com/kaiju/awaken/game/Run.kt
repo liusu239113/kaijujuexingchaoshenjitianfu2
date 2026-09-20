@@ -47,9 +47,9 @@ class RunState {
     val bag = ArrayList<Equip>()
     val grid = TalentGrid()
 
-    /** 本轮内永久属性加成（训练场、事件等）。 */
+    /** 本轮内永久面板加成（操练场、事件等）。 */
     val permBonus = HashMap<String, Double>()
-    /** 仅下一场战斗生效的加成。 */
+    /** 仅下一场遭遇战生效的加成。 */
     val nextBattleBonus = HashMap<String, Double>()
 
     var phoenixUsed = false
@@ -59,6 +59,10 @@ class RunState {
     var ascensionCount = 0
     var bonusTalentPick = false
     var pendingTalentPick = false
+    /** 0 = 无，1 = 一转待选，2 = 二转待选 */
+    var pendingPromotion = 0
+    var promotionId: String? = null
+    var tier2Id: String? = null
 
     var floorEvents = ArrayList<FloorEvent>()
     var eventIdx = 0
@@ -112,12 +116,51 @@ object RunService {
         u.base.critDmg = cd.critDmg
         u.base.energyRegen = cd.energyRegen
         u.base.dodge = cd.dodge
-        u.skills.clear()
-        u.skills.addAll(Data.skillsOf(classId))
-        u.ultimateId = u.skills.firstOrNull { it.isUltimate }?.id
+        rebuildSkills(u, classId, null, null)
         u.energy = 0.0
         u.hp = u.base.maxHp
         return u
+    }
+
+    /** 基础技 + 转职技，最多 6 个；优先保证有一个终极技。 */
+    fun rebuildSkills(u: Unit, classId: String, promoId: String?, tier2Id: String?) {
+        val base = Data.skillsOf(classId)
+        val basic = base.firstOrNull { it.isBasic }
+        val ult = base.firstOrNull { it.isUltimate }
+        val t1 = promoId?.let { Promotions.byId[it] }
+        val t2 = tier2Id?.let { Promotions.byId[it] }
+        val t2Skills = t2?.skillIds?.mapNotNull { Promotions.skillOf(it) } ?: emptyList()
+        val t1Skills = t1?.skillIds?.mapNotNull { Promotions.skillOf(it) } ?: emptyList()
+
+        val ordered = ArrayList<Skill>()
+        if (basic != null) ordered.add(basic)
+        ordered.addAll(t2Skills)
+        if (t2Skills.none { it.isUltimate } && ult != null) ordered.add(ult)
+        ordered.addAll(t1Skills)
+        for (s in base) {
+            if (s.isBasic) continue
+            if (s.isUltimate) continue
+            ordered.add(s)
+        }
+
+        val out = ArrayList<Skill>()
+        val seen = HashSet<String>()
+        for (s in ordered) {
+            if (seen.contains(s.id)) continue
+            seen.add(s.id)
+            out.add(s)
+            if (out.size >= 6) break
+        }
+        u.skills.clear()
+        u.skills.addAll(out)
+        u.ultimateId = out.lastOrNull { it.isUltimate }?.id
+    }
+
+    fun promotionOf(run: RunState): List<PromotionDef> {
+        val list = ArrayList<PromotionDef>()
+        run.promotionId?.let { Promotions.byId[it]?.let { p -> list.add(p) } }
+        run.tier2Id?.let { Promotions.byId[it]?.let { p -> list.add(p) } }
+        return list
     }
 
     fun makeMercenary(classId: String, level: Int, rarity: Rarity, name: String): Unit {
@@ -140,15 +183,15 @@ object RunService {
         u.base.critDmg = cd.critDmg
         u.base.energyRegen = cd.energyRegen
         u.base.dodge = cd.dodge
-        u.skills.clear()
-        u.skills.addAll(Data.skillsOf(classId))
-        u.ultimateId = u.skills.firstOrNull { it.isUltimate }?.id
+        u.star = 1
+        u.traitId = Content2.mercTraits.random().id
+        rebuildSkills(u, classId, null, null)
         u.energy = 0.0
         u.hp = u.base.maxHp
         return u
     }
 
-    /** 从职业基础 + 等级成长 + 天赋 + 共鸣 + 装备 + 事件加成，计算最终属性。 */
+    /** 从职阶基础 + 等级成长 + 天赋 + 共鸣 + 装备 + 事件加成，计算最终面板。 */
     fun calcStats(run: RunState, u: Unit, perm: PermState) {
         val cd = Data.classById[u.clsId] ?: Data.classes[0]
         val lv = max(1, u.level)
@@ -179,6 +222,11 @@ object RunService {
                 val k = t.scale(run.grid.divinityStar)
                 for ((key, v) in t.statMod) mods[key] = (mods[key] ?: 0.0) + v * k
                 for ((key, v) in t.flatMod) flats[key] = (flats[key] ?: 0.0) + v * k
+            }
+            // 转职加成
+            for (promo in promotionOf(run)) {
+                for ((key, v) in promo.statMod) mods[key] = (mods[key] ?: 0.0) + v
+                for ((key, v) in promo.flatMod) flats[key] = (flats[key] ?: 0.0) + v
             }
 
             s.maxHp *= 1.0 + (mods["maxHp"] ?: 0.0) + res.hp

@@ -72,6 +72,21 @@ class Battle(
                 e.shield += e.stats.maxHp * 0.25
             }
         }
+        if (isBoss && floor % 10 == 0) {
+            val chapter = Content2.chapterOf(floor)
+            for (e in enemies) {
+                if (chapter >= 1) e.shield += e.stats.maxHp * 0.25
+                if (chapter >= 2) e.addBuff(Buff("boss_regen", "首领再生", 999, 1, 0.04, false))
+                if (chapter >= 4) e.stats.crit += 15.0
+                if (chapter >= 5) {
+                    e.stats.statusRes = 999.0
+                    e.stats.armorPen = 0.30
+                }
+                if (chapter >= 6) e.addBuff(Buff("cc_immune", "免控", 999, 1, 0.0, false))
+            }
+            val mech = Content2.mechanicFor(floor)
+            if (mech != null) addLog("章节机制 · " + mech.name + "：" + mech.desc)
+        }
         turn = 0
         finished = false
         victory = false
@@ -109,8 +124,10 @@ class Battle(
         val expectedPower = (expAtk * 1.2) + expHp * 0.05
         val adapt = (heroPower / max(1.0, expectedPower)).coerceIn(0.75, 1.25)
 
+        val chapter = Content2.chapterOf(floor)
+        val isChapterBoss = isBoss && floor % 10 == 0
         val count = when (kind) {
-            "boss" -> if (floor >= 40) 2 else 1
+            "boss" -> if ((isChapterBoss && chapter >= 3) || floor >= 40) 2 else 1
             "elite" -> if (floor >= 25) 3 else 2
             else -> min(4, 2 + floor / 14)
         }
@@ -127,8 +144,18 @@ class Battle(
         val eDef = enemyDef()
         val heroBasicDmg = hero.stats.atk * hero.stats.atk / (hero.stats.atk + eDef * 1.2)
         val actions = 3.0 + floor * 0.02
-        val hpBase = heroBasicDmg * actions * kindHp * (0.7 + 0.3 * adapt)
-        val desiredHit = expHp * (0.035 + floor * 0.0006) * kindAtk * (0.75 + 0.25 * adapt)
+        var hpBase = heroBasicDmg * actions * kindHp * (0.7 + 0.3 * adapt)
+        var desiredHit = expHp * (0.035 + floor * 0.0006) * kindAtk * (0.75 + 0.25 * adapt)
+        if (mode == GameMode.CLIMB) {
+            val lv = run.climbLevel.coerceAtLeast(1)
+            hpBase *= 1.0 + 0.06 * (lv - 1)
+            desiredHit *= 1.0 + 0.04 * (lv - 1)
+        }
+        if (isChapterBoss) {
+            if (chapter >= 2) hpBase *= 1.15
+            if (chapter >= 4) desiredHit *= 1.30
+            if (chapter >= 5) desiredHit *= 1.15
+        }
         val atkBase = solveAtk(desiredHit, hero.stats.def)
 
         val names = mutableListOf<String>()
@@ -139,7 +166,7 @@ class Battle(
             val pool = Content.normalNames.shuffled(Random)
             for (i in 0 until count) {
                 val base = pool[i % pool.size]
-                names.add(if (kind == "elite") "精英·" + Content.elitePrefix[i % Content.elitePrefix.size] + base else base)
+                names.add(if (kind == "elite") "精锐·" + Content.elitePrefix[i % Content.elitePrefix.size] + base else base)
             }
         }
 
@@ -178,9 +205,10 @@ class Battle(
         }
     }
 
-    private fun pickAvatar(i: Int, kind: String): String {
-        val pool = listOf("monster_a", "monster_b", "monster_c", "monster_d", "monster_e", "monster_f")
-        return if (kind == "boss") "boss" else pool[i % pool.size]
+    private fun pickAvatar(i: Int, kind: String): String = when (kind) {
+        "boss" -> Content2.bossAvatars[(floor + i * 3) % Content2.bossAvatars.size]
+        "elite" -> Content2.eliteAvatars[(floor + i) % Content2.eliteAvatars.size]
+        else -> Content2.monsterAvatars[(floor * 5 + i * 7) % Content2.monsterAvatars.size]
     }
 
     private fun enemySkills(): List<Skill> = listOf(
@@ -241,10 +269,12 @@ class Battle(
         u.actionCount = 0
         u.energy = min(u.stats.energyMax, u.energy + u.stats.energyRegen)
         // DOT
+        val bossRegen = u.buffValue("boss_regen")
+        if (bossRegen > 0.0 && u.alive) u.heal(u.stats.maxHp * bossRegen)
         val dots = u.buffs.filter { it.id == "burn" || it.id == "poison" }
+        val dotBoost = if (u.isEnemy && run.grid.slots.any { it?.passive == "dot_boost" }) 1.8 else 1.0
         for (d in dots) {
-            val dmg = if (d.id == "burn") d.value * u.stats.maxHp * 0.0 + d.value else d.value
-            val real = max(1.0, dmg)
+            val real = max(1.0, d.value * dotBoost)
             u.hp -= real
             u.damageTaken += real
             addFloat("-${real.toInt()}", 0xFFFF7043.toInt(), u)
@@ -258,6 +288,8 @@ class Battle(
             if (run.grid.slots.any { it?.passive == "regen4" }) extraRegen += 0.04
             if (run.grid.slots.any { it?.passive == "regen3" }) extraRegen += 0.03
             if (run.grid.slots.any { it?.passive == "regen1_5" }) extraRegen += 0.015
+            if (run.grid.slots.any { it?.passive == "regen1" }) extraRegen += 0.01
+            if (run.grid.slots.any { it?.passive == "turn_shield" }) u.addShield(u.stats.maxHp * 0.08)
             if (dv?.passive == "iron_heart") UnitSizes.noop()
         }
         if (u.alive) u.heal(regen + u.stats.maxHp * extraRegen)
@@ -316,7 +348,7 @@ class Battle(
             (u.cooldowns[s.id] ?: 0) <= 0 && u.energy >= s.cost
         }
         if (usable.isEmpty()) return u.skills.first()
-        // 优先大招，其次高费用技能
+        // 优先大招，其次高费用战技
         val ult = usable.filter { it.isUltimate }
         if (ult.isNotEmpty() && Random.nextDouble() < 0.7) return ult.random()
         val nonBasic = usable.filter { !it.isBasic }
@@ -368,9 +400,36 @@ class Battle(
                 applyDamage(e, d, null, 0xFFFF6B6B.toInt())
             }
             "cleanse_potion" -> allies.forEach { if (it.alive) it.clearDebuffs() }
-            "rage_potion" -> allies.forEach { if (it.alive) it.addBuff(Buff("rage", "狂暴", 3, 1, 0.30, false)) }
+            "rage_potion" -> allies.forEach { if (it.alive) it.addBuff(Buff("rage", "沸血", 3, 1, 0.30, false)) }
             "group_heal" -> allies.forEach { if (it.alive) it.heal(it.stats.maxHp * 0.2) }
             "hourglass" -> enemies.filter { it.alive }.forEach { it.addBuff(Buff("stun", "眩晕", 1, 1, 0.0, true)) }
+            "revive_scroll" -> {
+                val dead = allies.firstOrNull { !it.alive }
+                if (dead != null) {
+                    dead.alive = true
+                    dead.hp = dead.stats.maxHp * 0.5
+                    dead.buffs.clear()
+                    addFloat("复活", 0xFF5FE8A0.toInt(), dead)
+                }
+            }
+            "power_elixir" -> allies.forEach { if (it.alive) it.addBuff(Buff("rage", "沸血", 3, 1, 0.40, false)) }
+            "iron_elixir" -> allies.forEach { if (it.alive) it.addBuff(Buff("iron", "铁壁", 3, 1, 0.60, false)) }
+            "swift_elixir" -> allies.forEach { if (it.alive) it.addBuff(Buff("evasion", "疾风", 3, 1, 0.25, false)) }
+            "vampire_elixir" -> allies.forEach { if (it.alive) it.addBuff(Buff("leech", "汲血", 3, 1, 0.35, false)) }
+            "purge_scroll" -> allies.forEach { if (it.alive) it.clearDebuffs() }
+            "stasis_orb" -> enemies.filter { it.alive }.forEach { e ->
+                applyDamage(e, e.stats.maxHp * 0.18, null, 0xFFB9A6FF.toInt())
+                e.addBuff(Buff("weaken", "虚弱", 3, 1, 0.20, true))
+            }
+            "star_fragment" -> {
+                val opt = DraftService.roll(run, perm, 1).firstOrNull()
+                if (opt != null) {
+                    DraftService.place(run, opt, -1)
+                    DraftService.notePicked(run, opt.talent)
+                    RunService.recalcAll(run, perm)
+                    addLog("曜辉残片：觉醒【" + opt.talent.name + "】")
+                }
+            }
         }
         addLog("使用了 ${item.name}。")
         checkEnd()
@@ -384,6 +443,24 @@ class Battle(
         if (skill.cd > 0) actor.cooldowns[skill.id] = skill.cd + 1
 
         if (skill.extra == "energy20") actor.energy = min(actor.stats.energyMax, actor.energy + 20)
+        if (actor.id == "player" && skill.cost > 0 && run.grid.slots.any { it?.passive == "skill_heal" }) {
+            actor.heal(actor.stats.maxHp * 0.06)
+        }
+        if (skill.extra == "energy40") {
+            for (f in if (actor.isEnemy) enemies else allies) {
+                if (f.alive) f.energy = min(f.stats.energyMax, f.energy + 40)
+            }
+        }
+        if (skill.extra == "cd2" || skill.extra == "cd3") {
+            val cut = if (skill.extra == "cd3") 3 else 2
+            for (f in if (actor.isEnemy) enemies else allies) {
+                if (!f.alive) continue
+                for (k in f.cooldowns.keys.toList()) {
+                    val v = (f.cooldowns[k] ?: 0) - cut
+                    if (v <= 0) f.cooldowns.remove(k) else f.cooldowns[k] = v
+                }
+            }
+        }
 
         val foes = if (actor.isEnemy) allies.filter { it.alive } else enemies.filter { it.alive }
         val friends = if (actor.isEnemy) enemies.filter { it.alive } else allies.filter { it.alive }
@@ -417,7 +494,7 @@ class Battle(
         // 增益
         if (skill.tags.contains(Tag.BUFF_ATK)) {
             val targets = if (skill.target == TargetKind.ALLY_ALL) friends else listOf(actor)
-            for (t in targets) t.addBuff(Buff("atk_up", "攻击强化", skill.buffDur, 1, skill.coeff, false))
+            for (t in targets) t.addBuff(Buff("atk_up", "攻击淬炼", skill.buffDur, 1, skill.coeff, false))
         }
         if (skill.tags.contains(Tag.BUFF_DODGE)) {
             actor.addBuff(Buff("evasion", "闪避提升", skill.buffDur, 1, skill.coeff, false))
@@ -434,12 +511,23 @@ class Battle(
                 TargetKind.ENEMY_ALL -> foes
                 else -> listOfNotNull(target ?: foes.firstOrNull())
             }
-            val critExtra = if (skill.extra == "crit25") 25.0 else 0.0
-            val penExtra = if (skill.extra == "pen35") 0.35 else 0.0
+            val critExtra = when (skill.extra) {
+                "crit25" -> 25.0
+                "crit30" -> 30.0
+                else -> 0.0
+            }
+            val penExtra = when (skill.extra) {
+                "pen35" -> 0.35
+                "pen40" -> 0.40
+                "pen50" -> 0.50
+                else -> 0.0
+            }
             val drain = when (skill.extra) {
+                "drain30" -> 0.30
                 "drain35" -> 0.35
-                "drain45" -> 0.45
                 "drain40" -> 0.40
+                "drain45" -> 0.45
+                "drain60" -> 0.60
                 else -> 0.0
             }
             var totalDealt = 0.0
@@ -502,7 +590,7 @@ class Battle(
 
     private fun postAction(actor: Unit) {
         actor.actionCount++
-        // 疾风之息：额外行动
+        // 岚息：额外行动
         val dv = if (actor.id == "player") run.grid.divinity else null
         if (dv != null && dv.passive == "gale_breath" && actor.actionCount < 2) {
             queue.add(queueIdx, actor)
@@ -574,8 +662,16 @@ class Battle(
             }
         }
         if (run.nextBattleBonus.containsKey("dmg")) bonus += run.nextBattleBonus["dmg"] ?: 0.0
+        if (attacker.id == "player") {
+            val g = run.grid
+            if (g.slots.any { it?.passive == "executioner" } && target.hpPct() < 0.35) bonus += 0.60
+            if (g.slots.any { it?.passive == "elite_hunter" } && (isBoss || isElite)) bonus += 0.18
+            if (g.slots.any { it?.passive == "last_stand" }) bonus += 0.50 * (1.0 - attacker.hpPct())
+            if (g.slots.any { it?.passive == "ambush" } && turn <= 1) bonus += 1.0
+            if (g.slots.any { it?.passive == "first_strike" } && (skill?.isBasic == true) && attacker.actionCount == 0) bonus += 0.60
+        }
 
-        var reduction = target.stats.dmgReduction
+        var reduction = target.stats.dmgReduction + target.buffValue("iron")
         if (target.id == "player" && dv?.passive == "god_slayer" && (isBoss || isElite)) reduction += 0.15
         reduction = reduction.coerceAtMost(0.85)
 
@@ -599,13 +695,14 @@ class Battle(
         applyDamage(target, finalDmg, attacker, if (isCrit) 0xFFFFD166.toInt() else 0xFFFFFFFF.toInt())
 
         // 吸血
-        if (attacker.stats.lifesteal > 0.0) {
-            val heal = finalDmg * attacker.stats.lifesteal
-            attacker.heal(heal)
+        val totalLeech = attacker.stats.lifesteal + attacker.buffValue("leech")
+        if (totalLeech > 0.0) {
+            attacker.heal(finalDmg * min(0.6, totalLeech))
         }
-        // 荆棘反伤
+        // 棘刺反伤
         val thorns = target.stats.let { if (target.hasBuff("affix_thorns")) 0.20 else 0.0 }
-        val thornsTalent = if (target.id == "player" && run.grid.slots.any { it?.passive == "thorns" }) 0.25 else 0.0
+        var thornsTalent = if (target.id == "player" && run.grid.slots.any { it?.passive == "thorns" }) 0.25 else 0.0
+        if (target.id == "player" && run.grid.slots.any { it?.passive == "thorns_small" }) thornsTalent = max(thornsTalent, 0.12)
         val totalThorns = max(thorns, thornsTalent)
         if (totalThorns > 0.0 && attacker.alive) {
             applyDamage(attacker, finalDmg * totalThorns, null, 0xFFFF8A8A.toInt())
@@ -622,9 +719,9 @@ class Battle(
         }
         if (target.id == "player" && run.grid.slots.any { it?.passive == "unbroken_line" } && !target.hasBuff("unbroken_used")) {
             if (target.hp - dmg <= target.stats.maxHp * 0.4) {
-                target.addBuff(Buff("unbroken_used", "不灭战线", 999, 1, 0.0, false))
+                target.addBuff(Buff("unbroken_used", "永峙防线", 999, 1, 0.0, false))
                 target.addShield(target.stats.maxHp * 0.25)
-                addFloat("不灭战线", 0xFFFFE066.toInt(), target)
+                addFloat("永峙防线", 0xFFFFE066.toInt(), target)
             }
         }
         if (target.shield > 0.0) {
@@ -642,15 +739,15 @@ class Battle(
     }
 
     private fun fatal(u: Unit) {
-        // 不死鸟 / 复活类
+        // 涅槃羽 / 复活类
         if (u.id == "player") {
             val phoenix = run.grid.slots.any { it?.passive == "phoenix" }
             if (phoenix && !run.phoenixUsed) {
                 run.phoenixUsed = true
                 u.hp = u.stats.maxHp * 0.4
                 u.alive = true
-                addFloat("不死鸟", 0xFFFFB454.toInt(), u)
-                addLog("${u.name} 触发【不死鸟】，以 40% 生命复活！")
+                addFloat("涅槃羽", 0xFFFFB454.toInt(), u)
+                addLog("${u.name} 触发【涅槃羽】，以 40% 生命复活！")
                 return
             }
         }

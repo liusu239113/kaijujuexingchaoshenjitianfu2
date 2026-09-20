@@ -6,7 +6,7 @@ class DraftOption(val talent: Talent, var star: Int, val isUpgradeOf: Int)
 
 object DraftService {
 
-    /** 稀有度权重，受永久成长与保底影响。 */
+    /** 精巧度权重，受轮回淬炼与保底影响。 */
     private fun weights(run: RunState, perm: PermState): MutableMap<Rarity, Double> {
         val w = HashMap<Rarity, Double>()
         w[Rarity.COMMON] = 38.0
@@ -68,7 +68,7 @@ object DraftService {
         return Rarity.COMMON
     }
 
-    /** 开局必得：3 个超神级供选择。 */
+    /** 开局必得：3 个曜神级供选择。 */
     fun rollDivinityChoices(): List<Talent> =
         Data.hiddenTalents.shuffled(Random).take(3)
 
@@ -78,7 +78,7 @@ object DraftService {
         if (talent.passive == "reincarnation_admin") run.draftExtraOption = true
     }
 
-    /** 把选中的天赋放进共鸣盘；满盘时替换指定槽位。 */
+    /** 把选中的天赋放进神格环；满盘时替换指定槽位。 */
     fun place(run: RunState, opt: DraftOption, replaceIndex: Int) {
         val t = opt.talent
         val existing = run.grid.indexOf(t.id)
@@ -98,7 +98,7 @@ object DraftService {
         run.pityCounter = if (t.rarity.rank >= 5) 0 else run.pityCounter + 1
     }
 
-    /** 神格升级：消耗天赋点强化天赋星级。 */
+    /** 神格升级：消耗神格点锻铸天赋星级。 */
     fun enhanceCost(t: Talent, level: Int): Int = t.enhanceCost(level)
 
     fun canEnhance(run: RunState, perm: PermState, index: Int): Boolean {

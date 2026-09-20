@@ -26,7 +26,8 @@ class Audio(private val ctx: Context) {
     private val trackFiles = mapOf(
         "city" to "bgm_city",
         "tower" to "bgm_tower",
-        "battle" to "bgm_battle"
+        "battle" to "bgm_battle",
+        "boss" to "bgm_boss"
     )
 
     private val sfxFiles = listOf(

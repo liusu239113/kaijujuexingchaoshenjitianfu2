@@ -19,13 +19,13 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
     val bottom = h - 78f
     card(c, 18f, top, w - 36f, bottom - top, r.withAlpha(Palette.BORDER, 210), 20f)
     val title = when (panel) {
-        "bag" -> "背包"
+        "bag" -> "行囊"
         "equip" -> "装备"
-        "skills" -> "技能"
-        "talents" -> "共鸣盘"
-        "attrs" -> "属性"
+        "skills" -> "战技"
+        "talents" -> "神格环"
+        "attrs" -> "面板"
         "items" -> "道具"
-        "settings" -> "设置"
+        "settings" -> "设定"
         else -> ""
     }
     r.text(c, title, w / 2f, top + 42f, 21f, Palette.CYAN, true, Paint.Align.CENTER)
@@ -36,7 +36,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
         "bag" -> {
             if (p == null) return
             if (p.bag.isEmpty()) {
-                r.text(c, "背包是空的。", w / 2f, y + 40f, 14f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+                r.text(c, "行囊是空的。", w / 2f, y + 40f, 14f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
             }
             for (i in p.bag.indices) {
                 if (y > bottom - 90f) break
@@ -54,7 +54,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 if (e == null) {
                     r.text(c, "未装备", w - 60f, y + 16f, 12f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)
                 } else {
-                    drawEquipRow(c, e, 36f, y + 24f, w - 72f, "panel_enhance_${slot.id}", "强化", Palette.GOLD)
+                    drawEquipRow(c, e, 36f, y + 24f, w - 72f, "panel_enhance_${slot.id}", "锻铸", Palette.GOLD)
                 }
                 y += 104f
             }
@@ -63,7 +63,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
         "skills" -> {
             if (p == null) return
             val hero = p.hero()
-            r.text(c, "技能点 ${p.skillPoints} · Lv.${p.level}", 36f, y, 13f, Palette.GOLD, true)
+            r.text(c, "战技点 ${p.skillPoints} · Lv.${p.level}", 36f, y, 13f, Palette.GOLD, true)
             y += 14f
             for (s in hero.skills) {
                 val lv = heroSkillLevel(p, s.id)
@@ -102,7 +102,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 }
                 y += 72f
             }
-            r.text(c, "天赋点：${perm.talentPoints}", 36f, bottom - 76f, 12f, Palette.GOLD)
+            r.text(c, "神格点：${perm.talentPoints}", 36f, bottom - 76f, 12f, Palette.GOLD)
             ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
         "attrs" -> {
@@ -136,7 +136,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
         }
         "items" -> {
             if (p == null) return
-            for (it in Content.items) {
+            for (it in Content.allItems) {
                 val cnt = p.items[it.id] ?: 0
                 card(c, 36f, y, w - 72f, 62f, if (cnt > 0) r.withAlpha(Palette.GOLD, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 12f)
                 r.text(c, it.glyph, 58f, y + 38f, 22f, Palette.GOLD)
@@ -147,19 +147,19 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
         "settings" -> {
-            r.text(c, "🎵 音乐音量 ${perm.musicVolume}%", 40f, y + 20f, 14f, Palette.TEXT)
+            r.text(c, "🎵 乐曲音量 ${perm.musicVolume}%", 40f, y + 20f, 14f, Palette.TEXT)
             for (i in 0 until 4) {
                 val v = (i + 1) * 25
                 ghostButton(c, "panel_vol_$v", "$v%", 40f + i * 84f, y + 34f, 76f, 40f, if (perm.musicVolume == v) Palette.CYAN else Palette.TEXT_DIM)
             }
             y += 92f
-            ghostButton(c, "panel_toggle_music", "音乐：${if (perm.musicOn) "开启" else "关闭"}", 40f, y, w - 80f, 46f, if (perm.musicOn) Palette.GREEN else Palette.TEXT_DIM)
+            ghostButton(c, "panel_toggle_music", "乐曲：${if (perm.musicOn) "开启" else "关闭"}", 40f, y, w - 80f, 46f, if (perm.musicOn) Palette.GREEN else Palette.TEXT_DIM)
             y += 56f
             ghostButton(c, "panel_toggle_sfx", "音效：${if (perm.sfxOn) "开启" else "关闭"}", 40f, y, w - 80f, 46f, if (perm.sfxOn) Palette.GREEN else Palette.TEXT_DIM)
             y += 66f
-            r.wrap(c, "本作完全离线运行：无账号、无登录、无广告、无联网权限。所有存档仅保存在本机。", 40f, y, w - 80f, 12f, Palette.TEXT_DIM, 18f)
+            r.wrap(c, "本作完全离线运行：无账号、无登录、无广告、无联网权限，存档仅保存在本机。", 40f, y, w - 80f, 12f, Palette.TEXT_DIM, 18f)
             y += 62f
-            ghostButton(c, "panel_reset", "清空存档并回到标题", 40f, y, w - 80f, 46f, Palette.RED)
+            ghostButton(c, "panel_reset", "清空存档并返回标题", 40f, y, w - 80f, 46f, Palette.RED)
             ghostButton(c, "panel_close", "关闭", 36f, bottom - 64f, w - 72f, 48f, Palette.TEXT_DIM)
         }
     }
@@ -189,7 +189,7 @@ private fun mainLabel(key: String): String = when (key) {
 }
 
 internal fun GameView.tapPanel(id: String) {
-    // 这些操作不依赖本轮进度（主菜单也能打开设置）
+    // 这些操作不依赖本轮进度（主菜单也能打开设定）
     when (id) {
         "panel_close" -> { panel = ""; return }
         "panel_vol_25" -> { setVol(25); return }
@@ -240,7 +240,7 @@ internal fun GameView.tapPanel(id: String) {
             val e = p.equipped[slot] ?: return
             val max = Content.enhanceMax(perm)
             if (e.enhance >= max) {
-                showToast("已达强化上限 +$max")
+                showToast("已达锻铸上限 +$max")
                 return
             }
             val cost = TowerService.goldNeeded(e, perm)
@@ -256,13 +256,13 @@ internal fun GameView.tapPanel(id: String) {
         id.startsWith("panel_learn_") -> {
             val sid = id.removePrefix("panel_learn_")
             if (p.skillPoints <= 0) {
-                showToast("技能点不足")
+                showToast("战技点不足")
                 return
             }
             p.skillPoints--
             RunService.recalcAll(p, perm)
             audio.play("levelup")
-            showToast("技能已强化")
+            showToast("战技已锻铸")
         }
         id.startsWith("panel_star_") -> {
             val idx = id.removePrefix("panel_star_").toIntOrNull() ?: return
@@ -270,7 +270,7 @@ internal fun GameView.tapPanel(id: String) {
                 RunService.recalcAll(p, perm)
                 audio.play("levelup")
             } else {
-                showToast("天赋点不足或已满星")
+                showToast("神格点不足或已满星")
             }
         }
     }
@@ -320,10 +320,10 @@ private fun GameView.drawBattleEndOverlay(c: Canvas) {
     }
 
     if (win) {
-        button(c, "over_continue", "继 续 前 行", 48f, h - 214f, w - 96f, 56f, Palette.CYAN)
+        button(c, "over_continue", "继 续 深 入", 48f, h - 214f, w - 96f, 56f, Palette.CYAN)
     } else {
-        button(c, "over_reincarnate", "转 生", 48f, h - 214f, w - 96f, 56f, Palette.PINK)
-        r.text(c, "转生会把本轮爬塔进度折算成天赋点，用于永久成长。", w / 2f, h - 150f, 11.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+        button(c, "over_reincarnate", "轮 回", 48f, h - 214f, w - 96f, 56f, Palette.PINK)
+        r.text(c, "轮回会把本轮迭塔进度折算为神格点，用于永久淬炼。", w / 2f, h - 150f, 11.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
     }
 }
 
@@ -339,11 +339,8 @@ internal fun GameView.tapOverlay(id: String) {
                     return
                 }
                 TowerService.advanceFloor(p, perm)
-                if (p.waitingFloorTalent) {
-                    p.waitingFloorTalent = false
-                    beginDraft(1)
-                    return
-                }
+                afterFloorAdvance()
+                return
             }
             screen = Screen.TOWER
             audio.playBgm("tower")
@@ -363,9 +360,9 @@ internal fun GameView.drawReincarnationScreen(c: Canvas) {
     card(c, 32f, 200f, w - 64f, 200f, r.withAlpha(Palette.BORDER, 210), 20f)
     val rows = listOf(
         "抵达层数" to "${p.floor}",
-        "难度模式" to p.mode.cn,
-        "职业" to (Data.classById[p.classId]?.name ?: ""),
-        "天赋点收益" to "+$pts"
+        "试炼强度" to p.mode.cn,
+        "职阶" to (Data.classById[p.classId]?.name ?: ""),
+        "神格点收益" to "+$pts"
     )
     var y = 240f
     for (row in rows) {
@@ -373,12 +370,12 @@ internal fun GameView.drawReincarnationScreen(c: Canvas) {
         r.text(c, row.second, w - 56f, y, 15f, Palette.GOLD, true, Paint.Align.RIGHT)
         y += 38f
     }
-    r.text(c, "共鸣盘最高：${p.grid.resonanceBonus().label()}", w / 2f, 440f, 13f, Palette.CYAN, true, Paint.Align.CENTER)
-    r.wrap(c, "提示：同系天赋相邻会结成共鸣链，链越长加成越高。下次轮回优先凑齐 3 条以上共鸣边。", 44f, 470f, w - 88f, 12f, Palette.TEXT_DIM, 18f)
+    r.text(c, "神格环最高：${p.grid.resonanceBonus().label()}", w / 2f, 440f, 13f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.wrap(c, "提示：同源神格在环上相邻即结成共鸣链，链越长增益越高。下次轮回优先凑齐 3 条以上共鸣边。", 44f, 470f, w - 88f, 12f, Palette.TEXT_DIM, 18f)
 
     button(c, "reinc_claim", "领 取 天 赋 点", 48f, h - 220f, w - 96f, 58f, Palette.PINK)
-    ghostButton(c, "reinc_growth", "前往永久成长", 48f, h - 148f, w - 96f, 48f, Palette.CYAN)
-    ghostButton(c, "reinc_menu", "回到标题", 48f, h - 90f, w - 96f, 44f, Palette.TEXT_DIM)
+    ghostButton(c, "reinc_growth", "前往轮回淬炼", 48f, h - 148f, w - 96f, 48f, Palette.CYAN)
+    ghostButton(c, "reinc_menu", "返回标题", 48f, h - 90f, w - 96f, 44f, Palette.TEXT_DIM)
 }
 
 internal fun GameView.tapReincarnation(id: String) {
@@ -391,7 +388,7 @@ internal fun GameView.tapReincarnation(id: String) {
             run = null
             Save.savePerm(context, perm)
             Save.clearRun(context)
-            showToast("获得 $pts 天赋点")
+            showToast("获得 $pts 神格点")
             screen = Screen.GROWTH
         }
         "reinc_growth" -> {
@@ -411,7 +408,7 @@ internal fun GameView.tapReincarnation(id: String) {
 }
 
 internal fun GameView.drawGrowthScreen(c: Canvas) {
-    drawTopBar(c, "永久成长", "天赋点：${perm.talentPoints} · 最高层数：${perm.bestFloor}", "growth_back", null, null)
+    drawTopBar(c, "轮回淬炼", "神格点：${perm.talentPoints} · 最高层数：${perm.bestFloor}", "growth_back", null, null)
     var y = 118f
     for (g in Content.growth) {
         val lv = perm.growthLevel(g.id)
@@ -425,7 +422,7 @@ internal fun GameView.drawGrowthScreen(c: Canvas) {
         if (maxed) {
             r.text(c, "已满级", w - 56f, y + 46f, 14f, Palette.GOLD, true, Paint.Align.RIGHT)
         } else {
-            ghostButton(c, "growth_up_${g.id}", "强化 $cost", w - 132f, y + 22f, 96f, 40f, if (afford) Palette.PINK else Palette.TEXT_FAINT)
+            ghostButton(c, "growth_up_${g.id}", "锻铸 $cost", w - 132f, y + 22f, 96f, 40f, if (afford) Palette.PINK else Palette.TEXT_FAINT)
         }
         y += 92f
     }
@@ -446,7 +443,7 @@ internal fun GameView.tapGrowth(id: String) {
             }
             val cost = Content.growthCost(def, lv)
             if (perm.talentPoints < cost) {
-                showToast("天赋点不足")
+                showToast("神格点不足")
                 return
             }
             perm.talentPoints -= cost
@@ -458,11 +455,11 @@ internal fun GameView.tapGrowth(id: String) {
 }
 
 internal fun GameView.drawCodexScreen(c: Canvas) {
-    drawTopBar(c, "天赋图鉴", "共 ${Data.talents.size} 个天赋 · 神格共鸣机制", "growth_back", null, null)
+    drawTopBar(c, "神格图鉴", "共 ${Data.allTalents.size} 项神格 · 共鸣机制", "growth_back", null, null)
     var y = 118f
     val order = listOf(Rarity.HIDDEN, Rarity.MYTHIC, Rarity.LEGENDARY, Rarity.EPIC, Rarity.RARE, Rarity.COMMON)
     for (rar in order) {
-        val list = Data.talents.filter { it.rarity == rar }
+        val list = Data.allTalents.filter { it.rarity == rar }
         if (list.isEmpty()) continue
         r.text(c, "【${rar.cn}】", 24f, y, 14f, rarityColor(rar), true)
         y += 8f

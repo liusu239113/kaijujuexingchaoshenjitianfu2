@@ -46,6 +46,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     // 选人 / 抽卡
     var setupMode = GameMode.NORMAL
     var setupClass = "warrior"
+    var setupClimbLevel = 1
     var draftOptions: List<DraftOption> = emptyList()
     var divinityOptions: List<Talent> = emptyList()
     var picksLeft = 0
@@ -64,7 +65,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var overlay = ""
     var lastRewards: TowerService.Rewards? = null
 
-    // 战斗
+    // 遭遇战
     var autoBattle = false
     var combatDelay = 0f
     var selectedSkill: Skill? = null
@@ -109,7 +110,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Choreographer.getInstance().postFrameCallback(this)
         }
         audio.resumeAll()
-        // 标题界面默认播放主城 BGM；playBgm 内部会跳过同一首
+        // 标题界面默认播放回廊 BGM；playBgm 内部会跳过同一首
         if (screen == Screen.MENU || screen == Screen.SETUP) audio.playBgm("city")
     }
 
@@ -417,6 +418,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     fun startRun() {
         val p = RunService.newRun(setupMode, setupClass, perm)
+        p.climbLevel = if (setupMode == GameMode.CLIMB) setupClimbLevel.coerceIn(1, perm.climbMaxUnlocked) else 1
         run = p
         RunService.recalcAll(p, perm)
         divinityOptions = com.kaiju.awaken.game.DraftService.rollDivinityChoices()
@@ -456,7 +458,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         selectedItem = null
         combatDelay = 0.4f
         screen = Screen.COMBAT
-        audio.playBgm("battle")
+        audio.playBgm(if (kind == "boss") "boss" else "battle")
     }
 
     fun onBattleFinished(b: Battle) {
@@ -464,7 +466,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         if (b.victory) {
             val rw = TowerService.grantBattleRewards(p, perm, b)
             lastRewards = rw
-            battleResult = if (b.timedOut) "回合耗尽 · 按胜利结算（奖励减半）" else "战斗胜利"
+            battleResult = if (b.timedOut) "回合耗尽 · 按胜利结算（奖励减半）" else "遭遇战告捷"
             audio.play("victory")
             val fe = TowerService.currentEvent(p)
             if (fe != null) fe.resolved = true
@@ -474,7 +476,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             TowerService.updateBest(perm, p)
         } else {
             p.alive = false
-            battleResult = "全员阵亡"
+            battleResult = "全员战殁"
             audio.play("defeat")
         }
         overlay = "battle_end"
@@ -506,18 +508,52 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 return
             }
             TowerService.advanceFloor(p, perm)
-            if (p.waitingFloorTalent) {
-                p.waitingFloorTalent = false
-                beginDraft(1)
-                return
-            }
+            Save.saveRun(context, p, perm)
+            afterFloorAdvance()
+            return
         }
         Save.saveRun(context, p, perm)
+    }
+
+    /** 楼层推进后的结算顺序：转职 > 层间觉醒 > 回到迭塔界面。 */
+    fun afterFloorAdvance() {
+        val p = run ?: return
+        if (p.pendingPromotion > 0) {
+            val tier = p.pendingPromotion
+            p.pendingPromotion = 0
+            beginPromotion(tier)
+            return
+        }
+        if (p.waitingFloorTalent) {
+            p.waitingFloorTalent = false
+            beginDraft(1)
+            return
+        }
+        screen = Screen.TOWER
+        audio.playBgm("tower")
+    }
+
+    fun beginPromotion(tier: Int) {
+        val p = run ?: return
+        promoTier = tier
+        val list = if (tier == 1) {
+            com.kaiju.awaken.game.Promotions.tier1For(p.classId)
+        } else {
+            com.kaiju.awaken.game.Promotions.tier2For(p.promotionId ?: "")
+        }
+        promoOptions = list
+        if (list.isEmpty()) {
+            screen = Screen.TOWER
+            return
+        }
+        screen = Screen.PROMOTION
+        audio.play("draft")
     }
 
     fun finishRun() {
         val p = run ?: return
         TowerService.updateBest(perm, p)
+        TowerService.tryUnlockClimb(perm, p)
         perm.totalRuns++
         p.runOver = true
         screen = Screen.REINCARNATION

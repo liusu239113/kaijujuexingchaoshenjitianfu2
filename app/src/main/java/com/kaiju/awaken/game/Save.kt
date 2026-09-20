@@ -18,6 +18,8 @@ object Save {
         o.put("bestFloor", perm.bestFloor)
         o.put("totalRuns", perm.totalRuns)
         o.put("pity", perm.pity)
+        o.put("climbMaxUnlocked", perm.climbMaxUnlocked)
+        o.put("climbBest", perm.climbBest)
         o.put("musicOn", perm.musicOn)
         o.put("musicVolume", perm.musicVolume)
         o.put("sfxOn", perm.sfxOn)
@@ -47,6 +49,8 @@ object Save {
             perm.bestFloor = o.optInt("bestFloor", 0)
             perm.totalRuns = o.optInt("totalRuns", 0)
             perm.pity = o.optInt("pity", 0)
+            perm.climbMaxUnlocked = o.optInt("climbMaxUnlocked", 1)
+            perm.climbBest = o.optInt("climbBest", 0)
             perm.musicOn = o.optBoolean("musicOn", true)
             perm.musicVolume = o.optInt("musicVolume", 70)
             perm.sfxOn = o.optBoolean("sfxOn", true)
@@ -92,6 +96,9 @@ object Save {
             o.put("pityCounter", run.pityCounter)
             o.put("eventIdx", run.eventIdx)
             o.put("waitingFloorTalent", run.waitingFloorTalent)
+            o.put("promotionId", run.promotionId ?: "")
+            o.put("tier2Id", run.tier2Id ?: "")
+            o.put("climbLevel", run.climbLevel)
 
             val items = JSONObject()
             for ((k, v) in run.items) items.put(k, v)
@@ -132,6 +139,8 @@ object Save {
                 ju.put("rarity", u.rarity.name)
                 ju.put("hp", u.hp)
                 ju.put("energy", u.energy)
+                ju.put("star", u.star)
+                ju.put("traitId", u.traitId ?: "")
                 party.put(ju)
             }
             o.put("party", party)
@@ -172,6 +181,11 @@ object Save {
             run.pityCounter = o.optInt("pityCounter", 0)
             run.eventIdx = o.optInt("eventIdx", 0)
             run.waitingFloorTalent = o.optBoolean("waitingFloorTalent", false)
+            val pid = o.optString("promotionId", "")
+            if (pid.isNotEmpty()) run.promotionId = pid
+            val t2 = o.optString("tier2Id", "")
+            if (t2.isNotEmpty()) run.tier2Id = t2
+            run.climbLevel = o.optInt("climbLevel", 1)
 
             o.optJSONObject("items")?.let { it ->
                 for (k in it.keys()) run.items[k] = it.optInt(k, 0)
@@ -230,6 +244,9 @@ object Save {
                         m.id = ju.optString("id", m.id)
                         m.hp = ju.optDouble("hp", 1.0)
                         m.energy = ju.optDouble("energy", 0.0)
+                        m.star = ju.optInt("star", 1)
+                        val tid = ju.optString("traitId", "")
+                        m.traitId = if (tid.isEmpty()) null else tid
                         run.party.add(m)
                     }
                 }
@@ -248,6 +265,7 @@ object Save {
                     run.floorEvents.add(fe)
                 }
             }
+            RunService.rebuildSkills(hero, run.classId, run.promotionId, run.tier2Id)
             if (run.floorEvents.isEmpty()) TowerService.generateFloor(run)
             RunService.recalcAll(run, perm)
             if (hero.hp <= 0.0) hero.hp = hero.stats.maxHp * 0.5
