@@ -437,27 +437,53 @@ internal fun GameView.tapOverlay(id: String) {
 internal fun GameView.drawReincarnationScreen(c: Canvas) {
     val p = run ?: return
     val pts = p.talentPointValue()
-    r.text(c, "轮 回 结 算", w / 2f, 150f, 30f, Palette.PINK, true, Paint.Align.CENTER)
-    card(c, 32f, 200f, w - 64f, 200f, r.withAlpha(Palette.BORDER, 210), 20f)
+    val cleared = p.mode.endFloor > 0 && p.floor > p.mode.endFloor
+
+    if (cleared) {
+        r.text(c, "回 廊 之 心", w / 2f, 92f, 30f, Palette.GOLD, true, Paint.Align.CENTER)
+        r.text(c, "你点亮了「" + p.mode.cn + "」的全部星语，回廊重新开始呼吸。", w / 2f, 120f, 12f, Palette.CYAN, false, Paint.Align.CENTER)
+        r.sparkle(c, w * 0.14f, 96f, 16f, Palette.GOLD)
+        r.sparkle(c, w * 0.86f, 110f, 13f, Palette.GOLD)
+    }
+
+    r.text(c, "轮 回 结 算", w / 2f, if (cleared) 156f else 140f, 26f, Palette.PINK, true, Paint.Align.CENTER)
+    val top = if (cleared) 180f else 164f
+    card(c, 32f, top, w - 64f, 196f, r.withAlpha(Palette.BORDER, 210), 20f)
+
+    var y = top + 40f
     val rows = listOf(
-        "抵达层数" to "${p.floor}",
+        "抵达层数" to (p.floor.toString() + (if (cleared) " · 已通关" else "")),
         "试炼强度" to p.mode.cn,
         "职阶" to (Data.classById[p.classId]?.name ?: ""),
-        "神格点收益" to "+$pts"
+        "神格点收益" to ("+" + pts)
     )
-    var y = 240f
     for (row in rows) {
         r.text(c, row.first, 56f, y, 13f, Palette.TEXT_DIM)
         r.text(c, row.second, w - 56f, y, 15f, Palette.GOLD, true, Paint.Align.RIGHT)
         y += 38f
     }
-    r.text(c, "神格环最高：${p.grid.resonanceBonus().label()}", w / 2f, 440f, 13f, Palette.CYAN, true, Paint.Align.CENTER)
-    r.wrap(c, "提示：同源神格在环上相邻即结成共鸣链，链越长增益越高。下次轮回优先凑齐 3 条以上共鸣边。", 44f, 470f, w - 88f, 12f, Palette.TEXT_DIM, 18f)
 
-    button(c, "reinc_claim", "领 取 天 赋 点", 48f, h - 220f, w - 96f, 58f, Palette.PINK)
+    val label = p.grid.resonanceBonus().label()
+    r.text(c, "神格环最高：" + label, w / 2f, top + 208f, 13f, Palette.CYAN, true, Paint.Align.CENTER)
+
+    var iy = top + 234f
+    val newAch = pendingAchievements
+    if (newAch.isNotEmpty()) {
+        r.text(c, "本次达成成就", w / 2f, iy, 13f, Palette.GOLD, true, Paint.Align.CENTER)
+        iy += 20f
+        for (a in newAch.take(5)) {
+            r.text(c, "· " + a.name + "   +" + a.dust + " 星尘", w / 2f, iy, 11.5f, Palette.CYAN, false, Paint.Align.CENTER)
+            iy += 18f
+        }
+    } else {
+        r.wrap(c, "提示：同源星语在环上相邻即结成共鸣链，链越长增益越高。下次轮回优先凑齐 3 条以上共鸣边。", 44f, iy, w - 88f, 12f, Palette.TEXT_DIM, 18f)
+    }
+
+    button(c, "reinc_claim", "领 取 神 格 点", 48f, h - 220f, w - 96f, 58f, Palette.PINK)
     ghostButton(c, "reinc_growth", "前往轮回淬炼", 48f, h - 148f, w - 96f, 48f, Palette.CYAN)
-    ghostButton(c, "reinc_menu", "返回标题", 48f, h - 90f, w - 96f, 44f, Palette.TEXT_DIM)
+    ghostButton(c, "reinc_menu", "回到标题", 48f, h - 90f, w - 96f, 44f, Palette.TEXT_DIM)
 }
+
 
 internal fun GameView.tapReincarnation(id: String) {
     val p = run ?: return

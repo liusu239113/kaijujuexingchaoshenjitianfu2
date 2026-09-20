@@ -124,7 +124,12 @@ private fun GameView.drawEventStage(c: Canvas, top: Float, fe: com.kaiju.awaken.
         "tavern" -> Triple("佣兵酒馆", "佣兵们在角落里打量你。", "🍺")
         else -> Triple(fe.event?.name ?: "奇遇", fe.event?.intro ?: "", fe.event?.glyph ?: "❖")
     }
-    r.text(c, glyph, 46f, top + 62f, 34f, accent, true)
+    val sceneKey = sceneFor(fe)
+    if (sceneKey != null) {
+        drawScene(c, sceneKey, w - 84f, top + 54f, 72f)
+    } else {
+        r.text(c, glyph, 46f, top + 62f, 34f, accent, true)
+    }
     r.text(c, title, 92f, top + 50f, 19f, Palette.TEXT, true)
     r.text(c, "第 ${p.floor} 层", 92f, top + 72f, 11.5f, Palette.TEXT_DIM)
     r.wrap(c, intro, 30f, top + 104f, w - 96f, 12.5f, Palette.TEXT_DIM, 18f)

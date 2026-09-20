@@ -427,6 +427,40 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     fun rarityColor(rr: Rarity): Int = rr.color
 
+
+    /** 事件 → 场景插画映射；没有对应插画时返回 null（回退到 emoji）。 */
+    fun sceneFor(fe: com.kaiju.awaken.game.FloorEvent): String? {
+        return when (fe.kind) {
+            "shop" -> "pt_ev_shop"
+            "tavern" -> "pt_ev_tavern"
+            "story" -> "pt_ev_altar"
+            else -> when (fe.event?.id) {
+                "evt_blacksmith", "evt_divine_forge" -> "pt_ev_forge"
+                "evt_shrine", "evt_star_shrine", "evt_blood_altar", "evt_goddess_tears" -> "pt_ev_shrine"
+                "evt_campfire", "evt_mercenary_camp" -> "pt_ev_camp"
+                "evt_library", "evt_talent_fragment" -> "pt_ev_library"
+                "evt_treasury", "evt_sealed_treasury", "evt_cursed_chest", "evt_dragon_hoard", "evt_immortal_throne" -> "pt_ev_treasure"
+                "evt_merchant", "evt_arcane_merchant" -> "pt_ev_shop"
+                else -> null
+            }
+        }
+    }
+
+    fun drawScene(c: Canvas, key: String, cx: Float, cy: Float, size: Float) {
+        val bmp = bitmap(key)
+        if (bmp == null) {
+            r.hexFrame(c, cx, cy, size * 0.5f, Palette.CYAN, r.withAlpha(Palette.PANEL_SOFT, 255))
+            return
+        }
+        val half = size / 2f
+        val src = android.graphics.Rect(0, 0, bmp.width, bmp.height)
+        val dst = android.graphics.RectF(cx - half, cy - half, cx + half, cy + half)
+        r.fill.shader = null
+        r.fill.alpha = 255
+        c.drawBitmap(bmp, src, dst, r.fill)
+        r.outline(c, cx - half, cy - half, size, size, size * 0.22f, r.withAlpha(Palette.CYAN, 200), 2.2f)
+    }
+
     // ------------------------------------------------------------ 输入
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
