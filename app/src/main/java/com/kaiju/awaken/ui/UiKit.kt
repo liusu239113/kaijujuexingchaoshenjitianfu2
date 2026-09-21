@@ -40,6 +40,8 @@ internal fun GameView.beginScroll(c: Canvas, top: Float = UiKit.CONTENT_TOP): Fl
     scrollBottomY = contentBottom()
     c.save()
     c.clipRect(0f, top, w, scrollBottomY)
+    // 同步登记到 hit 系统：滚出可视区的控件不再可点
+    setHitClip(top, scrollBottomY)
     screenScrollMax = 0f
     return top - screenScroll
 }
@@ -49,6 +51,7 @@ internal fun GameView.endScroll(c: Canvas, contentEndY: Float) {
     screenScrollMax = (contentEndY + screenScroll - scrollBottomY).coerceAtLeast(0f)
     screenScroll = screenScroll.coerceIn(0f, screenScrollMax)
     c.restore()
+    clearHitClip()
     if (screenScrollMax > 2f) {
         val viewH = scrollBottomY - scrollTopY
         val frac = viewH / (viewH + screenScrollMax)

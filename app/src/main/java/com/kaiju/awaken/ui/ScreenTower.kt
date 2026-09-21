@@ -232,6 +232,7 @@ internal fun GameView.tapEvent(id: String) {
 
 internal fun GameView.drawShopOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 220))
+    hit("modal_block", 0f, 0f, w, h)
     card(c, 22f, 90f, w - 44f, h - 200f, r.withAlpha(Palette.CYAN, 200), 20f)
     r.text(c, "道具商店", w / 2f, 140f, 22f, Palette.CYAN, true, Paint.Align.CENTER)
     r.text(c, "金币 ${run?.gold ?: 0}", w / 2f, 164f, 13f, Palette.GOLD, false, Paint.Align.CENTER)
@@ -280,6 +281,7 @@ internal fun GameView.tapShop(id: String) {
 
 internal fun GameView.drawTavernOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 220))
+    hit("modal_block", 0f, 0f, w, h)
     card(c, 22f, 90f, w - 44f, h - 200f, r.withAlpha(Palette.GREEN, 200), 20f)
     r.text(c, "佣兵酒馆", w / 2f, 140f, 22f, Palette.GREEN, true, Paint.Align.CENTER)
     val p = run ?: return

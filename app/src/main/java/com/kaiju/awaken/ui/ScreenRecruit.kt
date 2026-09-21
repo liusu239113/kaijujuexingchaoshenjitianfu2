@@ -18,6 +18,9 @@ internal fun GameView.drawRecruitScreen(c: Canvas) {
         card(c, 24f, y, w - 48f, 100f, r.withAlpha(Palette.BORDER_SOFT, 170), 14f)
         r.text(c, "尚未开启远征", w / 2f, y + 44f, 15f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
         r.text(c, "回到主城点击「出发远征」后再来招募", w / 2f, y + 68f, 11.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+        // 必须先 endScroll：旧实现的 early return 跳过了 c.restore()，
+        // Canvas 裁剪状态会泄漏到同帧后续绘制
+        endScroll(c, y + 110f)
         ghostButton(c, "rec_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 48f, Palette.TEXT_DIM)
         return
     }

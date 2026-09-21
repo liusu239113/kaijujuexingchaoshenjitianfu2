@@ -65,7 +65,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_slots", "存档", 48f, h - 104f, (bw - 12f) / 2f, 44f, Palette.CYAN)
     ghostButton(c, "menu_about", "关于", 48f + (bw - 12f) / 2f + 12f, h - 104f, (bw - 12f) / 2f, 44f, Palette.TEXT_DIM)
 
-    r.text(c, "v1.1.7 · PixelForge", w / 2f, h - 40f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.1.8 · PixelForge", w / 2f, h - 40f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
 }
 
 internal fun GameView.tapMenu(id: String) {

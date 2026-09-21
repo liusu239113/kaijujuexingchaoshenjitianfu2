@@ -294,6 +294,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         super.onDraw(canvas)
         if (physW <= 0f) return
         hits.clear()
+        // 每帧复位裁剪区，避免上一帧的裁剪状态泄漏到本帧
+        clearHitClip()
         canvas.save()
         canvas.scale(scale, scale)
         drawBackground(canvas)
@@ -407,7 +409,40 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     // ------------------------------------------------------------ 控件
 
+    /**
+     * 当前生效的绘制裁剪区。滚出可视区的控件不应再响应点击 ——
+     * 旧实现里背包靠下的格子、装备锻铸按钮滚出屏幕后仍可点到，会误扣金币。
+     */
+    private var hitClipActive = false
+    private var hitClipTop = 0f
+    private var hitClipBottom = 0f
+
+    fun setHitClip(top: Float, bottom: Float) {
+        hitClipActive = true
+        hitClipTop = top
+        hitClipBottom = bottom
+    }
+
+    fun clearHitClip() {
+        hitClipActive = false
+    }
+
     fun hit(id: String, x: Float, y: Float, ww: Float, hh: Float): HitRect {
+        if (hitClipActive) {
+            if (y + hh <= hitClipTop || y >= hitClipBottom) {
+                // 完全在裁剪区外：返回一个落在屏幕外的空矩形，
+                // 调用方即使把 .enabled 设回 true 也点不到。
+                val dead = HitRect(0f, -10000f, 0f, 0f, id)
+                hits.add(dead)
+                return dead
+            }
+            // 部分可见：把矩形收缩到可见区间，只有露出来的那部分可点
+            val cy = maxOf(y, hitClipTop)
+            val chh = minOf(y + hh, hitClipBottom) - cy
+            val hr = HitRect(x, cy, ww, chh, id)
+            hits.add(hr)
+            return hr
+        }
         val hr = HitRect(x, y, ww, hh, id)
         hits.add(hr)
         return hr

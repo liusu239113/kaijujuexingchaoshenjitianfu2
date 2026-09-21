@@ -15,6 +15,9 @@ import com.kaiju.awaken.ui.GameView.Screen
 
 internal fun GameView.drawPanelOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 226))
+    // 先注册全屏遮罩：hit 从末尾倒扫，后注册的面板内容优先，
+    // 底层屏幕的按钮则被吃掉（旧实现点顶栏返回键会切屏但面板还开着）
+    hit("modal_block", 0f, 0f, w, h)
     val p = run
     val top = 70f
     val bottom = h - 78f
@@ -37,11 +40,12 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
     val scrollBottom = bottom - 58f
     c.save()
     c.clipRect(20f, scrollTop, w - 20f, scrollBottom)
+    setHitClip(scrollTop, scrollBottom)
     panelScrollMax = 0f
     var y = scrollTop + 8f - panelScroll
     when (panel) {
         "bag" -> {
-            if (p == null) { c.restore(); return }
+            if (p == null) { c.restore(); clearHitClip(); return }
             val gridTop = y
             val cols = 5
             val gap = 6f
@@ -84,7 +88,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 116f
         }
         "equip" -> {
-            if (p == null) { c.restore(); return }
+            if (p == null) { c.restore(); clearHitClip(); return }
             for (slot in Content.slots) {
                 val e = p.equipped[slot.id]
                 val rowH = if (e == null) 46f else 92f
@@ -111,7 +115,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 56f
         }
         "skills" -> {
-            if (p == null) { c.restore(); return }
+            if (p == null) { c.restore(); clearHitClip(); return }
             val hero = p.hero()
             r.text(c, "战技点 ${p.skillPoints} · Lv.${p.level}", 36f, y, 13f, Palette.GOLD, true)
             y += 14f
@@ -130,7 +134,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             }
         }
         "talents" -> {
-            if (p == null) { c.restore(); return }
+            if (p == null) { c.restore(); clearHitClip(); return }
             drawResonanceStrip(c, p, y)
             y += 106f
             val dv = p.grid.divinity
@@ -157,7 +161,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 26f
         }
         "attrs" -> {
-            if (p == null) { c.restore(); return }
+            if (p == null) { c.restore(); clearHitClip(); return }
             val hero = p.hero()
             val rows = listOf(
                 "生命" to "${hero.stats.maxHp.toInt()}",
@@ -185,7 +189,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             r.text(c, "共鸣：" + p.grid.resonanceBonus().label() + " · " + (Data.classById[p.classId]?.name ?: ""), 36f, y + 16f, 12f, Palette.CYAN, true)
         }
         "items" -> {
-            if (p == null) { c.restore(); return }
+            if (p == null) { c.restore(); clearHitClip(); return }
             for (it in Content.allItems) {
                 val cnt = p.items[it.id] ?: 0
                 card(c, 36f, y, w - 72f, 62f, if (cnt > 0) r.withAlpha(Palette.GOLD, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 12f)
@@ -196,7 +200,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             }
         }
         "merc" -> {
-            if (p == null) { c.restore(); return }
+            if (p == null) { c.restore(); clearHitClip(); return }
             if (p.party.size <= 1) {
                 r.text(c, "尚未招募伙伴。", w / 2f, y + 40f, 14f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
                 r.wrap(c, "在「游侠营地」事件或酒肆中可以花金币招募伙伴。伙伴拥有独立专长、星级与装备。", 44f, y + 70f, w - 88f, 12f, Palette.TEXT_DIM, 18f)
@@ -270,6 +274,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
         val barY = scrollTop + (viewH - barH) * (panelScroll / panelScrollMax)
         r.solid(c, w - 14f, barY, 3f, barH, 1.5f, Palette.CYAN)
     }
+    // 底栏「关 闭」不在裁剪区内，先解除裁剪再绘制
+    clearHitClip()
     ghostButton(c, "panel_close", "关 闭", 36f, bottom - 52f, w - 72f, 44f, Palette.TEXT_DIM)
 }
 private fun heroSkillLevel(p: com.kaiju.awaken.game.RunState, skillId: String): Int =
@@ -507,6 +513,7 @@ internal fun GameView.drawOverlay(c: Canvas) {
 
 private fun GameView.drawDetailOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 228))
+    hit("modal_block", 0f, 0f, w, h)
     val top = h * 0.22f
     val boxH = h * 0.5f
     card(c, 26f, top, w - 52f, boxH, r.withAlpha(Palette.CYAN, 210), 18f)
@@ -514,7 +521,8 @@ private fun GameView.drawDetailOverlay(c: Canvas) {
     r.solid(c, 46f, top + 54f, w - 92f, 1.5f, 1f, r.withAlpha(Palette.BORDER_SOFT, 200))
     var ty = top + 80f
     for (line in detailBody.split("\n")) {
-        if (ty > top + boxH - 16f) break
+        // 阈值要给「关 闭」按钮留出高度，旧值只留 16 导致最后 1-3 行正文被按钮覆盖
+        if (ty > top + boxH - 74f) break
         if (line.isEmpty()) { ty += 10f; continue }
         ty = r.wrap(c, line, 44f, ty, w - 88f, 12f, Palette.TEXT_DIM, 17f)
     }
@@ -562,16 +570,19 @@ internal fun GameView.tapConfirm(id: String) {
 
 private fun GameView.drawConfirmOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 220))
+    hit("modal_block", 0f, 0f, w, h)
     val top = h * 0.34f
-    card(c, 34f, top, w - 68f, 168f, r.withAlpha(Palette.RED, 200), 18f)
+    card(c, 34f, top, w - 68f, 196f, r.withAlpha(Palette.RED, 200), 18f)
     r.text(c, "请 确 认", w / 2f, top + 40f, 19f, Palette.RED, true, Paint.Align.CENTER)
     r.wrap(c, confirmMsg, 54f, top + 70f, w - 108f, 12.5f, Palette.TEXT_DIM, 18f)
-    button(c, "confirm_yes", "确 定", 52f, top + 108f, (w - 120f) / 2f, 44f, Palette.RED)
-    ghostButton(c, "confirm_no", "取消", 52f + (w - 120f) / 2f + 16f, top + 108f, (w - 120f) / 2f, 44f, Palette.TEXT_DIM)
+    // 按钮下移，给最多 3 行确认文案留空间（长文案原本会压住按钮）
+    button(c, "confirm_yes", "确 定", 52f, top + 132f, (w - 120f) / 2f, 44f, Palette.RED)
+    ghostButton(c, "confirm_no", "取消", 52f + (w - 120f) / 2f + 16f, top + 132f, (w - 120f) / 2f, 44f, Palette.TEXT_DIM)
 }
 
 private fun GameView.drawExportOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 234))
+    hit("modal_block", 0f, 0f, w, h)
     card(c, 20f, 90f, w - 40f, h - 200f, r.withAlpha(Palette.CYAN, 200), 18f)
     r.text(c, "存档导出文本", w / 2f, 134f, 19f, Palette.CYAN, true, Paint.Align.CENTER)
     r.text(c, "长按可复制；粘贴到新设备的导入框即可恢复", w / 2f, 158f, 11f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
@@ -588,41 +599,53 @@ private fun GameView.drawExportOverlay(c: Canvas) {
     button(c, "confirm_no", "关 闭", 40f, h - 92f, w - 80f, 50f, Palette.CYAN)
 }
 
+/** 结算浮层的一行：先排版、再决定卡片高度与按钮位置。 */
+private class OverlayLine(val text: String, val size: Float, val color: Int, val bold: Boolean, val step: Float)
+
 private fun GameView.drawBattleEndOverlay(c: Canvas) {
     r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 232))
+    hit("modal_block", 0f, 0f, w, h)
     val b = battle
     val win = b?.victory == true
     val accent = if (win) Palette.GREEN else Palette.RED
-    card(c, 26f, 130f, w - 52f, h - 300f, accent, 20f)
-    r.text(c, if (win) "战 斗 胜 利" else "全 员 阵 亡", w / 2f, 196f, 28f, accent, true, Paint.Align.CENTER)
-    r.text(c, battleResult, w / 2f, 226f, 13f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
-
-    var y = 262f
+    // 先排版算高度、再画卡片：卡片高度与按钮位置改由内容决定。
+    // 旧实现卡片高度写死 h-300、按钮钉死 h-214，在 4:3 平板(h≈533)上
+    // 奖励文字会溢出卡片并压住按钮。
+    val lines = ArrayList<OverlayLine>()
     val rw = lastRewards
     if (win && rw != null) {
-        r.text(c, "获得 ${rw.gold} 金币", w / 2f, y, 16f, Palette.GOLD, true, Paint.Align.CENTER)
-        y += 28f
-        r.text(c, "获得 ${rw.exp} 经验", w / 2f, y, 15f, Palette.CYAN, false, Paint.Align.CENTER)
-        y += 30f
+        lines.add(OverlayLine("获得 ${rw.gold} 金币", 16f, Palette.GOLD, true, 28f))
+        lines.add(OverlayLine("获得 ${rw.exp} 经验", 15f, Palette.CYAN, false, 30f))
         rw.equip?.let { e ->
-            r.text(c, "掉落装备：${e.name}（${e.rarity.cn}）", w / 2f, y, 13f, rarityColor(e.rarity), true, Paint.Align.CENTER)
-            y += 26f
+            lines.add(OverlayLine("掉落装备：${e.name}（${e.rarity.cn}）", 13f, rarityColor(e.rarity), true, 26f))
         }
         if (rw.items.isNotEmpty()) {
-            r.text(c, "道具：" + rw.items.joinToString("、"), w / 2f, y, 12f, Palette.GOLD, false, Paint.Align.CENTER)
-            y += 26f
+            lines.add(OverlayLine("道具：" + rw.items.joinToString("、"), 12f, Palette.GOLD, false, 26f))
         }
-        for (nt in rw.notes) {
-            r.text(c, nt, w / 2f, y, 11.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
-            y += 22f
-        }
+        for (nt in rw.notes) lines.add(OverlayLine(nt, 11.5f, Palette.TEXT_DIM, false, 22f))
+    }
+
+    val cardTop = 130f
+    var contentEnd = cardTop + 132f
+    for (l in lines) contentEnd += l.step
+    val btnTop = maxOf(h - 214f, contentEnd + 24f)
+    val cardH = maxOf(h - 300f, btnTop - cardTop + 74f)
+
+    card(c, 26f, cardTop, w - 52f, cardH, accent, 20f)
+    r.text(c, if (win) "战 斗 胜 利" else "全 员 阵 亡", w / 2f, cardTop + 66f, 28f, accent, true, Paint.Align.CENTER)
+    r.text(c, battleResult, w / 2f, cardTop + 96f, 13f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+
+    var y = cardTop + 132f
+    for (l in lines) {
+        r.text(c, l.text, w / 2f, y, l.size, l.color, l.bold, Paint.Align.CENTER)
+        y += l.step
     }
 
     if (win) {
-        button(c, "over_continue", "继 续 深 入", 48f, h - 214f, w - 96f, 56f, Palette.CYAN)
+        button(c, "over_continue", "继 续 深 入", 48f, btnTop, w - 96f, 56f, Palette.CYAN)
     } else {
-        button(c, "over_reincarnate", "轮 回", 48f, h - 214f, w - 96f, 56f, Palette.PINK)
-        r.text(c, "轮回会把本轮迭塔进度折算为神格点，用于永久淬炼。", w / 2f, h - 150f, 11.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+        button(c, "over_reincarnate", "轮 回", 48f, btnTop, w - 96f, 56f, Palette.PINK)
+        r.text(c, "轮回会把本轮迭塔进度折算为神格点，用于永久淬炼。", w / 2f, btnTop + 78f, 11.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
     }
 }
 
@@ -666,7 +689,7 @@ internal fun GameView.drawReincarnationScreen(c: Canvas) {
 
     r.text(c, "轮 回 结 算", w / 2f, if (cleared) 156f else 140f, 26f, Palette.PINK, true, Paint.Align.CENTER)
     val top = if (cleared) 180f else 164f
-    card(c, 32f, top, w - 64f, 196f, r.withAlpha(Palette.BORDER, 210), 20f)
+    card(c, 32f, top, w - 64f, 216f, r.withAlpha(Palette.BORDER, 210), 20f)
 
     var y = top + 40f
     val rows = listOf(
@@ -682,16 +705,26 @@ internal fun GameView.drawReincarnationScreen(c: Canvas) {
     }
 
     val label = p.grid.resonanceBonus().label()
-    r.text(c, "神格环最高：" + label, w / 2f, top + 208f, 13f, Palette.CYAN, true, Paint.Align.CENTER)
+    // 基线原本落在卡片底边之外（top+208 > top+196），永远贴着/压着下边框
+    r.text(c, "神格环最高：" + label, w / 2f, top + 196f, 13f, Palette.CYAN, true, Paint.Align.CENTER)
 
-    var iy = top + 234f
+    // 成就条数按可用高度决定：旧实现固定 take(5) 且无上限，
+    // 在 h=711 的 16:9 上会压住下方「领取神格点」按钮。
+    val claimTop = h - 220f
+    var iy = top + 226f
     val newAch = pendingAchievements
     if (newAch.isNotEmpty()) {
         r.text(c, "本次达成成就", w / 2f, iy, 13f, Palette.GOLD, true, Paint.Align.CENTER)
         iy += 20f
-        for (a in newAch.take(5)) {
+        val room = ((claimTop - 12f - iy) / 17f).toInt().coerceAtLeast(0)
+        val shown = minOf(newAch.size, room)
+        for (i in 0 until shown) {
+            val a = newAch[i]
             r.text(c, "· " + a.name + "   +" + a.dust + " 星尘", w / 2f, iy, 11.5f, Palette.CYAN, false, Paint.Align.CENTER)
-            iy += 18f
+            iy += 17f
+        }
+        if (shown < newAch.size) {
+            r.text(c, "…… 还有 " + (newAch.size - shown) + " 项", w / 2f, iy, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
         }
     } else {
         r.wrap(c, "提示：同源星语在环上相邻即结成共鸣链，链越长增益越高。下次轮回优先凑齐 3 条以上共鸣边。", 44f, iy, w - 88f, 12f, Palette.TEXT_DIM, 18f)
