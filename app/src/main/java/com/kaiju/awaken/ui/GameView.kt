@@ -725,7 +725,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         com.kaiju.awaken.game.Tag.DISPEL -> "驱散"
     }
 
-    fun setScreen(s0: Screen) {
+    fun goScreen(s0: Screen) {
         if (screen != s0) screenScroll = 0f
         screen = s0
     }

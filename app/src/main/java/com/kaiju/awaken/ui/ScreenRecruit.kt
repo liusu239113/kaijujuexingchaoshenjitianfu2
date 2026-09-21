@@ -56,7 +56,7 @@ internal fun refreshCost(): Int = 60
 internal fun GameView.tapRecruit(id: String) {
     val p = run ?: return
     when {
-        id == "rec_back" -> setScreen(GameView.Screen.HUB)
+        id == "rec_back" -> goScreen(GameView.Screen.HUB)
         id == "rec_refresh" -> {
             if (p.gold < refreshCost()) {
                 audio.play("error")

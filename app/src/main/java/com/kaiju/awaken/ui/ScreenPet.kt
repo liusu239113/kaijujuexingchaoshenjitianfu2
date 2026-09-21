@@ -55,7 +55,7 @@ internal fun GameView.drawPetScreen(c: Canvas) {
 
 internal fun GameView.tapPet(id: String) {
     when {
-        id == "pet_back" -> setScreen(GameView.Screen.HUB)
+        id == "pet_back" -> goScreen(GameView.Screen.HUB)
         id == "pet_off" -> {
             perm.petId = null
             Save.savePerm(context, perm)
@@ -125,7 +125,7 @@ internal fun GameView.drawStoryScreen(c: Canvas) {
 
 internal fun GameView.tapStory(id: String) {
     when (id) {
-        "story_back" -> setScreen(GameView.Screen.HUB)
+        "story_back" -> goScreen(GameView.Screen.HUB)
         "story_claim" -> {
             val ch = Story.current(perm.storyIndex) ?: return
             if (perm.chapterClaimed.contains(ch.index.toString())) return
