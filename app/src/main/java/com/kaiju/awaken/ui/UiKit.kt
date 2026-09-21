@@ -35,13 +35,13 @@ internal fun GameView.contentBottom(): Float = h - UiKit.FOOTER
 internal fun GameView.contentW(): Float = w - UiKit.MARGIN * 2f
 
 /** 开始一个可滚动内容区：裁剪并返回起始 y。 */
-internal fun GameView.beginScroll(c: Canvas, top: Float = UiKit.CONTENT_TOP): Float {
+internal fun GameView.beginScroll(c: Canvas, top: Float = UiKit.CONTENT_TOP, bottom: Float = contentBottom()): Float {
     scrollTopY = top
-    scrollBottomY = contentBottom()
+    scrollBottomY = bottom
     c.save()
-    c.clipRect(0f, top, w, scrollBottomY)
+    c.clipRect(0f, top, w, bottom)
     // 同步登记到 hit 系统：滚出可视区的控件不再可点
-    setHitClip(top, scrollBottomY)
+    setHitClip(top, bottom)
     screenScrollMax = 0f
     return top - screenScroll
 }
@@ -64,16 +64,16 @@ internal fun GameView.endScroll(c: Canvas, contentEndY: Float) {
 
 /** 区块标题。返回下一行 Y。 */
 internal fun GameView.sectionHeader(c: Canvas, text: String, y: Float, accent: Int = Palette.CYAN): Float {
-    r.text(c, text, UiKit.MARGIN, y + 14f, 14f, accent, true)
-    r.solid(c, UiKit.MARGIN, y + 20f, 26f, 2f, 1f, r.withAlpha(accent, 200))
-    return y + 30f
+    r.text(c, text, UiKit.MARGIN, y + r.lh(14f), 14f, accent, true)
+    r.solid(c, UiKit.MARGIN, y + r.lh(20f), 26f, 2f, 1f, r.withAlpha(accent, 200))
+    return y + r.lh(30f)
 }
 
 /** 空状态。 */
 internal fun GameView.emptyState(c: Canvas, text: String, hint: String, y: Float) {
-    r.text(c, text, w / 2f, y + 40f, 15f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
+    r.text(c, text, w / 2f, y + r.lh(40f), 15f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
     if (hint.isNotEmpty()) {
-        r.wrap(c, hint, UiKit.MARGIN + 20f, y + 66f, contentW() - 40f, 12f, Palette.TEXT_DIM, 18f)
+        r.wrap(c, hint, UiKit.MARGIN + 20f, y + r.lh(66f), contentW() - 40f, 12f, Palette.TEXT_DIM, 18f)
     }
 }
 
@@ -82,14 +82,14 @@ internal fun GameView.progressRow(
     c: Canvas, title: String, desc: String, cur: Int, target: Int,
     rightTop: String, rightBottom: String, accent: Int, y: Float, done: Boolean
 ): Float {
-    val hRow = 62f
+    val hRow = r.lh(62f)
     card(c, UiKit.MARGIN, y, contentW(), hRow, if (done) Palette.GOLD else Palette.BORDER_SOFT, UiKit.RADIUS)
-    r.text(c, title, UiKit.MARGIN + 14f, y + 24f, 13.5f, if (done) Palette.GOLD else Palette.TEXT, true)
-    r.text(c, desc, UiKit.MARGIN + 14f, y + 43f, 10.5f, Palette.TEXT_DIM)
-    if (rightTop.isNotEmpty()) r.text(c, rightTop, w - UiKit.MARGIN - 14f, y + 24f, 11.5f, accent, true, Paint.Align.RIGHT)
-    if (rightBottom.isNotEmpty()) r.text(c, rightBottom, w - UiKit.MARGIN - 14f, y + 50f, 10f, Palette.CYAN, false, Paint.Align.RIGHT)
+    r.text(c, title, UiKit.MARGIN + 14f, y + r.lh(24f), 13.5f, if (done) Palette.GOLD else Palette.TEXT, true)
+    r.text(c, desc, UiKit.MARGIN + 14f, y + r.lh(43f), 10.5f, Palette.TEXT_DIM)
+    if (rightTop.isNotEmpty()) r.text(c, rightTop, w - UiKit.MARGIN - 14f, y + r.lh(24f), 11.5f, accent, true, Paint.Align.RIGHT)
+    if (rightBottom.isNotEmpty()) r.text(c, rightBottom, w - UiKit.MARGIN - 14f, y + r.lh(50f), 10f, Palette.CYAN, false, Paint.Align.RIGHT)
     if (target > 1) {
-        r.bar(c, UiKit.MARGIN + 14f, y + 50f, contentW() - 100f, 6f, cur.toFloat() / target, Palette.CYAN, Palette.EN_B, 0x55000000)
+        r.bar(c, UiKit.MARGIN + 14f, y + r.lh(50f), contentW() - 100f, 6f, cur.toFloat() / target, Palette.CYAN, Palette.EN_B, 0x55000000)
     }
     return y + hRow + UiKit.GAP
 }

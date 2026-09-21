@@ -90,6 +90,12 @@ class Renderer {
     /** 0..1 脉冲值，用于血条高光呼吸。 */
     var pctPulse = 0f
 
+    /**
+     * 行高随字号等比缩放。调用方传「设计基准行高」，
+     * 保证选「大字号」时文字变大、行距同步变大，而不会互相压叠。
+     */
+    fun lh(base: Float): Float = base * fontScale
+
     /** 注入游戏字体（打包在 assets/fonts 下的中文黑体）。 */
     fun setTypeface(tf: Typeface) {
         textPaint.typeface = tf
@@ -124,14 +130,15 @@ class Renderer {
             val test = line.toString() + ch
             if (p.measureText(test) > maxW && line.isNotEmpty()) {
                 c.drawText(line.toString(), x, cy, p)
-                cy += lineH
+                // 行距随 fontScale 一起放大，否则大字号下多行文本会逐行压叠
+                cy += lineH * fontScale
                 line = StringBuilder()
             }
             line.append(ch)
         }
         if (line.isNotEmpty()) {
             c.drawText(line.toString(), x, cy, p)
-            cy += lineH
+            cy += lineH * fontScale
         }
         return cy
     }

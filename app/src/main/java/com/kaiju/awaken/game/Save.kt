@@ -209,6 +209,9 @@ object Save {
             o.put("level", run.level)
             o.put("exp", run.exp)
             o.put("skillPoints", run.skillPoints)
+            val slv = JSONObject()
+            for ((k, v) in run.skillLevels) slv.put(k, v)
+            o.put("skillLevels", slv)
             o.put("alive", run.alive)
             o.put("phoenixUsed", run.phoenixUsed)
             o.put("adReviveUsed", run.adReviveUsed)
@@ -295,6 +298,10 @@ object Save {
             run.level = o.optInt("level", 1)
             run.exp = o.optInt("exp", 0)
             run.skillPoints = o.optInt("skillPoints", 0)
+            // 战技等级随本轮存档持久化（旧版本没有这个字段，缺失时按 Lv.1 处理）
+            o.optJSONObject("skillLevels")?.let { it ->
+                for (k in it.keys()) run.skillLevels[k] = it.optInt(k, 1)
+            }
             run.alive = o.optBoolean("alive", true)
             run.phoenixUsed = o.optBoolean("phoenixUsed", false)
             run.adReviveUsed = o.optBoolean("adReviveUsed", false)

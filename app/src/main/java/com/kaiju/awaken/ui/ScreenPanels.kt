@@ -281,25 +281,6 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
 private fun heroSkillLevel(p: com.kaiju.awaken.game.RunState, skillId: String): Int =
     p.skillLevels[skillId] ?: 1
 
-internal fun slotGlyph(slot: String): String = when (slot) {
-    "weapon" -> "\u2694"
-    "helmet" -> "\u26d1"
-    "chest" -> "\u25c6"
-    "amulet" -> "\u25cf"
-    else -> "\u25cb"
-}
-
-private fun GameView.drawEquipRow(c: Canvas, e: Equip, x: Float, y: Float, ww: Float, id: String, action: String, accent: Int) {
-    val col = rarityColor(e.rarity)
-    card(c, x, y, ww, 72f, col, 12f)
-    r.text(c, e.name, x + 12f, y + 24f, 13.5f, Palette.TEXT, true)
-    val main = mainLabel(e.mainKey) + " +" + e.mainValue.toInt()
-    r.text(c, e.rarity.cn + " · " + main + (if (e.enhance > 0) " · +${e.enhance}" else ""), x + 12f, y + 44f, 10.5f, col)
-    val affixTxt = e.affixes.take(2).joinToString("  ") { it.label + " +" + it.value.toInt() }
-    if (affixTxt.isNotEmpty()) r.text(c, affixTxt, x + 12f, y + 62f, 9.5f, Palette.TEXT_DIM)
-    ghostButton(c, id, action, x + ww - 84f, y + 18f, 72f, 36f, accent)
-}
-
 private fun starText(n: Int): String = "\u2605".repeat(n.coerceIn(0, 5))
 
 private fun mainLabel(key: String): String = when (key) {

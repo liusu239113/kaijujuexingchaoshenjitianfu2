@@ -581,9 +581,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     /** 应用设置里的字号 / 语言。 */
     fun applyDisplaySettings() {
+        // 上限收敛到 1.10：布局是固定像素行高，1.14 会让密集列表（战技/图鉴）开始压叠。
+        // 配合 Renderer.wrap 的行距缩放，「大字号」现在是安全档位。
         r.fontScale = when (perm.settingsFontSize) {
-            0 -> 0.88f
-            2 -> 1.14f
+            0 -> 0.92f
+            2 -> 1.10f
             else -> 1f
         }
     }
