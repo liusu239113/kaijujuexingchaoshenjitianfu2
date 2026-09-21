@@ -63,8 +63,8 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         Triple("hub_talents", "星语环", "enabled"),
         Triple("hub_merc", "伙伴", "party"),
         Triple("hub_growth", "轮回淬炼", "always"),
-        Triple("hub_codex", "星语图鉴", "always"),
-        Triple("hub_ach", "成就", "always")
+        Triple("hub_story", "主线", "always"),
+        Triple("hub_pet", "宠物", "always")
     )
     val gw = (w - 40f - 3 * 8f) / 4f
     for (i in entries.indices) {
@@ -114,6 +114,8 @@ internal fun GameView.tapHub(id: String) {
         "hub_talents" -> { panel = "talents"; panelScroll = 0f }
         "hub_merc" -> { panel = "merc"; panelScroll = 0f }
         "hub_settings" -> { panel = "settings"; panelScroll = 0f }
+        "hub_story" -> screen = GameView.Screen.STORY
+        "hub_pet" -> screen = GameView.Screen.PET
         "hub_growth" -> screen = GameView.Screen.GROWTH
         "hub_codex" -> screen = GameView.Screen.CODEX
         "hub_ach" -> screen = GameView.Screen.ACHIEVEMENTS

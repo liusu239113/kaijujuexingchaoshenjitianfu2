@@ -65,6 +65,36 @@ object ArtIcon {
     /** 转职徽记：berserker → em_berserker。 */
     fun emblem(promoId: String): String = "em_" + promoId
 
+
+    /** 技能音效名（对应 res/raw/sfx_xxx.mp3）。 */
+    fun skillSfx(s: Skill): String = when {
+        s.isUltimate -> "ult"
+        s.tags.contains(Tag.HEAL) -> "heal"
+        s.tags.contains(Tag.SHIELD) -> "shield"
+        s.tags.contains(Tag.STUN) || s.tags.contains(Tag.SILENCE) -> "draft"
+        s.tags.contains(Tag.BUFF_ATK) || s.tags.contains(Tag.BUFF_DEF) || s.tags.contains(Tag.BUFF_REGEN) -> "starup"
+        s.tags.contains(Tag.DOT_POISON) || s.tags.contains(Tag.DOT_BURN) -> "hit"
+        s.tags.contains(Tag.LIFESTEAL_HIT) -> "hit"
+        s.isBasic -> "hit"
+        else -> "skill"
+    }
+
+    /** 道具音效名。 */
+    fun itemSfx(id: String): String = when (id) {
+        "heal_potion" -> "heal"
+        "energy_potion" -> "starup"
+        "shield_scroll" -> "shield"
+        "bomb" -> "crit"
+        "cleanse_potion", "purge_scroll" -> "unlock"
+        "rage_potion", "power_elixir" -> "starup"
+        "group_heal" -> "heal"
+        "hourglass", "stasis_orb" -> "draft"
+        "revive_scroll" -> "revive"
+        "iron_elixir", "swift_elixir", "vampire_elixir" -> "shield"
+        "star_fragment" -> "unlock"
+        else -> "skill"
+    }
+
     const val GOLD = "ic_gold"
     const val TALENT = "ic_talent"
     const val DUST = "ic_dust"

@@ -35,7 +35,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     enum class Screen {
         MENU, HUB, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
-        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS, ENDING
+        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS, ENDING, PET, STORY
     }
 
     companion object {
@@ -94,6 +94,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var codexTab = 0
     var panelScroll = 0f
     var bagSelected = 0
+    var detailTitle = ""
+    var detailBody = ""
+    private var touchDownMs = 0L
+    private var lastTouchVX = 0f
+    private var lastTouchVY = 0f
     var confirmMsg = ""
     var confirmAction = ""
     var exportText = ""
@@ -186,6 +191,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.TOWER -> { screen = Screen.MENU; true }
             Screen.REINCARNATION -> { screen = Screen.MENU; true }
             Screen.ENDING -> { screen = Screen.REINCARNATION; true }
+            Screen.PET -> { screen = Screen.HUB; true }
+            Screen.STORY -> { screen = Screen.HUB; true }
             else -> false
         }
     }
@@ -231,13 +238,19 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     private fun playCombatSfx(b: Battle) {
         val ft = b.floatTexts.lastOrNull() ?: return
+        if (ft.text == lastSfxText) return
+        lastSfxText = ft.text
         when {
             ft.isCrit -> audio.play("crit")
-            ft.color == Palette.RED || ft.color == 0xFFFF8A8A.toInt() -> audio.play("hit")
             ft.text.startsWith("+") -> audio.play("heal")
             ft.text.startsWith("盾") -> audio.play("shield")
+            ft.text.startsWith("复活") || ft.text.startsWith("涅槃") -> audio.play("revive")
+            ft.text.startsWith("抵抗") || ft.text.startsWith("闪避") -> audio.play("error")
+            else -> audio.play("hit")
         }
     }
+
+    private var lastSfxText = ""
 
     override fun onSizeChanged(nw: Int, nh: Int, ow: Int, oh: Int) {
         super.onSizeChanged(nw, nh, ow, oh)
@@ -268,6 +281,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.GROWTH -> drawGrowthScreen(canvas)
             Screen.REINCARNATION -> drawReincarnationScreen(canvas)
             Screen.ENDING -> drawEndingScreen(canvas)
+            Screen.PET -> drawPetScreen(canvas)
+            Screen.STORY -> drawStoryScreen(canvas)
             Screen.CODEX -> drawCodexFullScreen(canvas)
             Screen.ACHIEVEMENTS -> drawAchievementsScreen(canvas)
             Screen.SHOP -> drawShopScreen(canvas)
@@ -287,6 +302,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         Screen.COMBAT -> "bg_battle"
         Screen.REINCARNATION -> "bg_ending"
         Screen.ENDING -> "bg_ending"
+        Screen.PET -> "bg_void"
+        Screen.STORY -> "bg_corridor"
         Screen.GROWTH, Screen.CODEX -> "bg_result"
     }
 
@@ -545,6 +562,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             MotionEvent.ACTION_DOWN -> {
                 dragLastY = vy
                 dragMoved = 0f
+                touchDownMs = System.currentTimeMillis()
+                lastTouchVX = vx
+                lastTouchVY = vy
             }
             MotionEvent.ACTION_MOVE -> {
                 val dy = vy - dragLastY
@@ -560,8 +580,14 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                     while (i >= 0) {
                         val hh = hits[i]
                         if (hh.enabled && hh.contains(vx, vy)) {
-                            audio.play("click")
-                            handleTap(hh.id)
+                            val held = System.currentTimeMillis() - touchDownMs
+                            if (held >= 380L) {
+                                audio.play("page")
+                                handleLongPress(hh.id)
+                            } else {
+                                audio.play("click")
+                                handleTap(hh.id)
+                            }
                             return true
                         }
                         i--
@@ -570,6 +596,115 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             }
         }
         return true
+    }
+
+    fun showDetail(title: String, body: String) {
+        detailTitle = title
+        detailBody = body
+    }
+
+    fun handleLongPress(id: String) {
+        when {
+            id.startsWith("cb_skill_") -> {
+                val b = battle ?: return
+                val idx = id.removePrefix("cb_skill_").toIntOrNull() ?: return
+                val actor = b.currentActor() ?: return
+                val usable = actor.skills.filter { (actor.cooldowns[it.id] ?: 0) <= 0 }
+                val sk = usable.getOrNull(idx) ?: return
+                val tagText = sk.tags.joinToString(" · ") { tagName(it) }
+                val body = buildString {
+                    appendLine(sk.desc)
+                    appendLine()
+                    appendLine("类型：" + (if (sk.isUltimate) "终极技" else if (sk.isBasic) "普攻" else "战技"))
+                    appendLine("耗能：" + sk.cost + "    冷却：" + sk.cd + " 回合")
+                    appendLine("目标：" + when (sk.target) {
+                        com.kaiju.awaken.game.TargetKind.ENEMY_ONE -> "单体敌人"
+                        com.kaiju.awaken.game.TargetKind.ENEMY_ALL -> "全体敌人"
+                        com.kaiju.awaken.game.TargetKind.ALLY_ONE -> "单体队友"
+                        com.kaiju.awaken.game.TargetKind.ALLY_ALL -> "全体队友"
+                        else -> "自身"
+                    })
+                    if (sk.hits > 1) appendLine("段数：" + sk.hits + " 段")
+                    if (sk.coeff > 0.0) appendLine("系数：" + (sk.coeff * 100).toInt() + "% × " + sk.stat)
+                    if (tagText.isNotEmpty()) appendLine("效果：" + tagText)
+                }
+                showDetail(sk.name, body)
+            }
+            id.startsWith("cb_item_") -> {
+                val itemId = id.removePrefix("cb_item_")
+                val def = com.kaiju.awaken.game.Content.itemById[itemId] ?: return
+                val cnt = run?.items?.get(itemId) ?: 0
+                showDetail(def.name, def.desc + "\n\n持有：" + cnt + " 个\n商店价格：" + def.price + " 金币")
+            }
+            id.startsWith("panel_bagsel_") -> {
+                val p = run ?: return
+                val idx = id.removePrefix("panel_bagsel_").toIntOrNull() ?: return
+                val e = p.bag.getOrNull(idx) ?: return
+                val sb = StringBuilder()
+                sb.appendLine(e.rarity.cn + " · " + e.slot)
+                sb.appendLine()
+                sb.appendLine(mainLabelOf(e.mainKey) + " +" + e.mainValue.toInt())
+                for (a in e.affixes) sb.appendLine(a.label + " +" + a.value.toInt())
+                if (e.setId != null) sb.appendLine("套装：" + e.setId)
+                sb.appendLine()
+                sb.appendLine("锻铸等级 +" + e.enhance + "    变卖 " + e.sellValue + " 金币")
+                showDetail(e.name, sb.toString())
+            }
+            id.startsWith("panel_merc_") || id == "tower_panel_merc" -> {
+                val p = run ?: return
+                val sb = StringBuilder()
+                for (m in p.party.drop(1)) {
+                    sb.appendLine(m.name + " · " + (com.kaiju.awaken.game.Data.classById[m.clsId]?.name ?: ""))
+                    sb.appendLine("  " + m.rarity.cn + "  Lv." + m.level + "  " + "★".repeat(m.star))
+                    val tr = m.traitId?.let { com.kaiju.awaken.game.Content2.traitById[it] }
+                    sb.appendLine("  专长：" + (tr?.name ?: "无") + " — " + (tr?.desc ?: ""))
+                    sb.appendLine()
+                }
+                if (sb.isEmpty()) sb.append("尚未招募伙伴。")
+                showDetail("队伍", sb.toString())
+            }
+        }
+    }
+
+    private fun mainLabelOf(key: String): String = when (key) {
+        "atk" -> "攻击"
+        "matk" -> "法强"
+        "maxHp" -> "生命"
+        "def" -> "防御"
+        "crit" -> "暴击"
+        "critDmg" -> "暴伤"
+        "dodge" -> "闪避"
+        "lifesteal" -> "吸血"
+        "energyRegen" -> "回能"
+        "hpRegen" -> "回血"
+        else -> key
+    }
+
+    fun tagName(t: com.kaiju.awaken.game.Tag): String = when (t) {
+        com.kaiju.awaken.game.Tag.DAMAGE -> "伤害"
+        com.kaiju.awaken.game.Tag.HEAL -> "治疗"
+        com.kaiju.awaken.game.Tag.SHIELD -> "护盾"
+        com.kaiju.awaken.game.Tag.BUFF_ATK -> "攻击增益"
+        com.kaiju.awaken.game.Tag.BUFF_DEF -> "防御增益"
+        com.kaiju.awaken.game.Tag.BUFF_CRIT -> "暴击增益"
+        com.kaiju.awaken.game.Tag.BUFF_DODGE -> "闪避增益"
+        com.kaiju.awaken.game.Tag.BUFF_REGEN -> "再生"
+        com.kaiju.awaken.game.Tag.DOT_BURN -> "灼烧"
+        com.kaiju.awaken.game.Tag.DOT_POISON -> "中毒"
+        com.kaiju.awaken.game.Tag.STUN -> "眩晕"
+        com.kaiju.awaken.game.Tag.SILENCE -> "沉默"
+        com.kaiju.awaken.game.Tag.ARMOR_BREAK -> "破甲"
+        com.kaiju.awaken.game.Tag.WEAKEN -> "虚弱"
+        com.kaiju.awaken.game.Tag.HUNTED -> "被追猎"
+        com.kaiju.awaken.game.Tag.TAUNT -> "嘲讽"
+        com.kaiju.awaken.game.Tag.THORNS -> "荆棘"
+        com.kaiju.awaken.game.Tag.COUNTER -> "反击"
+        com.kaiju.awaken.game.Tag.CLEANSE -> "净化"
+        com.kaiju.awaken.game.Tag.DRAIN -> "吸取"
+        com.kaiju.awaken.game.Tag.EXECUTE -> "斩杀"
+        com.kaiju.awaken.game.Tag.LIFESTEAL_HIT -> "吸血"
+        com.kaiju.awaken.game.Tag.EXTRA_TURN -> "额外行动"
+        com.kaiju.awaken.game.Tag.DISPEL -> "驱散"
     }
 
     fun handleTap(id: String) {
@@ -591,10 +726,13 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("meta_") -> tapMeta(id)
             id.startsWith("hub_") -> tapHub(id)
             id.startsWith("end_") -> tapEnding(id)
+            id.startsWith("pet_") -> tapPet(id)
+            id.startsWith("story_") -> tapStory(id)
             id.startsWith("codex_") -> tapCodex(id)
             id.startsWith("dust_") -> tapDust(id)
             id.startsWith("slot_") -> tapSlot(id)
             id.startsWith("confirm_") -> tapConfirm(id)
+            id == "detail_close" -> tapConfirm(id)
         }
     }
 
@@ -662,6 +800,16 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Tracker.bump(perm, "chapterBoss", if (b.kind == "boss" && b.floor % 10 == 0) 1 else 0)
             if (b.timedOut) Tracker.bump(perm, "timeout")
             if (b.allies.all { it.hp >= it.stats.maxHp }) Tracker.bump(perm, "perfect")
+            // 章节首领：首次击败掉落未拥有的宠物
+            if (b.kind == "boss" && b.floor % 10 == 0) {
+                val pet = com.kaiju.awaken.game.Pets.randomUnowned(perm.petsOwned)
+                if (pet != null) {
+                    perm.petsOwned.add(pet.id)
+                    if (perm.petId == null) perm.petId = pet.id
+                    showToast("获得宠物：" + pet.name)
+                    audio.play("unlock")
+                }
+            }
             val fe = TowerService.currentEvent(p)
             if (fe != null) fe.resolved = true
             p.eventIdx++
@@ -778,6 +926,15 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             }
         }
         Tracker.sampleRun(perm, p)
+        // 主线推进
+        var guard = 0
+        while (guard < 30) {
+            guard++
+            val ch = com.kaiju.awaken.game.Story.current(perm.storyIndex) ?: break
+            if (p.floor >= ch.goalFloor && !perm.chapterClaimed.contains(ch.index.toString())) break
+            if (p.floor >= ch.goalFloor) { perm.storyIndex++; continue }
+            break
+        }
         val seenTalents = p.grid.allTalents().size
         val curSeen = perm.stats["talentsSeen"] ?: 0
         if (seenTalents > curSeen) perm.stats["talentsSeen"] = seenTalents

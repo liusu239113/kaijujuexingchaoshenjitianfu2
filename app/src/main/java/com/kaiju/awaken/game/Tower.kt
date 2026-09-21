@@ -461,6 +461,7 @@ object TowerService {
         if (run.grid.slots.any { it?.passive == "xp_up" }) exp = (exp * 1.2).roundToInt()
         if (run.grid.slots.any { it?.passive == "xp_up2" }) exp = (exp * 1.35).roundToInt()
         if (run.mode == GameMode.CLIMB && run.climbLevel >= 15) gold = (gold * 0.9).roundToInt()
+        if (Pets.of(perm.petId)?.passive == "gold") gold = (gold * 1.25).roundToInt()
 
         if (b.timedOut) {
             gold = gold / 2

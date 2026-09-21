@@ -58,6 +58,15 @@ class Battle(
         }
         buildEnemies()
         // 开场护盾类被动
+        // 宠物开场效果
+        Pets.of(perm.petId)?.let { pet ->
+            when (pet.passive) {
+                "open_shield" -> for (u in allies) if (u.alive) u.addShield(u.stats.maxHp * 0.12)
+                "open_dmg" -> for (u in allies) if (u.alive) u.addBuff(Buff("rage", "狂野", 3, 1, 0.15, false))
+                else -> UnitSizes.noop()
+            }
+            addLog("宠物【" + pet.name + "】同行。")
+        }
         for (u in allies) {
             val dv = run.grid.divinity
             if (u.id == "player" && dv != null && dv.passive == "iron_heart") {
@@ -180,15 +189,27 @@ class Battle(
         }
         val atkBase = solveAtk(desiredHit, hero.stats.def)
 
+        // 名字与立绘同源：同一索引同时决定名称与图像，避免错配
+        val avatarKeys = ArrayList<String>()
         val names = mutableListOf<String>()
-        if (kind == "boss") {
-            names.add(Content.bossNames[(floor / 10 + floor) % Content.bossNames.size])
-            if (count > 1) names.add(Content.bossNames[(floor / 7 + 3) % Content.bossNames.size])
-        } else {
-            val pool = Content.normalNames.shuffled(Random)
-            for (i in 0 until count) {
-                val base = pool[i % pool.size]
-                names.add(if (kind == "elite") "精锐·" + Content.elitePrefix[i % Content.elitePrefix.size] + base else base)
+        val seed = (floor * 5 + run.eventIdx * 3) % 97
+        for (i in 0 until count) {
+            when (kind) {
+                "boss" -> {
+                    val idx = (seed + i * 4) % Content.bossNames.size
+                    names.add(Content.bossNames[idx])
+                    avatarKeys.add("b" + (idx + 1).toString().padStart(2, '0'))
+                }
+                "elite" -> {
+                    val idx = (seed + i * 5) % Content.eliteNames.size
+                    names.add("精锐·" + Content.eliteNames[idx])
+                    avatarKeys.add("e" + (idx + 1).toString().padStart(2, '0'))
+                }
+                else -> {
+                    val idx = (seed + i * 7) % Content.normalNames.size
+                    names.add(Content.normalNames[idx])
+                    avatarKeys.add("m" + (idx + 1).toString().padStart(2, '0'))
+                }
             }
         }
 
@@ -295,7 +316,8 @@ class Battle(
         val bossRegen = u.buffValue("boss_regen")
         if (bossRegen > 0.0 && u.alive) u.heal(u.stats.maxHp * bossRegen)
         val dots = u.buffs.filter { it.id == "burn" || it.id == "poison" }
-        val dotBoost = if (u.isEnemy && run.grid.slots.any { it?.passive == "dot_boost" }) 1.8 else 1.0
+        var dotBoost = if (u.isEnemy && run.grid.slots.any { it?.passive == "dot_boost" }) 1.8 else 1.0
+        if (u.isEnemy && Pets.of(perm.petId)?.passive == "dot") dotBoost += 0.4
         for (d in dots) {
             val real = max(1.0, d.value * dotBoost)
             u.hp -= real
@@ -312,6 +334,10 @@ class Battle(
             if (run.grid.slots.any { it?.passive == "regen3" }) extraRegen += 0.03
             if (run.grid.slots.any { it?.passive == "regen1_5" }) extraRegen += 0.015
             if (run.grid.slots.any { it?.passive == "regen1" }) extraRegen += 0.01
+            when (Pets.of(perm.petId)?.passive) {
+                "regen" -> extraRegen += 0.015
+                else -> UnitSizes.noop()
+            }
             if (run.grid.slots.any { it?.passive == "turn_shield" }) u.addShield(u.stats.maxHp * 0.08)
             if (dv?.passive == "iron_heart") UnitSizes.noop()
         }
@@ -689,6 +715,7 @@ class Battle(
             val g = run.grid
             if (g.slots.any { it?.passive == "executioner" } && target.hpPct() < 0.35) bonus += 0.60
             if (g.slots.any { it?.passive == "elite_hunter" } && (isBoss || isElite)) bonus += 0.18
+            if (Pets.of(perm.petId)?.passive == "elite_hunter" && (isBoss || isElite)) bonus += 0.20
             if (g.slots.any { it?.passive == "last_stand" }) bonus += 0.50 * (1.0 - attacker.hpPct())
             if (g.slots.any { it?.passive == "ambush" } && turn <= 1) bonus += 1.0
             if (g.slots.any { it?.passive == "first_strike" } && (skill?.isBasic == true) && attacker.actionCount == 0) bonus += 0.60

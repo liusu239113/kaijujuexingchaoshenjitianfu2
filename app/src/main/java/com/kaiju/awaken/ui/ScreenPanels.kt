@@ -86,14 +86,22 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             if (p == null) return
             for (slot in Content.slots) {
                 val e = p.equipped[slot.id]
-                drawIcon(c, com.kaiju.awaken.game.ArtIcon.equip(slot.id), 52f, y + 10f, 32f, Palette.CYAN)
-                r.text(c, slot.cn, 78f, y + 16f, 13f, Palette.TEXT_DIM, true)
+                val rowH = if (e == null) 46f else 92f
+                card(c, 22f, y, w - 44f, rowH, r.withAlpha(Palette.BORDER_SOFT, 170), 12f)
+                drawIcon(c, com.kaiju.awaken.game.ArtIcon.equip(slot.id), 46f, y + 23f, 30f, Palette.CYAN)
+                r.text(c, slot.cn, 68f, y + 28f, 13.5f, Palette.TEXT, true)
                 if (e == null) {
-                    r.text(c, "未装备", w - 60f, y + 16f, 12f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)
+                    r.text(c, "未装备", w - 36f, y + 28f, 12f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)
                 } else {
-                    drawEquipRow(c, e, 36f, y + 24f, w - 72f, "panel_enhance_${slot.id}", "锻铸", Palette.GOLD)
+                    val ecol = rarityColor(e.rarity)
+                    r.text(c, e.name, 68f, y + 48f, 12.5f, Palette.TEXT, true)
+                    r.text(c, e.rarity.cn + " · " + mainLabel(e.mainKey) + " +" + e.mainValue.toInt() + (if (e.enhance > 0) "  ·  锻铸 +" + e.enhance else ""), 68f, y + 66f, 10.5f, ecol)
+                    val eaff = e.affixes.take(2).joinToString("  ") { it.label + " +" + it.value.toInt() }
+                    if (eaff.isNotEmpty()) r.text(c, eaff, 68f, y + 82f, 9.5f, Palette.TEXT_DIM)
+                    val ecost = TowerService.goldNeeded(e, perm)
+                    ghostButton(c, "panel_enhance_${slot.id}", "锻铸 " + ecost, w - 116f, y + 30f, 84f, 34f, if (p.gold >= ecost) Palette.GOLD else Palette.TEXT_FAINT)
                 }
-                y += 104f
+                y += rowH + 8f
             }
             ghostButton(c, "panel_auto", "一键换装（自动装备更强的装备）", 36f, bottom - 64f, w - 72f, 48f, Palette.GREEN)
         }
@@ -460,6 +468,10 @@ private fun GameView.setVol(v: Int) {
 }
 
 internal fun GameView.drawOverlay(c: Canvas) {
+    if (detailTitle.isNotEmpty()) {
+        drawDetailOverlay(c)
+        return
+    }
     if (exportText.isNotEmpty()) {
         drawExportOverlay(c)
         return
@@ -472,8 +484,28 @@ internal fun GameView.drawOverlay(c: Canvas) {
     }
 }
 
+private fun GameView.drawDetailOverlay(c: Canvas) {
+    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 228))
+    val top = h * 0.22f
+    val boxH = h * 0.5f
+    card(c, 26f, top, w - 52f, boxH, r.withAlpha(Palette.CYAN, 210), 18f)
+    r.text(c, detailTitle, w / 2f, top + 40f, 20f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.solid(c, 46f, top + 54f, w - 92f, 1.5f, 1f, r.withAlpha(Palette.BORDER_SOFT, 200))
+    var ty = top + 80f
+    for (line in detailBody.split("\n")) {
+        if (ty > top + boxH - 16f) break
+        if (line.isEmpty()) { ty += 10f; continue }
+        ty = r.wrap(c, line, 44f, ty, w - 88f, 12f, Palette.TEXT_DIM, 17f)
+    }
+    ghostButton(c, "detail_close", "关 闭", 40f, top + boxH - 58f, w - 80f, 46f, Palette.CYAN)
+}
+
 internal fun GameView.tapConfirm(id: String) {
     when (id) {
+        "detail_close" -> {
+            detailTitle = ""
+            detailBody = ""
+        }
         "confirm_no" -> {
             overlay = ""
             confirmAction = ""

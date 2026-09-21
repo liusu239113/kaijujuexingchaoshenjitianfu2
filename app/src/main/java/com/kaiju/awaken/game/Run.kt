@@ -31,6 +31,13 @@ class PermState {
     var settingsFontScale = 100
     var settingsColorBlind = false
     var settingsBattleSpeed = 1
+    /** 已拥有的宠物 */
+    val petsOwned = HashSet<String>()
+    /** 当前出战宠物 */
+    var petId: String? = null
+    /** 主线进度 */
+    var storyIndex = 0
+    val chapterClaimed = HashSet<String>()
     var settingsFontSize = 1
     var totalRuns = 0
     var pity = 0
@@ -295,6 +302,30 @@ object RunService {
             s.dodge += run.grid.divinity?.let { if (it.passive == "gale_breath") 12.0 else 0.0 } ?: 0.0
             s.def += run.grid.divinity?.let { if (it.passive == "iron_heart") run.floor * 2.0 else 0.0 } ?: 0.0
 
+
+            // 宠物加成
+            Pets.of(perm.petId)?.let { pet ->
+                for ((key, v) in pet.statMod) {
+                    when (key) {
+                        "atk" -> s.atk *= 1.0 + v
+                        "matk" -> s.matk *= 1.0 + v
+                        "maxHp" -> s.maxHp *= 1.0 + v
+                        "def" -> s.def *= 1.0 + v
+                        "crit" -> s.crit += v
+                        "dodge" -> s.dodge += v
+                        "dmgReduction" -> s.dmgReduction += v
+                    }
+                }
+                for ((key, v) in pet.flatMod) {
+                    when (key) {
+                        "energyRegen" -> s.energyRegen += v
+                        "lifesteal" -> s.lifesteal += v / 100.0
+                        "healPower" -> s.healPower += v
+                        "shieldPower" -> s.shieldPower += v
+                        "hpRegen" -> s.hpRegen += v
+                    }
+                }
+            }
             s.energyRegen += res.energy
 
             // 装备

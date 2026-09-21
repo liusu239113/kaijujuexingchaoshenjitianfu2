@@ -17,58 +17,74 @@ internal fun GameView.drawCombatScreen(c: Canvas) {
         "elite" -> Palette.GOLD
         else -> Palette.PINK
     }
-    r.panel(c, 0f, 0f, w, TOP_H, 0f, r.withAlpha(0xFF1B1040.toInt(), 242), r.withAlpha(0xFF120A2E.toInt(), 232), null)
-    r.fill.color = r.withAlpha(accent, 80)
+    // ---- 顶栏 ----
+    r.panel(c, 0f, 0f, w, TOP_H, 0f, r.withAlpha(0xFF1B1040.toInt(), 244), r.withAlpha(0xFF120A2E.toInt(), 236), null)
+    r.fill.color = r.withAlpha(accent, 90)
     c.drawRect(0f, TOP_H - 2f, w, TOP_H, r.fill)
     val kindLabel = when (b.kind) {
         "boss" -> "首领战"
         "elite" -> "精锐战"
         else -> "遭遇战"
     }
-    r.text(c, kindLabel + " · 第 " + b.turn + "/500 回合", 16f, 30f, 16f, Palette.TEXT, true)
-    r.text(c, "增伤 +" + (b.escalation() * 100).toInt() + "%   第 " + b.floor + " 层", 16f, 52f, 12f, accent)
-    ghostButton(c, "cb_auto", if (autoBattle) "自动中" else "自动", w - 78f, 16f, 64f, 40f, if (autoBattle) Palette.GREEN else Palette.TEXT_DIM)
+    r.text(c, kindLabel + " · 第 " + b.turn + "/500 回合", 14f, 30f, 16f, Palette.TEXT, true)
+    r.text(c, "增伤 +" + (b.escalation() * 100).toInt() + "%   第 " + b.floor + " 层", 14f, 52f, 11.5f, accent)
+    ghostButton(c, "cb_auto", if (autoBattle) "自动中" else "自动", w - 74f, 16f, 62f, 40f, if (autoBattle) Palette.GREEN else Palette.TEXT_DIM)
 
-    val enemyTop = TOP_H + 6f
-    val allyTop = enemyTop + ROW_H + 10f
-    val logTop = allyTop + ROW_H + 8f
-    val logBottom = minOf(h - CMD_H - 6f, logTop + 96f)
+    // ---- 自适应行高 ----
+    val cmdTop = h - CMD_H
+    val avail = cmdTop - TOP_H - 46f
+    val rowH = ((avail - 70f) / 2f).coerceIn(118f, 176f)
+    val enemyTop = TOP_H + 8f
+    val allyTop = enemyTop + rowH + 14f
+    val logTop = allyTop + rowH + 10f
 
-    drawUnitRow(c, b.enemies, enemyTop, true, b, accent)
-    drawUnitRow(c, b.allies, allyTop, false, b, Palette.CYAN)
+    drawUnitRow(c, b.enemies, enemyTop, rowH, true, b, accent)
+    drawUnitRow(c, b.allies, allyTop, rowH, false, b, Palette.CYAN)
 
-    if (logBottom > logTop + 40f) {
-        card(c, 10f, logTop, w - 20f, logBottom - logTop, r.withAlpha(Palette.BORDER_SOFT, 170), 12f)
-        var ly = logTop + 22f
-        val maxLines = (((logBottom - logTop - 26f) / 16f).toInt()).coerceAtLeast(1)
-        for (s in b.log.takeLast(maxLines)) {
-            if (ly > logBottom - 8f) break
-            r.text(c, s, 22f, ly, 11.5f, Palette.TEXT_DIM)
-            ly += 16f
-        }
+    val logBottom = (cmdTop - 8f).coerceAtLeast(logTop + 46f)
+    card(c, 10f, logTop, w - 20f, logBottom - logTop, r.withAlpha(Palette.BORDER_SOFT, 180), 12f)
+    var ly = logTop + 20f
+    val maxLines = (((logBottom - logTop - 22f) / 15f).toInt()).coerceAtLeast(1)
+    for (s in b.log.takeLast(maxLines)) {
+        if (ly > logBottom - 6f) break
+        r.text(c, s, 22f, ly, 11f, Palette.TEXT_DIM)
+        ly += 15f
     }
 
+    // ---- 飘字（在日志之上）----
     for (ft in b.floatTexts) {
-        val pos = unitPosition(ft.target, b) ?: continue
-        val rise = (1f - ft.life) * 36f
+        val pos = unitPosition(ft.target, b, rowH) ?: continue
+        val rise = (1f - ft.life) * 38f
         val alpha = (ft.life.coerceIn(0f, 1f) * 255).toInt()
-        r.text(c, ft.text, pos.first, pos.second - rise, if (ft.isCrit) 23f else 18f,
-            r.withAlpha(ft.color, alpha), true, Paint.Align.CENTER)
+        val size = if (ft.isCrit) 24f else 18f
+        r.text(c, ft.text, pos.first + 1f, pos.second - rise + 1f, size, r.withAlpha(0xFF000000.toInt(), alpha / 2), true, Paint.Align.CENTER)
+        r.text(c, ft.text, pos.first, pos.second - rise, size, r.withAlpha(ft.color, alpha), true, Paint.Align.CENTER)
     }
 
     drawCommandBar(c, b)
 }
 
-private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, isEnemy: Boolean, b: Battle, accent: Int) {
-    val n = list.size.coerceAtLeast(1)
-    val pad = 8f
-    val cw = (w - pad * (n + 1)) / n
-    r.text(c, if (isEnemy) "敌方 · 点击锁定目标" else "我方", 14f, top + 12f, 12f, accent, true)
-    val gridTop = top + 18f
-    val ch = ROW_H - 22f
+/** 每行卡片的几何：返回 (起始X, 卡宽, 行高)。 */
+private fun rowGeom(count: Int, rowH: Float): Triple<Float, Float, Float> {
+    val n = count.coerceAtLeast(1)
+    val gap = 8f
+    val maxW = 128f
+    var cw = (w - gap * (n + 1)) / n
+    if (cw > maxW) cw = maxW
+    val totalW = cw * n + gap * (n - 1)
+    val startX = (w - totalW) / 2f
+    return Triple(startX, cw, rowH)
+}
+
+private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: Float, isEnemy: Boolean, b: Battle, accent: Int) {
+    r.text(c, if (isEnemy) "敌方 · 点击锁定目标" else "我方", 14f, top + 11f, 11.5f, accent, true)
+    val gridTop = top + 16f
+    val ch = rowH - 18f
+    val (startX, cw, _) = rowGeom(list.size, rowH)
+    val gap = 8f
     for (i in list.indices) {
         val u = list[i]
-        val x = pad + i * (cw + pad)
+        val x = startX + i * (cw + gap)
         val actor = b.currentActor() == u
         val border = when {
             !u.alive -> 0xFF3A2F60.toInt()
@@ -78,63 +94,63 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, isEnem
         }
         card(c, x, gridTop, cw, ch, border, 12f)
         if (actor && u.alive) r.glowPanel(c, x, gridTop, cw, ch, 12f, Palette.PINK, 70)
-        if (isEnemy && u.alive) {
-            val preferred = preferredTargetId == u.id
-            if (preferred) r.glowPanel(c, x, gridTop, cw, ch, 12f, Palette.GOLD, 90)
-            hit("cb_target_" + u.id, x, gridTop, cw, ch)
-        }
         if (!u.alive) {
-            r.solid(c, x, gridTop, cw, ch, 12f, r.withAlpha(0xFF0A0618.toInt(), 180))
+            r.solid(c, x, gridTop, cw, ch, 12f, r.withAlpha(0xFF0A0618.toInt(), 185))
             r.text(c, "战殁", x + cw / 2f, gridTop + ch / 2f, 14f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
             continue
         }
         val key = u.avatarKey.ifEmpty { u.clsId }
-        val psize = if (cw < 110f) 44f else 54f
+        val psize = (cw * 0.52f).coerceIn(40f, 62f)
         val cpIcon = if (isEnemy) "" else com.kaiju.awaken.game.ArtIcon.companion(key)
         if (cpIcon.isNotEmpty() && bitmap(cpIcon) != null) {
-            drawIcon(c, cpIcon, x + cw / 2f, gridTop + psize * 0.52f, psize, Palette.CYAN)
+            drawIcon(c, cpIcon, x + cw / 2f, gridTop + 8f + psize / 2f, psize, if (isEnemy) Palette.RED else Palette.CYAN)
         } else {
-            drawPortrait(c, key, x + cw / 2f, gridTop + psize * 0.52f, psize, if (isEnemy) Palette.RED else classColor(u.clsId))
+            drawPortrait(c, key, x + cw / 2f, gridTop + 8f + psize / 2f, psize, if (isEnemy) Palette.RED else classColor(u.clsId))
         }
-        r.text(c, u.name, x + cw / 2f, gridTop + psize + 18f, if (cw < 110f) 10.5f else 12f, Palette.TEXT, true, Paint.Align.CENTER)
-        val barY = gridTop + psize + 24f
-        r.bar(c, x + 8f, barY, cw - 16f, 9f, u.hpPct().toFloat(), hpColor(u.hpPct()), hpColorDark(u.hpPct()))
-        r.text(c, u.hp.toInt().toString() + "/" + u.stats.maxHp.toInt(), x + cw / 2f, barY + 21f, 10f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+        var cy = gridTop + 12f + psize
+        r.text(c, u.name, x + cw / 2f, cy, 11.5f, Palette.TEXT, true, Paint.Align.CENTER)
+        cy += 10f
+        if (isEnemy && cw > 112f) {
+            r.text(c, "攻" + u.stats.atk.toInt() + " 防" + u.stats.def.toInt(), x + cw / 2f, cy, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+            cy += 10f
+        }
+        r.bar(c, x + 8f, cy, cw - 16f, 8f, u.hpPct().toFloat(), hpColor(u.hpPct()), hpColorDark(u.hpPct()))
+        cy += 15f
+        r.text(c, u.hp.toInt().toString() + "/" + u.stats.maxHp.toInt(), x + cw / 2f, cy, 10f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+        cy += 8f
         if (u.shield > 0.0) {
-            r.bar(c, x + 8f, barY + 24f, cw - 16f, 5f, (u.shield / u.stats.maxHp).toFloat().coerceIn(0f, 1f), Palette.SHIELD, Palette.SHIELD)
+            r.bar(c, x + 8f, cy, cw - 16f, 4f, (u.shield / u.stats.maxHp).toFloat().coerceIn(0f, 1f), Palette.SHIELD, Palette.SHIELD)
+            cy += 7f
         }
-        r.text(c, "攻" + u.stats.atk.toInt() + " 防" + u.stats.def.toInt(), x + cw / 2f, barY + 42f, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
         val buffs = u.buffs.filter { !it.id.startsWith("affix_") }.take(3)
         if (buffs.isNotEmpty()) {
             var bx = x + 6f
             for (bf in buffs) {
                 val col = if (bf.isDebuff) Palette.RED else Palette.GREEN
-                r.solid(c, bx, barY + 46f, 30f, 15f, 7f, r.withAlpha(col, 210))
-                r.text(c, bf.name.take(2), bx + 15f, barY + 58f, 9f, 0xFF140B26.toInt(), true, Paint.Align.CENTER)
-                bx += 33f
+                r.solid(c, bx, cy, 28f, 14f, 7f, r.withAlpha(col, 215))
+                r.text(c, bf.name.take(2), bx + 14f, cy + 11f, 8.5f, 0xFF140B26.toInt(), true, Paint.Align.CENTER)
+                bx += 31f
             }
         }
     }
 }
 
-private fun GameView.unitPosition(u: Unit, b: Battle): Pair<Float, Float>? {
-    val pad = 8f
-    val enemyTop = TOP_H + 6f
-    val allyTop = enemyTop + ROW_H + 10f
-    val enemyIdx = b.enemies.indexOf(u)
-    if (enemyIdx >= 0) {
-        val n = b.enemies.size.coerceAtLeast(1)
-        val cw = (w - pad * (n + 1)) / n
-        return (pad + enemyIdx * (cw + pad) + cw / 2f) to (enemyTop + 18f + 30f)
+private fun GameView.unitPosition(u: Unit, b: Battle, rowH: Float): Pair<Float, Float>? {
+    val enemyTop = TOP_H + 8f
+    val allyTop = enemyTop + rowH + 14f
+    val ei = b.enemies.indexOf(u)
+    if (ei >= 0) {
+        val (sx, cw, _) = rowGeom(b.enemies.size, rowH)
+        return (sx + ei * (cw + 8f) + cw / 2f) to (enemyTop + 16f + 30f)
     }
-    val allyIdx = b.allies.indexOf(u)
-    if (allyIdx >= 0) {
-        val n = b.allies.size.coerceAtLeast(1)
-        val cw = (w - pad * (n + 1)) / n
-        return (pad + allyIdx * (cw + pad) + cw / 2f) to (allyTop + 18f + 30f)
+    val ai = b.allies.indexOf(u)
+    if (ai >= 0) {
+        val (sx, cw, _) = rowGeom(b.allies.size, rowH)
+        return (sx + ai * (cw + 8f) + cw / 2f) to (allyTop + 16f + 30f)
     }
     return null
 }
+
 
 private fun GameView.drawCommandBar(c: Canvas, b: Battle) {
     val p = run ?: return
@@ -201,6 +217,9 @@ internal fun GameView.tapCombat(id: String) {
         id == "cb_auto" -> {
             autoBattle = !autoBattle
             b.auto = autoBattle
+            b.awaitingInput = false
+            combatDelay = 0.15f
+            showToast(if (autoBattle) "已开启自动战斗" else "已切回手动")
         }
         id == "cb_finish" -> overlay = "battle_end"
         id.startsWith("cb_target_") -> {
@@ -208,7 +227,9 @@ internal fun GameView.tapCombat(id: String) {
             showToast("已锁定目标")
         }
         id.startsWith("cb_item_") -> {
-            b.useItem(id.removePrefix("cb_item_"))
+            val iid = id.removePrefix("cb_item_")
+            b.useItem(iid)
+            audio.play(com.kaiju.awaken.game.ArtIcon.itemSfx(iid))
             selectedSkill = null
         }
         id.startsWith("cb_skill_") -> {
@@ -227,7 +248,7 @@ internal fun GameView.tapCombat(id: String) {
                 else -> actor
             }
             b.playerAct(s, target)
-            audio.play(if (s.isUltimate) "ult" else "skill")
+            audio.play(com.kaiju.awaken.game.ArtIcon.skillSfx(s))
             combatDelay = 0.32f
         }
     }

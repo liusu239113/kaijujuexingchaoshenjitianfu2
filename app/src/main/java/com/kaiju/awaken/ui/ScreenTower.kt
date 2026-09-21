@@ -27,8 +27,19 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
     // 路径
     drawFloorPath(c, 118f)
 
+    drawFloorPath(c, 118f)
+    val stageY2 = 214f
+    val fe2 = TowerService.currentEvent(p)
+    if (fe2 == null) {
+        card(c, 18f, stageY2, w - 36f, h - stageY2 - 108f, r.withAlpha(Palette.BORDER, 200), 18f)
+        r.text(c, "本层已肃清。", w / 2f, stageY2 + 80f, 18f, Palette.CYAN, true, Paint.Align.CENTER)
+        button(c, "tower_next_floor", "深入下一层", 48f, stageY2 + 120f, w - 96f, 56f, Palette.PINK)
+    } else {
+        drawEventStage(c, stageY2, fe2)
+    }
+    drawBottomNav(c)
     if (perm.seenIntro == false) {
-        r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 234))
+        r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 236))
         card(c, 26f, 150f, w - 52f, h - 320f, r.withAlpha(Palette.CYAN, 210), 20f)
         r.text(c, "回廊入门", w / 2f, 200f, 24f, Palette.CYAN, true, Paint.Align.CENTER)
         var iy = 240f
@@ -43,7 +54,7 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
         for (t in tips) {
             iy = r.wrap(c, t, 44f, iy, w - 88f, 12f, Palette.TEXT_DIM, 18f) + 6f
         }
-        button(c, "tower_intro_ok", "开 始 探 索", 48f, h - 180f, w - 96f, 54f, Palette.PINK)
+        ghostButton(c, "tower_intro_ok", "开 始 探 索", 44f, h - 200f, w - 88f, 52f, Palette.PINK)
     }
     // 事件舞台
     val stageY = 214f
