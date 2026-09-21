@@ -220,6 +220,46 @@ fun hexFrame(c: Canvas, cx: Float, cy: Float, radius: Float, border: Int, fillCo
         c.drawRect(rect, stroke)
     }
 
+    /**
+     * 同 wrap，但最多输出 maxLines 行；被截断时在末行补「…」。
+     * 用于「描述可能超长、但卡片高度固定」的场景，避免文字溢出卡片被裁掉。
+     */
+    fun wrapClamp(c: Canvas, s: String, x: Float, y: Float, maxW: Float, size: Float, color: Int, lineH: Float, maxLines: Int, bold: Boolean = false): Float {
+        val p = if (bold) boldPaint else textPaint
+        p.textSize = size * fontScale
+        p.color = color
+        p.textAlign = Paint.Align.LEFT
+        val step = lineH * fontScale
+        val linesList = ArrayList<String>()
+        var line = StringBuilder()
+        var cut = false
+        for (ch in s) {
+            val test = line.toString() + ch
+            if (p.measureText(test) > maxW && line.isNotEmpty()) {
+                linesList.add(line.toString())
+                line = StringBuilder()
+                if (linesList.size >= maxLines) { cut = true; break }
+            }
+            line.append(ch)
+        }
+        if (linesList.size < maxLines) {
+            if (line.isNotEmpty()) linesList.add(line.toString())
+        } else if (line.isNotEmpty()) {
+            cut = true
+        }
+        if (cut && linesList.isNotEmpty()) {
+            var t = linesList[linesList.size - 1]
+            while (t.isNotEmpty() && p.measureText(t + "…") > maxW) t = t.substring(0, t.length - 1)
+            linesList[linesList.size - 1] = t + "…"
+        }
+        var cy = y
+        for (t in linesList) {
+            c.drawText(t, x, cy, p)
+            cy += step
+        }
+        return cy
+    }
+
     fun sparkle(c: Canvas, cx: Float, cy: Float, r: Float, color: Int, alpha: Int = 180) {
         stroke.shader = null
         stroke.color = (color and 0x00FFFFFF) or (alpha shl 24)

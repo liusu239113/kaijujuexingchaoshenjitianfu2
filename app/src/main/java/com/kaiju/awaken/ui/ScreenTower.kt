@@ -183,8 +183,14 @@ private fun GameView.drawBottomNav(c: Canvas) {
         val badge = items[i].third
         r.text(c, label, x + cw / 2f, y + 44f, 13f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
         if (badge.isNotEmpty() && badge != "0") {
-            r.solid(c, x + cw / 2f + 12f, y + 14f, 22f, 15f, 7.5f, r.withAlpha(Palette.PINK, 235))
-            r.text(c, badge, x + cw / 2f + 23f, y + 25f, 9.5f, 0xFF1A0F2E.toInt(), true, Paint.Align.CENTER)
+            // 徽章要贴住文字右侧、又不能越出自己这一格。
+            // 旧实现固定在 x + cw/2 + 12，格子只有 62.7 宽时会溢到隔壁格子上。
+            val lw = r.measure(label, 13f, true)
+            val badgeW = 22f
+            var bx = x + cw / 2f + lw / 2f + 2f
+            if (bx + badgeW > x + cw - 2f) bx = x + cw - 2f - badgeW
+            r.solid(c, bx, y + 14f, badgeW, 15f, 7.5f, r.withAlpha(Palette.PINK, 235))
+            r.text(c, badge, bx + badgeW / 2f, y + 25f, 9.5f, 0xFF1A0F2E.toInt(), true, Paint.Align.CENTER)
         }
         hit(items[i].first, x, y + 8f, cw, 62f)
     }

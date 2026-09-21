@@ -722,6 +722,57 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 val cnt = run?.items?.get(itemId) ?: 0
                 showDetail(def.name, def.desc + "\n\n持有：" + cnt + " 个\n商店价格：" + def.price + " 金币", com.kaiju.awaken.game.ArtIcon.item(itemId))
             }
+            id.startsWith("panel_skillinfo_") -> {
+                val sid = id.removePrefix("panel_skillinfo_")
+                val hero = run?.hero() ?: return
+                val sk = hero.skills.firstOrNull { it.id == sid } ?: return
+                val sb = StringBuilder()
+                sb.appendLine(sk.desc)
+                sb.appendLine()
+                sb.appendLine("类型：" + (if (sk.isUltimate) "终极技" else if (sk.isBasic) "普攻" else "战技"))
+                sb.appendLine("耗能：" + sk.cost + "    冷却：" + sk.cd + " 回合")
+                sb.appendLine("目标：" + when (sk.target) {
+                    com.kaiju.awaken.game.TargetKind.ENEMY_ONE -> "单体敌人"
+                    com.kaiju.awaken.game.TargetKind.ENEMY_ALL -> "全体敌人"
+                    com.kaiju.awaken.game.TargetKind.ALLY_ONE -> "单体队友"
+                    com.kaiju.awaken.game.TargetKind.ALLY_ALL -> "全体队友"
+                    else -> "自身"
+                })
+                if (sk.hits > 1) sb.appendLine("段数：" + sk.hits + " 段")
+                if (sk.coeff > 0.0) sb.appendLine("系数：" + (sk.coeff * 100).toInt() + "% × " + sk.stat)
+                val tg = sk.tags.joinToString(" · ") { tagName(it) }
+                if (tg.isNotEmpty()) sb.appendLine("效果：" + tg)
+                val lvNow = run?.skillLevels?.get(sk.id) ?: 1
+                sb.appendLine()
+                sb.appendLine("当前等级 Lv." + lvNow + " / 3（每级系数 +12%）")
+                showDetail(sk.name, sb.toString(), com.kaiju.awaken.game.ArtIcon.skill(sk))
+            }
+            id.startsWith("panel_item_") -> {
+                val itemId = id.removePrefix("panel_item_")
+                val def = com.kaiju.awaken.game.Content.itemById[itemId] ?: return
+                val cnt = run?.items?.get(itemId) ?: 0
+                showDetail(def.name, def.desc + "\n\n持有：" + cnt + " 个\n商店价格：" + def.price + " 金币", com.kaiju.awaken.game.ArtIcon.item(itemId))
+            }
+            id.startsWith("panel_equip_") -> {
+                val slotKey = id.removePrefix("panel_equip_")
+                val e = run?.equipped?.get(slotKey) ?: return
+                val sb = StringBuilder()
+                sb.appendLine(e.rarity.cn + " · " + slotKey + " · Lv." + e.level)
+                sb.appendLine()
+                sb.appendLine(mainLabelOf(e.mainKey) + " +" + e.mainValue.toInt())
+                for (a in e.affixes) sb.appendLine(a.label + " +" + a.value.toInt())
+                if (e.setId != null) sb.appendLine("套装：" + e.setId)
+                sb.appendLine()
+                sb.appendLine("锻铸等级 +" + e.enhance + "（每级 +10% 主属性）")
+                sb.appendLine("变卖价值 " + e.sellValue + " 金币")
+                showDetail(e.name, sb.toString(), com.kaiju.awaken.game.ArtIcon.equip(e.slot))
+            }
+            id.startsWith("panel_merc_detail_") -> {
+                val idx = id.removePrefix("panel_merc_detail_").toIntOrNull() ?: return
+                val pt = run ?: return
+                val u = pt.party.getOrNull(idx) ?: return
+                showDetail(u.name, mercBody(u), "")
+            }
             id.startsWith("panel_bagsel_") -> {
                 val p = run ?: return
                 val idx = id.removePrefix("panel_bagsel_").toIntOrNull() ?: return
@@ -750,6 +801,27 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 showDetail("队伍", sb.toString())
             }
         }
+    }
+
+    /** 伙伴完整属性 + 战技，供点击查看详情使用。 */
+    private fun mercBody(u: Unit): String {
+        val sb = StringBuilder()
+        sb.appendLine((com.kaiju.awaken.game.Data.classById[u.clsId]?.name ?: "") + " · " + u.rarity.cn + " · Lv." + u.level)
+        sb.appendLine("星级 " + "★".repeat(u.star.coerceIn(1, 5)))
+        val tr = u.traitId?.let { com.kaiju.awaken.game.Content2.traitById[it] }
+        sb.appendLine("专长：" + (tr?.name ?: "无") + (if (tr != null) " — " + tr.desc else ""))
+        sb.appendLine()
+        sb.appendLine("生命 " + u.stats.maxHp.toInt() + "    攻击 " + u.stats.atk.toInt())
+        sb.appendLine("法强 " + u.stats.matk.toInt() + "    防御 " + u.stats.def.toInt())
+        sb.appendLine("暴击 " + u.stats.crit.toInt() + "%    暴伤 " + u.stats.critDmg.toInt() + "%")
+        sb.appendLine("闪避 " + u.stats.dodge.toInt() + "%    回能 " + u.stats.energyRegen.toInt())
+        sb.appendLine()
+        sb.appendLine("战技：")
+        for (sk in u.skills) {
+            sb.appendLine("· " + sk.name + "（耗能 " + sk.cost + " / 冷却 " + sk.cd + "）")
+            sb.appendLine("   " + sk.desc)
+        }
+        return sb.toString()
     }
 
     private fun mainLabelOf(key: String): String = when (key) {

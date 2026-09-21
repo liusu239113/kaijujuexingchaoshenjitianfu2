@@ -8,7 +8,8 @@ import com.kaiju.awaken.game.RunService
 /** 主城（回廊前厅）：远征前后的中枢页面。 */
 internal fun GameView.drawHubScreen(c: Canvas) {
     val p = run
-    var y = 92f
+    // 整屏滚动化：功能格变多后内容会超过 16:9 的可视高度
+    var y = beginScroll(c, 92f, h - 12f)
 
     r.text(c, "回 廊 前 厅", w / 2f, y, 24f, Palette.TEXT, true, Paint.Align.CENTER)
     y += 22f
@@ -56,18 +57,24 @@ internal fun GameView.drawHubScreen(c: Canvas) {
     y += 56f
 
     // 功能宫格
+    // 图鉴 / 成就 / 星尘兑换 / 存档 从标题界面迁移到这里（功能归属游戏内）
     val entries = listOf(
         Triple("hub_bag", "行囊", "enabled"),
         Triple("hub_equip", "装备", "enabled"),
         Triple("hub_skills", "战技", "enabled"),
         Triple("hub_talents", "星语环", "enabled"),
         Triple("hub_merc", "伙伴", "party"),
-        Triple("hub_growth", "轮回淬炼", "always"),
         Triple("hub_recruit", "招募所", "party"),
+        Triple("hub_pet", "宠物", "always"),
         Triple("hub_story", "主线", "always"),
-        Triple("hub_pet", "宠物", "always")
+        Triple("hub_growth", "轮回淬炼", "always"),
+        Triple("hub_codex", "图鉴", "always"),
+        Triple("hub_ach", "成就", "always"),
+        Triple("hub_shop", "星尘兑换", "always"),
+        Triple("hub_slots", "存档", "always")
     )
     val gw = (w - 40f - 3 * 8f) / 4f
+    val gridRows = (entries.size + 3) / 4
     for (i in entries.indices) {
         val col = i % 4
         val row = i / 4
@@ -78,17 +85,27 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         r.text(c, entries[i].second, x + gw / 2f, yy + gw / 2f + 6f, if (entries[i].second.length > 3) 11f else 13f, if (active) Palette.TEXT else Palette.TEXT_FAINT, true, Paint.Align.CENTER)
         if (active) hit(entries[i].first, x, yy, gw, gw)
     }
-    y += (gw + 10f) * 2f + 6f
+    y += (gw + 10f) * gridRows + 6f
 
-    // 出发
+    // 底部操作区一并纳入流式布局：13 个功能格在 16:9（h≈711）上会排到 700+，
+    // 与固定在 h-168 的按钮直接硬碰撞。改为跟随内容滚动后，任意高度都不会重叠。
+    val blockH = if (p == null) 58f + 12f + 40f + 16f else 58f + 12f + 44f + 12f + 40f + 16f
+    val pushTo = h - 14f - blockH
+    if (y + 16f < pushTo) y = pushTo - 16f
+    y += 16f
+
     if (p == null) {
-        button(c, "hub_start", "出 发 远 征", 40f, h - 168f, w - 80f, 58f, Palette.PINK)
+        button(c, "hub_start", "出 发 远 征", 40f, y, w - 80f, 58f, Palette.PINK)
+        y += 70f
     } else {
-        button(c, "hub_resume", "继 续 深 入", 40f, h - 168f, w - 80f, 54f, Palette.PINK)
-        ghostButton(c, "hub_abandon", "放弃本轮并结算", 40f, h - 108f, w - 80f, 44f, Palette.RED)
+        button(c, "hub_resume", "继 续 深 入", 40f, y, w - 80f, 58f, Palette.PINK)
+        y += 70f
+        ghostButton(c, "hub_abandon", "放弃本轮并结算", 40f, y, w - 80f, 44f, Palette.RED)
+        y += 56f
     }
-    ghostButton(c, "hub_shop", "星尘兑换", 40f, h - 62f, (w - 88f) / 2f, 40f, Palette.GOLD)
-    ghostButton(c, "hub_settings", "设定", 40f + (w - 88f) / 2f + 8f, h - 62f, (w - 88f) / 2f, 40f, Palette.TEXT_DIM)
+    ghostButton(c, "hub_settings", "设 定", 40f, y, w - 80f, 40f, Palette.TEXT_DIM)
+    y += 40f + 16f
+    endScroll(c, y)
 }
 
 internal fun GameView.tapHub(id: String) {
@@ -125,5 +142,6 @@ internal fun GameView.tapHub(id: String) {
         "hub_codex" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.CODEX }
         "hub_ach" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.ACHIEVEMENTS }
         "hub_shop" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.SHOP }
+        "hub_slots" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.SAVE_SLOTS }
     }
 }

@@ -107,7 +107,9 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: 
         } else {
             drawPortrait(c, key, x + cw / 2f, gridTop + 8f + psize / 2f, psize, if (isEnemy) Palette.RED else classColor(u.clsId))
         }
-        var cy = gridTop + 12f + psize
+        // 旧值 gridTop+12+psize 只比立绘下沿低 4px，中文名的字身会压进立绘里
+        // （截图上就是「名字糊在人物图上」）。改为立绘下沿再留 13px。
+        var cy = gridTop + 8f + psize + 13f
         r.text(c, u.name, x + cw / 2f, cy, 11.5f, Palette.TEXT, true, Paint.Align.CENTER)
         cy += 10f
         if (isEnemy && cw > 112f) {

@@ -99,7 +99,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                     r.text(c, "未装备", w - 36f, y + 28f, 12f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)
                 } else {
                     val ecol = rarityColor(e.rarity)
-                    r.text(c, e.name, 68f, y + 48f, 12.5f, Palette.TEXT, true)
+                    hit("panel_equip_" + slot.id, 36f, y, w - 152f, rowH)
+                r.text(c, e.name, 68f, y + 48f, 12.5f, Palette.TEXT, true)
                     r.text(c, e.rarity.cn + " · " + mainLabel(e.mainKey) + " +" + e.mainValue.toInt() + (if (e.enhance > 0) "  ·  锻铸 +" + e.enhance else ""), 68f, y + 66f, 10.5f, ecol)
                     val eaff = e.affixes.take(2).joinToString("  ") { it.label + " +" + it.value.toInt() }
                     if (eaff.isNotEmpty()) r.text(c, eaff, 68f, y + 82f, 9.5f, Palette.TEXT_DIM)
@@ -121,16 +122,20 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 14f
             for (s in hero.skills) {
                 val lv = heroSkillLevel(p, s.id)
-                card(c, 36f, y, w - 72f, 88f, if (s.isUltimate) Palette.GOLD else Palette.BORDER_SOFT, 12f)
+                card(c, 36f, y, w - 72f, 106f, if (s.isUltimate) Palette.GOLD else Palette.BORDER_SOFT, 12f)
                 drawIcon(c, com.kaiju.awaken.game.ArtIcon.skill(s), 68f, y + 44f, 46f, if (s.isUltimate) Palette.GOLD else Palette.CYAN)
                 r.text(c, s.name, 102f, y + 26f, 14f, Palette.TEXT, true)
                 r.text(c, (if (s.isUltimate) "终极技 · " else "") + "耗能 ${s.cost} 冷却 ${s.cd} · Lv.$lv/3", 102f, y + 46f, 11f, Palette.TEXT_DIM)
-                r.wrap(c, s.desc, 102f, y + 66f, w - 200f, 10.5f, Palette.TEXT_FAINT, 14f)
+                // 描述宽度必须避开右侧「升级」按钮（按钮左沿 x = w-108）。
+                // 旧值 w-200 让文字一直铺到 302，直接压进按钮里；卡片也只有 88 高，
+                // 第二行中文会被卡片底边切掉 —— 截图上的「并沉默」被裁就是这个原因。
+                r.wrapClamp(c, s.desc, 102f, y + 66f, w - 228f, 10.5f, Palette.TEXT_FAINT, 14f, 3)
                 if (lv < 3) {
                     val cost = listOf(1, 2, 3)[lv.coerceIn(0, 2)]
                     ghostButton(c, "panel_learn_${s.id}", "升级 $cost", w - 108f, y + 28f, 68f, 34f, Palette.CYAN)
                 }
-                y += 96f
+                hit("panel_skillinfo_${s.id}", 36f, y, w - 180f, 106f)
+                y += 114f
             }
         }
         "talents" -> {
@@ -195,7 +200,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 card(c, 36f, y, w - 72f, 62f, if (cnt > 0) r.withAlpha(Palette.GOLD, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 12f)
                 drawIcon(c, com.kaiju.awaken.game.ArtIcon.item(it.id), 58f, y + 34f, 40f, Palette.GOLD)
                 r.text(c, it.name + "  ×$cnt", 88f, y + 26f, 13.5f, Palette.TEXT, true)
-                r.text(c, it.desc, 88f, y + 46f, 10.5f, Palette.TEXT_DIM)
+                r.wrapClamp(c, it.desc, 88f, y + 46f, w - 130f, 10.5f, Palette.TEXT_DIM, 14f, 1)
+                hit("panel_item_" + it.id, 36f, y, w - 72f, 62f)
                 y += 70f
             }
         }
@@ -222,6 +228,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                     r.text(c, "满星", w - 62f, y + 36f, 12f, Palette.GOLD, true, Paint.Align.RIGHT)
                 }
                 ghostButton(c, "panel_merc_fire_" + i, "解雇", w - 126f, y + 56f, 90f, 34f, Palette.RED)
+                hit("panel_merc_detail_" + i, 24f, y, w - 150f, 104f)
                 y += 112f
             }
             y += 4f
@@ -416,6 +423,13 @@ internal fun GameView.tapPanel(id: String) {
         }
         id.startsWith("panel_bagsel_") -> {
             bagSelected = id.removePrefix("panel_bagsel_").toIntOrNull() ?: 0
+            // 轻点即开详情：此前只有长按能看属性，玩家会以为「根本看不了详细信息」
+            handleLongPress(id)
+            return
+        }
+        id.startsWith("panel_skillinfo_") || id.startsWith("panel_item_") ||
+            id.startsWith("panel_equip_") || id.startsWith("panel_merc_detail_") -> {
+            handleLongPress(id)
             return
         }
         id == "panel_bag_equip" -> {
@@ -539,6 +553,14 @@ internal fun GameView.tapConfirm(id: String) {
                 "abandon" -> {
                     pendingAchievements = ArrayList()
                     finishRun()
+                }
+                "newrun" -> {
+                    // 明确放弃当前存档后，才进入创角流程
+                    run = null
+                    battle = null
+                    panel = ""
+                    Save.clearRun(context)
+                    goScreen(GameView.Screen.SETUP)
                 }
                 "export" -> {
                     exportText = Save.exportSlot(context)
@@ -771,8 +793,17 @@ internal fun GameView.drawGrowthScreen(c: Canvas) {
 
 internal fun GameView.tapGrowth(id: String) {
     when {
-        id == "growth_back" -> screen = Screen.MENU
-        id == "growth_start" -> screen = Screen.SETUP
+        id == "growth_back" -> goScreen(metaReturn)
+        id == "growth_start" -> {
+            // 「开始新一轮」会覆盖当前存档。旧实现直接 goScreen(SETUP)，
+            // 于是玩家从「轮回淬炼」点一下就被踹回创角界面、远征进度无声丢失。
+            val cur = run
+            if (cur != null && cur.floor > 1 && cur.runOver.not()) {
+                showConfirm("开始新一轮会放弃当前远征（第 " + cur.floor + " 层），确定重新创建角色吗？", "newrun")
+            } else {
+                goScreen(Screen.SETUP)
+            }
+        }
         id.startsWith("growth_up_") -> {
             val gid = id.removePrefix("growth_up_")
             val def = Content.growthById[gid] ?: return

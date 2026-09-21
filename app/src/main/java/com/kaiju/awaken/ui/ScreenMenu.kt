@@ -48,39 +48,34 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
         }
     }
 
-    // 当前存档提示
+    // 存档状态：只作信息展示，顶部主按钮按状态切换文案
     val savedRun = run
     var by = py + 96f
     if (savedRun != null) {
         by += 12f
         card(c, 24f, by, pw, 62f, r.withAlpha(Palette.CYAN, 170))
-        r.text(c, "延续轮回", 40f, by + 27f, 14f, Palette.CYAN, true)
+        r.text(c, "远征进行中", 40f, by + 27f, 14f, Palette.CYAN, true)
         r.text(c, "${Data.classById[savedRun.classId]?.name ?: ""} · ${savedRun.mode.cn}模式 · 第 ${savedRun.floor} 层", 40f, by + 48f, 12f, Palette.TEXT_DIM)
-        ghostButton(c, "menu_continue", "继续", w - 122f, by + 12f, 78f, 38f, Palette.CYAN)
         by += 62f
     }
 
-    // 按钮组：屏幕够高就用留白压到底部，矮屏则紧接内容、整体可滚动，永远不会硬碰撞
-    val blockH = 56f + 12f + 46f + 12f + 46f + 12f + 44f + 16f + 14f
+    // 标题界面只保留「开始/继续 · 设置 · 关于」。
+    // 图鉴 / 成就 / 星尘兑换 / 存档 属于游戏内功能，已迁到「回廊前厅」，
+    // 不再在开局堆一屏玩家看不懂用途的按钮。
+    val blockH = 56f + 16f + 48f + 16f + 48f + 20f + 14f
     val pushTo = h - 12f - blockH - 8f
     if (by + 20f < pushTo) by = pushTo - 20f
     by += 20f
 
     val bw = w - 96f
-    val half = (bw - 12f) / 2f
-    button(c, "menu_start", "开 始 觉 醒", 48f, by, bw, 56f, Palette.PINK)
+    button(c, "menu_start", if (savedRun == null) "开 始 游 戏" else "继 续 游 戏", 48f, by, bw, 56f, Palette.PINK)
+    by += 72f
+    ghostButton(c, "menu_settings", "设 置", 48f, by, bw, 48f, Palette.CYAN)
+    by += 64f
+    ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 68f
-    ghostButton(c, "menu_growth", "轮回淬炼", 48f, by, half, 46f, Palette.CYAN)
-    ghostButton(c, "menu_codex", "星语图鉴", 48f + half + 12f, by, half, 46f, Palette.GOLD)
-    by += 58f
-    ghostButton(c, "menu_ach", "成就", 48f, by, half, 46f, Palette.GREEN)
-    ghostButton(c, "menu_shop", "星尘兑换", 48f + half + 12f, by, half, 46f, Palette.PINK)
-    by += 58f
-    ghostButton(c, "menu_slots", "存档", 48f, by, half, 44f, Palette.CYAN)
-    ghostButton(c, "menu_about", "关于", 48f + half + 12f, by, half, 44f, Palette.TEXT_DIM)
-    by += 44f + 16f
 
-    r.text(c, "v1.1.9 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.2.0 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
@@ -90,17 +85,9 @@ internal fun GameView.tapMenu(id: String) {
         // 统一走 goScreen：它会重置 screenScroll，否则主菜单滚过之后
         // 下一个可滚动屏幕会继承菜单的滚动位置
         "menu_start" -> {
-            goScreen(Screen.HUB)
-        }
-        "menu_continue" -> {
             run?.let { RunService.recalcAll(it, perm) }
             goScreen(Screen.HUB)
         }
-        "menu_growth" -> { metaReturn = Screen.MENU; goScreen(Screen.GROWTH) }
-        "menu_codex" -> { metaReturn = Screen.MENU; goScreen(Screen.CODEX) }
-        "menu_ach" -> { metaReturn = Screen.MENU; goScreen(Screen.ACHIEVEMENTS) }
-        "menu_shop" -> { metaReturn = Screen.MENU; goScreen(Screen.SHOP) }
-        "menu_slots" -> { metaReturn = Screen.MENU; goScreen(Screen.SAVE_SLOTS) }
         "menu_about" -> { metaReturn = Screen.MENU; goScreen(Screen.ABOUT) }
         "menu_settings" -> panel = "settings"
     }
