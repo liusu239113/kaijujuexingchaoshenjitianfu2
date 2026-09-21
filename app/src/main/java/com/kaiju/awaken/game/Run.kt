@@ -138,7 +138,7 @@ object RunService {
             isPlayer = true,
             clsId = classId,
             level = 1,
-            avatarKey = Content2.companionAvatars.random()
+            avatarKey = classId
         )
         u.base.maxHp = cd.baseHp + perm.growthLevel("g_hp") * 12.0
         u.base.atk = cd.baseAtk + perm.growthLevel("g_atk") * 3.0
@@ -205,7 +205,7 @@ object RunService {
             clsId = classId,
             level = level,
             rarity = rarity,
-            avatarKey = classId
+            avatarKey = Content2.companionAvatars.random()
         )
         u.base.maxHp = cd.baseHp * 0.8 * mul
         u.base.atk = cd.baseAtk * 0.8 * mul

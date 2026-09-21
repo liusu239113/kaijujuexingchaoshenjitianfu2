@@ -112,16 +112,16 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 14f
             for (s in hero.skills) {
                 val lv = heroSkillLevel(p, s.id)
-                card(c, 36f, y, w - 72f, 72f, if (s.isUltimate) Palette.GOLD else Palette.BORDER_SOFT, 12f)
-                drawIcon(c, com.kaiju.awaken.game.ArtIcon.skill(s), 66f, y + 36f, 44f, if (s.isUltimate) Palette.GOLD else Palette.CYAN)
-                r.text(c, s.name, 96f, y + 26f, 14f, Palette.TEXT, true)
-                r.text(c, (if (s.isUltimate) "终极技 · " else "") + "耗能 ${s.cost} 冷却 ${s.cd} · Lv.$lv/3", 48f, y + 46f, 11f, Palette.TEXT_DIM)
-                r.wrap(c, s.desc, 48f, y + 64f, w - 150f, 10.5f, Palette.TEXT_FAINT, 0f)
+                card(c, 36f, y, w - 72f, 88f, if (s.isUltimate) Palette.GOLD else Palette.BORDER_SOFT, 12f)
+                drawIcon(c, com.kaiju.awaken.game.ArtIcon.skill(s), 68f, y + 44f, 46f, if (s.isUltimate) Palette.GOLD else Palette.CYAN)
+                r.text(c, s.name, 102f, y + 26f, 14f, Palette.TEXT, true)
+                r.text(c, (if (s.isUltimate) "终极技 · " else "") + "耗能 ${s.cost} 冷却 ${s.cd} · Lv.$lv/3", 102f, y + 46f, 11f, Palette.TEXT_DIM)
+                r.wrap(c, s.desc, 102f, y + 66f, w - 200f, 10.5f, Palette.TEXT_FAINT, 0f)
                 if (lv < 3) {
                     val cost = listOf(1, 2, 3)[lv.coerceIn(0, 2)]
-                    ghostButton(c, "panel_learn_${s.id}", "升级 $cost", w - 110f, y + 20f, 68f, 34f, Palette.CYAN)
+                    ghostButton(c, "panel_learn_${s.id}", "升级 $cost", w - 108f, y + 28f, 68f, 34f, Palette.CYAN)
                 }
-                y += 80f
+                y += 96f
             }
         }
         "talents" -> {

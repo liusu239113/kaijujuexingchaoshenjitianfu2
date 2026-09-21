@@ -38,6 +38,18 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
         drawEventStage(c, stageY2, fe2)
     }
     drawBottomNav(c)
+    // 事件舞台
+    val stageY = 214f
+    val fe = TowerService.currentEvent(p)
+    card(c, 18f, stageY, w - 36f, h - stageY - 108f, r.withAlpha(Palette.BORDER, 200), 18f)
+    if (fe == null) {
+        r.text(c, "本层已肃清。", w / 2f, stageY + 80f, 18f, Palette.CYAN, true, Paint.Align.CENTER)
+        button(c, "tower_next_floor", "深入下一层", 48f, stageY + 120f, w - 96f, 56f, Palette.PINK)
+        drawBottomNav(c)
+        return
+    }
+    drawEventStage(c, stageY, fe)
+    drawBottomNav(c)
     if (perm.seenIntro == false) {
         r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 236))
         card(c, 26f, 150f, w - 52f, h - 320f, r.withAlpha(Palette.CYAN, 210), 20f)
@@ -56,18 +68,6 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
         }
         ghostButton(c, "tower_intro_ok", "开 始 探 索", 44f, h - 200f, w - 88f, 52f, Palette.PINK)
     }
-    // 事件舞台
-    val stageY = 214f
-    val fe = TowerService.currentEvent(p)
-    card(c, 18f, stageY, w - 36f, h - stageY - 108f, r.withAlpha(Palette.BORDER, 200), 18f)
-    if (fe == null) {
-        r.text(c, "本层已肃清。", w / 2f, stageY + 80f, 18f, Palette.CYAN, true, Paint.Align.CENTER)
-        button(c, "tower_next_floor", "深入下一层", 48f, stageY + 120f, w - 96f, 56f, Palette.PINK)
-        drawBottomNav(c)
-        return
-    }
-    drawEventStage(c, stageY, fe)
-    drawBottomNav(c)
 }
 
 private fun GameView.drawFloorPath(c: Canvas, top: Float) {
@@ -190,10 +190,10 @@ private fun GameView.drawBottomNav(c: Canvas) {
         val x = 12f + cw * i
         val label = items[i].second
         val badge = items[i].third
-        r.text(c, label, x + cw / 2f, y + 38f, 13f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
+        r.text(c, label, x + cw / 2f, y + 44f, 13f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
         if (badge.isNotEmpty() && badge != "0") {
-            r.solid(c, x + cw / 2f + 14f, y + 16f, 22f, 16f, 8f, r.withAlpha(Palette.PINK, 230))
-            r.text(c, badge, x + cw / 2f + 25f, y + 28f, 10f, 0xFF1A0F2E.toInt(), true, Paint.Align.CENTER)
+            r.solid(c, x + cw / 2f + 12f, y + 14f, 22f, 15f, 7.5f, r.withAlpha(Palette.PINK, 235))
+            r.text(c, badge, x + cw / 2f + 23f, y + 25f, 9.5f, 0xFF1A0F2E.toInt(), true, Paint.Align.CENTER)
         }
         hit(items[i].first, x, y + 8f, cw, 62f)
     }

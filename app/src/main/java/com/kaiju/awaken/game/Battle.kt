@@ -223,7 +223,7 @@ class Battle(
                 isEnemy = true,
                 clsId = "enemy",
                 level = floor,
-                avatarKey = pickAvatar(i, kind)
+                avatarKey = avatarKeys.getOrElse(i) { pickAvatar(i, kind) }
             )
             val hpMul = if (kind == "boss" && count > 1) 0.6 else 1.0
             e.base.maxHp = hpBase * hpMul

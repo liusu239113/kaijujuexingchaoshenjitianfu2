@@ -103,9 +103,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var scrollBottomY = 0f
     var detailTitle = ""
     var detailBody = ""
-    private var touchDownMs = 0L
-    private var lastTouchVX = 0f
-    private var lastTouchVY = 0f
+    var detailIcon = ""
+    private var longPressFired = false
     var confirmMsg = ""
     var confirmAction = ""
     var exportText = ""
@@ -214,8 +213,25 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         Choreographer.getInstance().postFrameCallback(this)
     }
 
+    private fun hitIdAt(x: Float, y: Float): String? {
+        var i = hits.size - 1
+        while (i >= 0) {
+            val hh = hits[i]
+            if (hh.enabled && hh.contains(x, y)) return hh.id
+            i--
+        }
+        return null
+    }
+
+
     private fun update(dt: Float) {
         time += dt
+        if (touchDownMs > 0L && !longPressFired && dragMoved < 14f && System.currentTimeMillis() - touchDownMs > 420L) {
+            longPressFired = true
+            val hid = hitIdAt(lastTouchVX, lastTouchVY)
+            if (hid != null) handleLongPress(hid)
+            touchDownMs = 0L
+        }
         r.pctPulse = (0.5f + 0.5f * kotlin.math.sin(time * 3.2f))
         if (toastTime > 0f) toastTime -= dt
         for (p in particles) {
@@ -594,7 +610,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 }
             }
             MotionEvent.ACTION_UP -> {
-                if (dragMoved < 14f) {
+                touchDownMs = 0L
+                if (dragMoved < 14f && !longPressFired) {
                     var i = hits.size - 1
                     while (i >= 0) {
                         val hh = hits[i]
@@ -617,9 +634,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         return true
     }
 
-    fun showDetail(title: String, body: String) {
+    fun showDetail(title: String, body: String, icon: String = "") {
         detailTitle = title
         detailBody = body
+        detailIcon = icon
+        overlay = "detail"
     }
 
     fun handleLongPress(id: String) {
@@ -647,13 +666,13 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                     if (sk.coeff > 0.0) appendLine("系数：" + (sk.coeff * 100).toInt() + "% × " + sk.stat)
                     if (tagText.isNotEmpty()) appendLine("效果：" + tagText)
                 }
-                showDetail(sk.name, body)
+                showDetail(sk.name, body, com.kaiju.awaken.game.ArtIcon.skill(sk))
             }
             id.startsWith("cb_item_") -> {
                 val itemId = id.removePrefix("cb_item_")
                 val def = com.kaiju.awaken.game.Content.itemById[itemId] ?: return
                 val cnt = run?.items?.get(itemId) ?: 0
-                showDetail(def.name, def.desc + "\n\n持有：" + cnt + " 个\n商店价格：" + def.price + " 金币")
+                showDetail(def.name, def.desc + "\n\n持有：" + cnt + " 个\n商店价格：" + def.price + " 金币", com.kaiju.awaken.game.ArtIcon.item(itemId))
             }
             id.startsWith("panel_bagsel_") -> {
                 val p = run ?: return
@@ -667,7 +686,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 if (e.setId != null) sb.appendLine("套装：" + e.setId)
                 sb.appendLine()
                 sb.appendLine("锻铸等级 +" + e.enhance + "    变卖 " + e.sellValue + " 金币")
-                showDetail(e.name, sb.toString())
+                showDetail(e.name, sb.toString(), com.kaiju.awaken.game.ArtIcon.equip(e.slot))
             }
             id.startsWith("panel_merc_") || id == "tower_panel_merc" -> {
                 val p = run ?: return
