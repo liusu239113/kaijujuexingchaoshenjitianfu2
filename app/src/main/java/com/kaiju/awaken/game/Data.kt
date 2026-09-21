@@ -89,7 +89,7 @@ object Data {
         sk("pp_command", "丝线号令", "puppeteer", 0, 0, 1, "matk", 1.0, TargetKind.ENEMY_ONE, "造成 100% 法强伤害，回复 20 能量。", listOf(Tag.DAMAGE), extra = "energy20"),
         sk("pp_guard", "守护织网", "puppeteer", 20, 3, 1, "matk", 1.35, TargetKind.ALLY_ALL, "为全体队友附加 135% 法强护盾。", listOf(Tag.SHIELD)),
         sk("pp_link", "丝线渡魂", "puppeteer", 22, 3, 3, "matk", 1.5, TargetKind.ALLY_ONE, "为生命最低队友恢复 150% 法强生命。", listOf(Tag.HEAL)),
-        sk("pp_overdrive", "丝鸣超载丝鸣", "puppeteer", 22, 3, 5, "matk", 0.28, TargetKind.ALLY_ALL, "全体队友攻击与法强 +28%，持续 3 回合。", listOf(Tag.BUFF_ATK), buffDur = 3),
+        sk("pp_overdrive", "丝鸣超载", "puppeteer", 22, 3, 5, "matk", 0.28, TargetKind.ALLY_ALL, "全体队友攻击与法强 +28%，持续 3 回合。", listOf(Tag.BUFF_ATK), buffDur = 3),
         sk("pp_ult", "终焉机偶", "puppeteer", 50, 6, 9, "matk", 2.35, TargetKind.ENEMY_ALL, "对全体造成 235% 法强伤害，并附加 3 回合灼烧。", listOf(Tag.DAMAGE, Tag.DOT_BURN), dotDur = 3, dotCoeff = 0.3, ult = true)
     )
 

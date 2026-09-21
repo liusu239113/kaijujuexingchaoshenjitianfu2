@@ -254,10 +254,12 @@ internal fun GameView.tapCombat(id: String) {
             b.playerAct(s, target)
             audio.play(com.kaiju.awaken.game.ArtIcon.skillSfx(s))
             if (s.isUltimate) {
-                (run)?.let { audio.playClassVoice(it.classId, "ult") }
-            } else if (System.currentTimeMillis() - lastVoiceMs > 4500L) {
+                (run)?.let { audio.playSkillVoice(it.classId, s.id, "ult") }
+            } else if (System.currentTimeMillis() - lastVoiceMs > 900L) {
+                // 节流放宽到 0.9s：playVoice 是覆盖式播放，同一时刻只会响一条，
+                // 旧值 4.5s 会让大部分技能根本轮不到自己的专属语音。
                 lastVoiceMs = System.currentTimeMillis()
-                (run)?.let { audio.playClassVoice(it.classId, "skill") }
+                (run)?.let { audio.playSkillVoice(it.classId, s.id, "skill") }
             }
             combatDelay = 0.32f
         }

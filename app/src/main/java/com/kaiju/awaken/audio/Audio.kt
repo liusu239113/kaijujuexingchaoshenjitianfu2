@@ -175,6 +175,18 @@ class Audio(private val ctx: Context) {
         playVoice("v_" + voiceProfile(clsId) + "_" + kind)
     }
 
+    /** 该技能是否有专属语音资源。 */
+    fun hasSkillVoice(skillId: String): Boolean = rawId("v_sk_" + skillId) != 0
+
+    /**
+     * 技能语音：优先播放该技能的专属语音（v_sk_<skillId>，语气按技能名与效果定制），
+     * 资源缺失时回退到职阶通用语音（v_<profile>_<kind>），保证任何情况下都不会静音。
+     */
+    fun playSkillVoice(clsId: String, skillId: String, kind: String) {
+        val name = "v_sk_" + skillId
+        if (rawId(name) != 0) playVoice(name) else playClassVoice(clsId, kind)
+    }
+
     /** 任意角色（含伙伴）按自身职阶播放语音。 */
     fun playUnitVoice(clsId: String, kind: String) = playClassVoice(clsId, kind)
 
