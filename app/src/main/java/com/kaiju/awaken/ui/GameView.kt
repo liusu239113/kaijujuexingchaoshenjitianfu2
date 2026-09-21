@@ -98,6 +98,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var metaReturn: Screen = Screen.MENU
     var screenScroll = 0f
     var screenScrollMax = 0f
+    var endingStart = 0f
     var scrollTopY = 0f
     var scrollBottomY = 0f
     var detailTitle = ""
@@ -977,6 +978,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         if (newly.isNotEmpty()) pendingAchievements = ArrayList(newly)
         p.runOver = true
         val clearedRun = p.mode.endFloor > 0 && p.floor > p.mode.endFloor
+        endingStart = time
         screen = if (clearedRun) Screen.ENDING else Screen.REINCARNATION
         audio.play("levelup")
         Save.savePerm(context, perm)

@@ -16,7 +16,7 @@ internal fun GameView.drawPromotionScreen(c: Canvas) {
     )
     r.text(c, "当前职阶：" + (Data.classById[p.classId]?.name ?: ""), w / 2f, 124f, 12f, Palette.CYAN, false, Paint.Align.CENTER)
 
-    var y = 146f
+    var y = beginScroll(c, 146f)
     val cardH = 216f
     for (i in promoOptions.indices) {
         val promo = promoOptions[i]
@@ -53,7 +53,8 @@ internal fun GameView.drawPromotionScreen(c: Canvas) {
         button(c, "promo_pick_$i", "选 择 " + promo.name, 40f, y + cardH - 58f, w - 80f, 46f, col)
         y += cardH + 14f
     }
-    r.text(c, "转职会永久改变本轮的能力与战技组，无法更改。", w / 2f, h - 30f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.wrap(c, "转职会永久改变本轮的能力与战技组，无法更改。", UiKit.MARGIN, y + 6f, contentW(), 11f, Palette.TEXT_FAINT, 17f)
+    endScroll(c, y + 40f)
 }
 
 private fun statLabel(k: String): String = when (k) {

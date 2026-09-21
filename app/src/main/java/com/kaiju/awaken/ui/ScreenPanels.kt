@@ -758,27 +758,3 @@ internal fun GameView.tapGrowth(id: String) {
         }
     }
 }
-
-internal fun GameView.drawCodexScreen(c: Canvas) {
-    drawTopBar(c, "神格图鉴", "共 ${Data.allTalents.size} 项神格 · 共鸣机制", "growth_back", null, null)
-    var y = 118f
-    val order = listOf(Rarity.HIDDEN, Rarity.MYTHIC, Rarity.LEGENDARY, Rarity.EPIC, Rarity.RARE, Rarity.COMMON)
-    for (rar in order) {
-        val list = Data.allTalents.filter { it.rarity == rar }
-        if (list.isEmpty()) continue
-        r.text(c, "【${rar.cn}】", 24f, y, 14f, rarityColor(rar), true)
-        y += 8f
-        for (t in list) {
-            if (y > h - 110f) break
-            val col = rarityColor(t.rarity)
-            card(c, 24f, y, w - 48f, 62f, r.withAlpha(col, 150), 12f)
-            r.hexFrame(c, 52f, y + 31f, 18f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
-            r.text(c, t.school.glyph, 52f, y + 37f, 15f, col, true, Paint.Align.CENTER)
-            r.text(c, t.name, 80f, y + 26f, 13.5f, Palette.TEXT, true)
-            r.text(c, t.school.cn, w - 44f, y + 26f, 11f, col, false, Paint.Align.RIGHT)
-            r.wrap(c, t.desc, 80f, y + 44f, w - 130f, 10.5f, Palette.TEXT_DIM, 0f)
-            y += 70f
-        }
-        y += 12f
-    }
-}

@@ -63,7 +63,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_slots", "存档", 48f, h - 104f, (bw - 12f) / 2f, 44f, Palette.CYAN)
     ghostButton(c, "menu_about", "关于", 48f + (bw - 12f) / 2f + 12f, h - 104f, (bw - 12f) / 2f, 44f, Palette.TEXT_DIM)
 
-    r.text(c, "v1.1.6 · 神格共鸣版", w / 2f, h - 28f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.1.6 · PixelForge", w / 2f, h - 40f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
 }
 
 internal fun GameView.tapMenu(id: String) {
@@ -193,12 +193,13 @@ internal fun GameView.drawDivinityScreen(c: Canvas) {
 
     val cardW = w - 56f
     val cardH = 132f
-    var y = 152f
+    var y = beginScroll(c, 152f)
     for (i in divinityOptions.indices) {
         val t = divinityOptions[i]
         drawTalentCard(c, t, 28f, y, cardW, cardH, "div_pick_$i", 1)
         y += cardH + 14f
     }
+    endScroll(c, y)
 }
 
 internal fun GameView.tapDivinity(id: String) {
