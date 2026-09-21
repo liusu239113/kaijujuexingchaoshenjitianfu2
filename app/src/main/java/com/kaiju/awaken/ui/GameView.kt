@@ -92,7 +92,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var runStartMs = 0L
     var pendingAchievements = ArrayList<com.kaiju.awaken.game.AchDef>()
     var codexTab = 0
-    var recruitList: List<com.kaiju.awaken.game.Unit> = emptyList()
+    var recruitList: MutableList<com.kaiju.awaken.game.Unit> = ArrayList()
     var panelScroll = 0f
     var bagSelected = 0
     var detailTitle = ""

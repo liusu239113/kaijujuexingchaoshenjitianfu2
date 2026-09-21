@@ -22,7 +22,7 @@ internal fun GameView.drawRecruitScreen(c: Canvas) {
         return
     }
 
-    if (recruitList.isEmpty()) recruitList = TowerService.tavernCandidates(p.floor)
+    if (recruitList.isEmpty()) recruitList = ArrayList(TowerService.tavernCandidates(p.floor))
 
     r.text(c, "候选伙伴", 22f, y, 13f, Palette.CYAN, true)
     y += 10f

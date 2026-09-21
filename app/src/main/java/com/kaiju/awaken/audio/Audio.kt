@@ -148,7 +148,7 @@ class Audio(private val ctx: Context) {
 
     /** 播放人物语音（覆盖式，同一时刻只播一条）。 */
     fun playVoice(name: String) {
-        if (\!sfxOn) return
+        if (!sfxOn) return
         val id = rawId(name)
         if (id == 0) return
         try {

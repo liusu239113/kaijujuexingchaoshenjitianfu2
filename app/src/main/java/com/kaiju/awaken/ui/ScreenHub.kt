@@ -116,7 +116,7 @@ internal fun GameView.tapHub(id: String) {
         "hub_merc" -> { panel = "merc"; panelScroll = 0f }
         "hub_settings" -> { panel = "settings"; panelScroll = 0f }
         "hub_recruit" -> {
-            recruitList = com.kaiju.awaken.game.TowerService.tavernCandidates(run?.floor ?: 1)
+            recruitList = ArrayList(com.kaiju.awaken.game.TowerService.tavernCandidates(run?.floor ?: 1))
             screen = GameView.Screen.RECRUIT
         }
         "hub_story" -> screen = GameView.Screen.STORY

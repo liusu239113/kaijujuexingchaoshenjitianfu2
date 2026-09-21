@@ -216,7 +216,7 @@ internal fun GameView.tapTower(id: String) {
             afterFloorAdvance()
         }
         id == "tower_recruit" -> {
-            recruitList = TowerService.tavernCandidates(run?.floor ?: 1)
+            recruitList = ArrayList(TowerService.tavernCandidates(run?.floor ?: 1))
             screen = GameView.Screen.RECRUIT
         }
         id.startsWith("tower_panel_") -> {
