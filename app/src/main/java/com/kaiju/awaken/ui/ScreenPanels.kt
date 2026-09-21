@@ -391,7 +391,7 @@ internal fun GameView.tapPanel(id: String) {
             bagSelected = id.removePrefix("panel_bagsel_").toIntOrNull() ?: 0
             return
         }
-        "panel_bag_equip" -> {
+        id == "panel_bag_equip" -> {
             val e = p.bag.getOrNull(bagSelected) ?: return
             val cur = p.equipped[e.slot]
             p.bag.removeAt(bagSelected)
@@ -402,7 +402,7 @@ internal fun GameView.tapPanel(id: String) {
             audio.play("levelup")
             showToast("已装备 " + e.name)
         }
-        "panel_bag_sell" -> {
+        id == "panel_bag_sell" -> {
             val e = p.bag.getOrNull(bagSelected) ?: return
             p.gold += e.sellValue
             p.bag.removeAt(bagSelected)
