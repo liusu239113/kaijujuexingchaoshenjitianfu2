@@ -61,7 +61,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                     val col2 = rarityColor(e.rarity)
                     card(c, x, yy, cell, cell, if (sel) Palette.GOLD else col2, 10f)
                     if (sel) r.glowPanel(c, x, yy, cell, cell, 10f, Palette.GOLD, 70)
-                    r.text(c, slotGlyph(e.slot), x + cell / 2f, yy + cell * 0.44f, cell * 0.44f, col2, true, Paint.Align.CENTER)
+                    drawIcon(c, com.kaiju.awaken.game.ArtIcon.equip(e.slot), x + cell / 2f, yy + cell * 0.44f, cell * 0.62f, col2)
                     r.text(c, e.name.take(4), x + cell / 2f, yy + cell * 0.72f, 9f, Palette.TEXT, false, Paint.Align.CENTER)
                     if (e.enhance > 0) r.text(c, "+" + e.enhance, x + cell / 2f, yy + cell * 0.9f, 9.5f, Palette.GOLD, true, Paint.Align.CENTER)
                     hit("panel_bagsel_" + i, x, yy, cell, cell)
@@ -86,7 +86,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             if (p == null) return
             for (slot in Content.slots) {
                 val e = p.equipped[slot.id]
-                r.text(c, slot.glyph + " " + slot.cn, 36f, y + 16f, 13f, Palette.TEXT_DIM, true)
+                drawIcon(c, com.kaiju.awaken.game.ArtIcon.equip(slot.id), 52f, y + 10f, 32f, Palette.CYAN)
+                r.text(c, slot.cn, 78f, y + 16f, 13f, Palette.TEXT_DIM, true)
                 if (e == null) {
                     r.text(c, "未装备", w - 60f, y + 16f, 12f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)
                 } else {
@@ -104,7 +105,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             for (s in hero.skills) {
                 val lv = heroSkillLevel(p, s.id)
                 card(c, 36f, y, w - 72f, 72f, if (s.isUltimate) Palette.GOLD else Palette.BORDER_SOFT, 12f)
-                r.text(c, s.name, 48f, y + 26f, 14f, Palette.TEXT, true)
+                drawIcon(c, com.kaiju.awaken.game.ArtIcon.skill(s), 66f, y + 36f, 44f, if (s.isUltimate) Palette.GOLD else Palette.CYAN)
+                r.text(c, s.name, 96f, y + 26f, 14f, Palette.TEXT, true)
                 r.text(c, (if (s.isUltimate) "终极技 · " else "") + "耗能 ${s.cost} 冷却 ${s.cd} · Lv.$lv/3", 48f, y + 46f, 11f, Palette.TEXT_DIM)
                 r.wrap(c, s.desc, 48f, y + 64f, w - 150f, 10.5f, Palette.TEXT_FAINT, 0f)
                 if (lv < 3) {
@@ -172,7 +174,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             for (it in Content.allItems) {
                 val cnt = p.items[it.id] ?: 0
                 card(c, 36f, y, w - 72f, 62f, if (cnt > 0) r.withAlpha(Palette.GOLD, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 12f)
-                r.text(c, it.glyph, 58f, y + 38f, 22f, Palette.GOLD)
+                drawIcon(c, com.kaiju.awaken.game.ArtIcon.item(it.id), 58f, y + 34f, 40f, Palette.GOLD)
                 r.text(c, it.name + "  ×$cnt", 88f, y + 26f, 13.5f, Palette.TEXT, true)
                 r.text(c, it.desc, 88f, y + 46f, 10.5f, Palette.TEXT_DIM)
                 y += 70f

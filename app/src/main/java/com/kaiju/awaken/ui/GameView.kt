@@ -432,6 +432,22 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         }
     }
 
+    /** 画一个图标资源（无图时退回 hex 框）。 */
+    fun drawIcon(c: Canvas, key: String, cx: Float, cy: Float, size: Float, border: Int? = null) {
+        val bmp = bitmap(key)
+        val half = size / 2f
+        if (bmp != null) {
+            val src = android.graphics.Rect(0, 0, bmp.width, bmp.height)
+            val dst = android.graphics.RectF(cx - half, cy - half, cx + half, cy + half)
+            r.fill.shader = null
+            r.fill.alpha = 255
+            c.drawBitmap(bmp, src, dst, r.fill)
+            if (border != null) r.outline(c, cx - half, cy - half, size, size, size * 0.24f, border, 1.6f)
+        } else {
+            r.hexFrame(c, cx, cy, half * 0.9f, border ?: Palette.CYAN, r.withAlpha(Palette.PANEL_SOFT, 255))
+        }
+    }
+
     fun classColor(clsId: String): Int = when (clsId) {
         "warrior" -> 0xFFFF8A5C.toInt()
         "mage" -> 0xFF8C7BFF.toInt()

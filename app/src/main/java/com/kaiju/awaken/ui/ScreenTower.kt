@@ -235,7 +235,7 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
         val it = shopStock[i]
         val afford = p.gold >= it.price
         card(c, 40f, y, w - 80f, 76f, if (afford) r.withAlpha(Palette.BORDER, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 14f)
-        r.text(c, it.glyph, 62f, y + 44f, 26f, Palette.CYAN)
+        drawIcon(c, com.kaiju.awaken.game.ArtIcon.item(it.id), 62f, y + 38f, 42f, Palette.CYAN)
         r.text(c, it.name, 96f, y + 30f, 15f, Palette.TEXT, true)
         r.text(c, it.desc, 96f, y + 52f, 11f, Palette.TEXT_DIM)
         r.text(c, "${it.price}💰", w - 60f, y + 44f, 14f, if (afford) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)

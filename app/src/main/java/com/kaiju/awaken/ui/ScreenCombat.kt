@@ -166,8 +166,9 @@ private fun GameView.drawCommandBar(c: Canvas, b: Battle) {
         val costOk = actor.energy >= s.cost
         val accent = if (s.isUltimate) Palette.GOLD else if (costOk) Palette.PINK else Palette.TEXT_FAINT
         card(c, x, y, cw - 6f, 48f, accent, 11f)
-        r.text(c, s.name, x + (cw - 6f) / 2f, y + 20f, 12.5f, if (costOk) Palette.TEXT else Palette.TEXT_FAINT, true, Paint.Align.CENTER)
-        r.text(c, "耗能 " + s.cost, x + (cw - 6f) / 2f, y + 36f, 10f, if (costOk) Palette.TEXT_DIM else Palette.RED, false, Paint.Align.CENTER)
+        drawIcon(c, com.kaiju.awaken.game.ArtIcon.skill(s), x + 20f, y + 24f, 30f, accent)
+        r.text(c, s.name, x + 38f, y + 21f, 11.5f, if (costOk) Palette.TEXT else Palette.TEXT_FAINT, true)
+        r.text(c, "耗能 " + s.cost, x + 38f, y + 37f, 9.5f, if (costOk) Palette.TEXT_DIM else Palette.RED)
         hit("cb_skill_$i", x, y, cw - 6f, 48f).enabled = costOk
         shown++
     }
@@ -181,8 +182,8 @@ private fun GameView.drawCommandBar(c: Canvas, b: Battle) {
             val def = com.kaiju.awaken.game.Content.itemById[id] ?: continue
             val cnt = p.items[id] ?: 0
             card(c, ix, iy - 10f, 62f, 44f, r.withAlpha(Palette.GOLD, 190), 10f)
-            r.text(c, def.glyph, ix + 31f, iy + 10f, 16f, Palette.TEXT, true, Paint.Align.CENTER)
-            r.text(c, "×" + cnt, ix + 31f, iy + 28f, 10f, Palette.GOLD, false, Paint.Align.CENTER)
+            drawIcon(c, com.kaiju.awaken.game.ArtIcon.item(id), ix + 20f, iy + 12f, 30f, Palette.GOLD)
+            r.text(c, "×" + cnt, ix + 46f, iy + 18f, 11f, Palette.GOLD, true, Paint.Align.CENTER)
             hit("cb_item_$id", ix, iy - 10f, 62f, 44f)
             ix += 66f
         }

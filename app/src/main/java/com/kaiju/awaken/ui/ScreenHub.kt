@@ -37,16 +37,16 @@ internal fun GameView.drawHubScreen(c: Canvas) {
     card(c, 20f, y, w - 40f, 44f, r.withAlpha(Palette.BORDER_SOFT, 190), 12f)
     val gold = p?.gold ?: 0
     val cols = listOf(
-        "金币" to gold.toString(),
-        "神格点" to perm.talentPoints.toString(),
-        "星尘" to perm.dust.toString(),
-        "最高" to perm.bestFloor.toString()
+        com.kaiju.awaken.game.ArtIcon.GOLD to gold.toString(),
+        com.kaiju.awaken.game.ArtIcon.TALENT to perm.talentPoints.toString(),
+        com.kaiju.awaken.game.ArtIcon.DUST to perm.dust.toString(),
+        com.kaiju.awaken.game.ArtIcon.FLOOR to perm.bestFloor.toString()
     )
     val cw = (w - 40f) / 4f
     for (i in cols.indices) {
         val cx = 20f + cw * i + cw / 2f
-        r.text(c, cols[i].first, cx, y + 18f, 10f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
-        r.text(c, cols[i].second, cx, y + 36f, 14f, Palette.GOLD, true, Paint.Align.CENTER)
+        drawIcon(c, cols[i].first, cx - 14f, y + 22f, 24f)
+        r.text(c, cols[i].second, cx + 10f, y + 27f, 14f, Palette.GOLD, true, Paint.Align.CENTER)
     }
     y += 56f
 
