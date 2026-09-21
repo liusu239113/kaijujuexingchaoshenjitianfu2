@@ -75,7 +75,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 68f
 
-    r.text(c, "v1.2.2 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.2.3 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
@@ -99,6 +99,15 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
     // 改为可滚动：旧实现内容总高约 740，在 h=711 的 16:9 屏上「职阶网格」
     // 会与底部「觉醒天赋」按钮重叠，职阶说明卡直接被挤出屏幕。
     var y = beginScroll(c, 100f)
+
+    // 角色名：进入游戏前必须先命名，且命名后角色不可更换
+    card(c, 24f, y, w - 48f, 58f, r.withAlpha(Palette.GOLD, 200), 14f)
+    r.text(c, "角色名", 38f, y + 24f, 11.5f, Palette.TEXT_DIM)
+    r.text(c, if (playerName.isBlank()) "点 击 命 名" else playerName, 38f, y + 46f, 16f,
+        if (playerName.isBlank()) Palette.TEXT_FAINT else Palette.GOLD, true)
+    hit("setup_name", 24f, y, w - 48f, 58f)
+    y += 70f
+
     r.text(c, "试炼强度", 24f, y, 15f, Palette.CYAN, true)
     y += 12f
     val modes = GameMode.values()
@@ -188,7 +197,15 @@ internal fun GameView.tapSetup(id: String) {
                 showToast("该职阶未解锁，可在「星尘兑换」中解锁")
             }
         }
-        id == "setup_go" -> startRun()
+        id == "setup_name" -> askPlayerName()
+        id == "setup_go" -> {
+            if (playerName.isBlank()) {
+                audio.play("error")
+                showToast("请先给角色命名")
+                return
+            }
+            startRun()
+        }
         id == "setup_climb_up" -> {
             if (setupClimbLevel < perm.climbMaxUnlocked) setupClimbLevel++
             else showToast("通关当前档位后解锁下一档")

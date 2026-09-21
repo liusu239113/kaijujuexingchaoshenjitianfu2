@@ -35,7 +35,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     enum class Screen {
         MENU, HUB, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
-        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS, ENDING, PET, STORY, RECRUIT
+        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS, ENDING, PET, STORY, RECRUIT,
+        STORY_SCENE
     }
 
     companion object {
@@ -104,6 +105,79 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var detailTitle = ""
     var detailBody = ""
     var detailIcon = ""
+
+    // ---- 剧情演出 ----
+    /** 当前剧情的分页文本，每页一段。 */
+    var storyPages: List<String> = emptyList()
+    var storyPage = 0
+    /** 剧情播完回到哪个屏幕。 */
+    var storyReturn = Screen.TOWER
+    /** 当前页淡入进度 0..1。 */
+    var storyFade = 0f
+    /** 已经播过开场剧情的章节号，避免来回切层重复弹。 */
+    private var storyShownChapter = -1
+
+    /** 玩家在创角时输入的名字。 */
+    var playerName = ""
+
+    fun heroName(): String = if (playerName.isBlank()) "拾语者" else playerName
+
+    /** 开一段剧情演出；播完自动回到 ret。 */
+    fun openStory(pages: List<String>, ret: Screen) {
+        val list = pages.filter { it.isNotBlank() }
+        if (list.isEmpty()) { goScreen(ret); return }
+        storyPages = list
+        storyPage = 0
+        storyReturn = ret
+        storyFade = 0f
+        goScreen(Screen.STORY_SCENE)
+    }
+
+    fun advanceStory() {
+        storyPage++
+        if (storyPage >= storyPages.size) {
+            goScreen(storyReturn)
+        } else {
+            storyFade = 0f
+        }
+    }
+
+    /** 到达章节节点时插入章节剧情。返回 true 表示已接管本次跳转。 */
+    fun maybeShowChapterStory(): Boolean {
+        val p = run ?: return false
+        val ch = com.kaiju.awaken.game.Story.current(perm.storyIndex) ?: return false
+        if (p.floor < ch.goalFloor) return false
+        if (perm.chapterClaimed.contains(ch.index.toString())) return false
+        if (storyShownChapter == ch.index) return false
+        storyShownChapter = ch.index
+        openStory(com.kaiju.awaken.game.StoryScript.chapter(ch, heroName()), Screen.TOWER)
+        return true
+    }
+
+    /** 弹出系统输入框为角色命名。 */
+    fun askPlayerName() {
+        try {
+            val input = android.widget.EditText(context)
+            input.setText(playerName)
+            input.setSingleLine(true)
+            input.filters = arrayOf<android.text.InputFilter>(android.text.InputFilter.LengthFilter(8))
+            input.setHint("最多 8 个字")
+            android.app.AlertDialog.Builder(context)
+                .setTitle("为拾语者命名")
+                .setView(input)
+                .setPositiveButton("确定") { _, _ ->
+                    val t = input.text.toString().trim()
+                    if (t.isNotEmpty()) {
+                        playerName = t
+                        showToast("已命名为「" + t + "」")
+                    }
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        } catch (t: Throwable) {
+            showToast("当前环境无法呼出输入框")
+        }
+    }
     private var touchDownMs = 0L
     private var lastTouchVX = 0f
     private var lastTouchVY = 0f
@@ -203,6 +277,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.PET -> { screen = Screen.HUB; true }
             Screen.STORY -> { screen = Screen.HUB; true }
             Screen.RECRUIT -> { screen = Screen.HUB; true }
+            Screen.STORY_SCENE -> { advanceStory(); true }
             else -> false
         }
     }
@@ -236,6 +311,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             touchDownMs = 0L
         }
         r.pctPulse = (0.5f + 0.5f * kotlin.math.sin(time * 3.2f))
+        if (storyFade < 1f) storyFade = (storyFade + dt * 2.6f).coerceAtMost(1f)
         if (toastTime > 0f) toastTime -= dt
         for (p in particles) {
             p.y -= p.vy * dt
@@ -319,6 +395,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.SHOP -> drawShopScreen(canvas)
             Screen.ABOUT -> drawAboutScreen(canvas)
             Screen.SAVE_SLOTS -> drawSaveSlotsScreen(canvas)
+            Screen.STORY_SCENE -> drawStoryScene(canvas)
         }
         if (panel.isNotEmpty()) drawPanelOverlay(canvas)
         if (overlay.isNotEmpty()) drawOverlay(canvas)
@@ -337,6 +414,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         Screen.STORY -> "bg_corridor"
         Screen.RECRUIT -> "bg_menu"
         Screen.GROWTH, Screen.CODEX -> "bg_result"
+        // 剧情演出是纯黑屏，背景图用不到，但这里是无 else 的穷尽 when 表达式，
+        // 新增枚举值必须补分支，否则编译不过。
+        Screen.STORY_SCENE -> "bg_void"
     }
 
     private fun drawBackground(c: Canvas) {
@@ -903,6 +983,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("dust_") -> tapDust(id)
             id.startsWith("slot_") -> tapSlot(id)
             id.startsWith("confirm_") -> tapConfirm(id)
+            id.startsWith("sc_") -> tapStoryScene(id)
             id == "detail_close" -> tapConfirm(id)
         }
     }
@@ -916,10 +997,13 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         perm.classPlayed.add(setupClass)
         Save.savePerm(context, perm)
         run = p
+        if (playerName.isNotBlank()) p.hero().name = playerName
         RunService.recalcAll(p, perm)
         divinityOptions = com.kaiju.awaken.game.DraftService.rollDivinityChoices()
         for (t in divinityOptions) perm.codexSeen.add("t:" + t.id)
-        screen = Screen.DIVINITY
+        // 创角后立刻进黑屏序章，播完再进神格三选一
+        val clsName = com.kaiju.awaken.game.Data.classById[setupClass]?.name ?: ""
+        openStory(com.kaiju.awaken.game.StoryScript.prologue(heroName(), clsName), Screen.DIVINITY)
         audio.playBgm("city")
     }
 
@@ -1057,6 +1141,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             beginDraft(1)
             return
         }
+        // 抵达章节节点时插入剧情
+        if (maybeShowChapterStory()) return
         screen = Screen.TOWER
         audio.playBgm("tower")
     }
@@ -1145,6 +1231,13 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             "tavern" -> {
                 tavernList = ArrayList(TowerService.tavernCandidates(p.floor))
                 overlay = "tavern"
+            }
+            "story" -> {
+                // 奇遇类事件：先把引子当成一屏剧情放出来，再回到楼层做选择
+                val intro = fe.event?.intro ?: ""
+                if (intro.isNotEmpty()) {
+                    openStory(com.kaiju.awaken.game.StoryScript.encounter(intro, heroName()), Screen.TOWER)
+                }
             }
             "event" -> {
                 // 事件选项直接显示在楼层界面
