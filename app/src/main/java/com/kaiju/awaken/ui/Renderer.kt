@@ -11,29 +11,65 @@ import android.graphics.Typeface
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** 二次元风格视觉基调：深紫夜色 + 霓虹粉/青 + 玻璃卡片。 */
+/**
+ * PixelForge 像素风设计令牌（移植自 ui-pixelforge 设计规范）。
+ * 规则：圆角恒为 0 / 2px 内描边（填充色的暗一档）/ 零模糊硬投影 / 深色高对比底。
+ */
 object Palette {
-    const val BG_TOP = 0xFF150B2E.toInt()
-    const val BG_BOTTOM = 0xFF07041A.toInt()
-    const val PANEL = 0xFF221549.toInt()
-    const val PANEL_DEEP = 0xFF170E36.toInt()
-    const val PANEL_SOFT = 0xFF2C1C5E.toInt()
-    const val BORDER = 0xFF6C4CE0.toInt()
-    const val BORDER_SOFT = 0xFF3B2A78.toInt()
-    const val PINK = 0xFFFF5FA2.toInt()
-    const val CYAN = 0xFF54E8FF.toInt()
-    const val GOLD = 0xFFFFD166.toInt()
-    const val GREEN = 0xFF5FE8A0.toInt()
-    const val RED = 0xFFFF6B6B.toInt()
-    const val TEXT = 0xFFF4EFFF.toInt()
-    const val TEXT_DIM = 0xFFA99CD8.toInt()
-    const val TEXT_FAINT = 0xFF6F5FA8.toInt()
-    const val HP_A = 0xFF63F0B0.toInt()
-    const val HP_B = 0xFF2FB77E.toInt()
-    const val HP_LOW = 0xFFFF5F6D.toInt()
-    const val EN_A = 0xFF7FD8FF.toInt()
-    const val EN_B = 0xFF4A7BFF.toInt()
-    const val SHIELD = 0xFFB9A6FF.toInt()
+    // 底色
+    const val BG_TOP = 0xFF0F0F23.toInt()
+    const val BG_BOTTOM = 0xFF08081A.toInt()
+    const val PANEL = 0xFF1B1B3A.toInt()
+    const val PANEL_DEEP = 0xFF14142C.toInt()
+    const val PANEL_SOFT = 0xFF252550.toInt()
+    const val BORDER = 0xFF3A3A6A.toInt()
+    const val BORDER_SOFT = 0xFF2E2E56.toInt()
+
+    // 强调色（高饱和）
+    const val PINK = 0xFF21BDAE.toInt()      // primary 青绿
+    const val CYAN = 0xFF45AAF2.toInt()      // info 亮蓝
+    const val GOLD = 0xFFFFD93D.toInt()      // warning 亮黄
+    const val GREEN = 0xFF50C878.toInt()     // success 亮绿
+    const val RED = 0xFFFF4757.toInt()       // error 亮红
+    const val PURPLE = 0xFF6C5CE7.toInt()    // secondary 紫
+
+    // 文本
+    const val TEXT = 0xFFF0F0F0.toInt()
+    const val TEXT_DIM = 0xFFA0A0C0.toInt()
+    const val TEXT_FAINT = 0xFF505070.toInt()
+
+    // 状态条
+    const val HP_A = 0xFF50C878.toInt()
+    const val HP_B = 0xFF3AA85E.toInt()
+    const val HP_LOW = 0xFFFF4757.toInt()
+    const val EN_A = 0xFF45AAF2.toInt()
+    const val EN_B = 0xFF2E7BD6.toInt()
+    const val SHIELD = 0xFF6C5CE7.toInt()
+
+    /** 零模糊硬投影颜色。 */
+    const val SHADOW = 0xCC0A0A1A.toInt()
+    /** 按钮左上高光斜面。 */
+    const val BEVEL = 0x30FFFFFF
+
+    /** 12 阶暗化，用于内描边。 */
+    fun darken(color: Int, amount: Float = 0.30f): Int {
+        val a = (color ushr 24) and 0xFF
+        val r = ((color ushr 16) and 0xFF) * (1f - amount)
+        val g = ((color ushr 8) and 0xFF) * (1f - amount)
+        val b = (color and 0xFF) * (1f - amount)
+        return (a shl 24) or (r.toInt().coerceIn(0, 255) shl 16) or
+            (g.toInt().coerceIn(0, 255) shl 8) or b.toInt().coerceIn(0, 255)
+    }
+
+    /** 提亮，用于高光/悬停。 */
+    fun lighten(color: Int, amount: Float = 0.18f): Int {
+        val a = (color ushr 24) and 0xFF
+        val r = ((color ushr 16) and 0xFF) + (255 - ((color ushr 16) and 0xFF)) * amount
+        val g = ((color ushr 8) and 0xFF) + (255 - ((color ushr 8) and 0xFF)) * amount
+        val b = (color and 0xFF) + (255 - (color and 0xFF)) * amount
+        return (a shl 24) or (r.toInt().coerceIn(0, 255) shl 16) or
+            (g.toInt().coerceIn(0, 255) shl 8) or b.toInt().coerceIn(0, 255)
+    }
 }
 
 class Renderer {
@@ -51,6 +87,8 @@ class Renderer {
 
     /** 全局字号缩放（1.0 = 100%）。 */
     var fontScale = 1f
+    /** 0..1 脉冲值，用于血条高光呼吸。 */
+    var pctPulse = 0f
 
     /** 注入游戏字体（打包在 assets/fonts 下的中文黑体）。 */
     fun setTypeface(tf: Typeface) {
@@ -98,54 +136,61 @@ class Renderer {
         return cy
     }
 
-    fun panel(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, top: Int, bottom: Int, border: Int?, borderW: Float = 2f) {
+fun panel(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, top: Int, bottom: Int, border: Int?, borderW: Float = 2f, shadow: Float = 0f) {
+        if (shadow > 0f) {
+            fill.shader = null
+            fill.color = Palette.SHADOW
+            c.drawRect(x + shadow, y + shadow, x + w + shadow, y + h + shadow, fill)
+        }
         rect.set(x, y, x + w, y + h)
         fill.shader = LinearGradient(x, y, x, y + h, top, bottom, Shader.TileMode.CLAMP)
-        c.drawRoundRect(rect, radius, radius, fill)
+        c.drawRect(rect, fill)
         fill.shader = null
         if (border != null) {
+            val ins = borderW / 2f
             stroke.shader = null
             stroke.color = border
             stroke.strokeWidth = borderW
-            c.drawRoundRect(rect, radius, radius, stroke)
+            rect.set(x + ins, y + ins, x + w - ins, y + h - ins)
+            c.drawRect(rect, stroke)
         }
     }
 
-    fun glowPanel(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, tint: Int, alpha: Int = 40) {
-        var i = 4
-        while (i >= 1) {
-            rect.set(x - i * 2.5f, y - i * 2.5f, x + w + i * 2.5f, y + h + i * 2.5f)
-            stroke.color = (tint and 0x00FFFFFF) or ((alpha / (i + 1)) shl 24)
-            stroke.strokeWidth = 2.5f
-            stroke.shader = null
-            c.drawRoundRect(rect, radius + i, radius + i, stroke)
-            i--
-        }
+fun glowPanel(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, tint: Int, alpha: Int = 40) {
+        fill.shader = null
+        fill.color = Palette.SHADOW
+        c.drawRect(x + 3f, y + 3f, x + w + 3f, y + h + 3f, fill)
+        stroke.shader = null
+        stroke.color = (tint and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
+        stroke.strokeWidth = 2f
+        c.drawRect(x - 1f, y - 1f, x + w + 1f, y + h + 1f, stroke)
     }
 
-    fun solid(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, color: Int) {
-        rect.set(x, y, x + w, y + h)
+fun solid(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, color: Int) {
         fill.shader = null
         fill.color = color
-        c.drawRoundRect(rect, radius, radius, fill)
+        c.drawRect(x, y, x + w, y + h, fill)
     }
 
-    fun outline(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, color: Int, width: Float = 2f) {
-        rect.set(x, y, x + w, y + h)
+fun outline(c: Canvas, x: Float, y: Float, w: Float, h: Float, radius: Float, color: Int, width: Float = 2f) {
         stroke.shader = null
         stroke.color = color
         stroke.strokeWidth = width
-        c.drawRoundRect(rect, radius, radius, stroke)
+        val ins = width / 2f
+        c.drawRect(x + ins, y + ins, x + w - ins, y + h - ins, stroke)
     }
 
     fun bar(c: Canvas, x: Float, y: Float, w: Float, h: Float, pct: Float, a: Int, b: Int, bg: Int = 0x66000000) {
-        solid(c, x, y, w, h, h / 2f, bg)
+        solid(c, x, y, w, h, 0f, bg)
         val p = pct.coerceIn(0f, 1f)
+        val vp = pctPulse
         if (p <= 0f) return
-        rect.set(x, y, x + w * p, y + h)
-        fill.shader = LinearGradient(x, y, x + w, y, a, b, Shader.TileMode.CLAMP)
-        c.drawRoundRect(rect, h / 2f, h / 2f, fill)
         fill.shader = null
+        fill.color = a
+        c.drawRect(x, y, x + w * p, y + h, fill)
+        // 高光条（脉冲变化，便于肉眼确认条在动）
+        fill.color = Palette.lighten(a, 0.25f + 0.25f * vp)
+        c.drawRect(x, y, x + w * p, y + h * 0.45f, fill)
     }
 
     fun softBar(c: Canvas, x: Float, y: Float, w: Float, h: Float, pct: Float, color: Int) {
@@ -157,21 +202,15 @@ class Renderer {
     }
 
     /** 六边形头像底框，带霓虹描边。 */
-    fun hexFrame(c: Canvas, cx: Float, cy: Float, radius: Float, border: Int, fillColor: Int) {
-        path.reset()
-        for (i in 0 until 6) {
-            val ang = Math.toRadians((60.0 * i - 90.0))
-            val px = cx + (radius * cos(ang)).toFloat()
-            val py = cy + (radius * sin(ang)).toFloat()
-            if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
-        }
-        path.close()
+fun hexFrame(c: Canvas, cx: Float, cy: Float, radius: Float, border: Int, fillColor: Int) {
+        rect.set(cx - radius, cy - radius, cx + radius, cy + radius)
         fill.shader = null
         fill.color = fillColor
-        c.drawPath(path, fill)
+        c.drawRect(rect, fill)
+        stroke.shader = null
         stroke.color = border
-        stroke.strokeWidth = 2.5f
-        c.drawPath(path, stroke)
+        stroke.strokeWidth = 2f
+        c.drawRect(rect, stroke)
     }
 
     fun sparkle(c: Canvas, cx: Float, cy: Float, r: Float, color: Int, alpha: Int = 180) {

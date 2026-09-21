@@ -215,6 +215,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     private fun update(dt: Float) {
         time += dt
+        r.pctPulse = (0.5f + 0.5f * kotlin.math.sin(time * 3.2f))
         if (toastTime > 0f) toastTime -= dt
         for (p in particles) {
             p.y -= p.vy * dt
@@ -388,27 +389,33 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         return hr
     }
 
+    /** PixelForge 按钮：3px 硬投影 + 左上高光斜面 + 2px 内描边。 */
     fun button(c: Canvas, id: String, label: String, x: Float, y: Float, ww: Float, hh: Float, accent: Int, enabled: Boolean = true, sub: String? = null) {
-        val top = if (enabled) r.withAlpha(accent, 220) else 0xFF2A2244.toInt()
-        val bottom = if (enabled) r.withAlpha(accent, 150) else 0xFF1B1533.toInt()
-        r.glowPanel(c, x, y, ww, hh, hh * 0.28f, if (enabled) accent else 0xFF3A2F60.toInt(), 34)
-        r.panel(c, x, y, ww, hh, hh * 0.28f, top, bottom, if (enabled) Palette.TEXT else Palette.TEXT_FAINT, 1.6f)
-        val ty = if (sub == null) y + hh / 2f + 6f else y + hh / 2f - 2f
-        r.text(c, label, x + ww / 2f, ty, 16f, if (enabled) 0xFF1A0F2E.toInt() else Palette.TEXT_FAINT, true, Paint.Align.CENTER)
-        if (sub != null) {
-            r.text(c, sub, x + ww / 2f, y + hh / 2f + 18f, 11f, r.withAlpha(0xFF1A0F2E.toInt(), 190), false, Paint.Align.CENTER)
-        }
+        r.solid(c, x + 3f, y + 3f, ww, hh, 0f, Palette.SHADOW)
+        val top = if (enabled) accent else 0xFF2A2A4A.toInt()
+        val bottom = if (enabled) Palette.darken(accent, 0.22f) else 0xFF1E1E38.toInt()
+        r.panel(c, x, y, ww, hh, 0f, top, bottom, Palette.darken(accent, 0.45f), 2f)
+        r.solid(c, x + 2f, y + 2f, ww - 4f, 2f, 0f, Palette.BEVEL)
+        r.solid(c, x + 2f, y + 2f, 2f, hh - 4f, 0f, Palette.BEVEL)
+        val txtCol = if (enabled) 0xFF0F0F23.toInt() else Palette.TEXT_FAINT
+        val ty = if (sub == null) y + hh / 2f + 6f else y + hh / 2f - 1f
+        r.text(c, label, x + ww / 2f, ty, 16f, txtCol, true, Paint.Align.CENTER)
+        if (sub != null) r.text(c, sub, x + ww / 2f, y + hh / 2f + 18f, 11f, r.withAlpha(txtCol, 190), false, Paint.Align.CENTER)
         hit(id, x, y, ww, hh).enabled = enabled
     }
 
+    /** PixelForge 次级按钮：直角 + 2px 描边 + 2px 硬投影。 */
     fun ghostButton(c: Canvas, id: String, label: String, x: Float, y: Float, ww: Float, hh: Float, accent: Int) {
-        r.panel(c, x, y, ww, hh, hh * 0.28f, r.withAlpha(Palette.PANEL, 235), r.withAlpha(Palette.PANEL_DEEP, 235), r.withAlpha(accent, 200), 1.6f)
+        r.solid(c, x + 2f, y + 2f, ww, hh, 0f, Palette.SHADOW)
+        r.panel(c, x, y, ww, hh, 0f, Palette.PANEL, Palette.PANEL_DEEP, accent, 2f)
         r.text(c, label, x + ww / 2f, y + hh / 2f + 6f, 15f, accent, true, Paint.Align.CENTER)
         hit(id, x, y, ww, hh)
     }
 
-    fun card(c: Canvas, x: Float, y: Float, ww: Float, hh: Float, border: Int, radius: Float = 16f) {
-        r.panel(c, x, y, ww, hh, radius, r.withAlpha(Palette.PANEL, 240), r.withAlpha(Palette.PANEL_DEEP, 250), border, 1.8f)
+    /** PixelForge 卡片：直角 + 2px 内描边 + 4px 硬投影。 */
+    fun card(c: Canvas, x: Float, y: Float, ww: Float, hh: Float, border: Int, radius: Float = 0f) {
+        r.solid(c, x + 4f, y + 4f, ww, hh, 0f, Palette.SHADOW)
+        r.panel(c, x, y, ww, hh, 0f, Palette.PANEL, Palette.PANEL_DEEP, border, 2f)
     }
 
     fun drawTopBar(c: Canvas, title: String, subtitle: String, backId: String?, rightId: String?, rightLabel: String?) {
