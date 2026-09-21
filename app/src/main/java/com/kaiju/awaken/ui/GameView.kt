@@ -104,6 +104,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var detailTitle = ""
     var detailBody = ""
     var detailIcon = ""
+    private var touchDownMs = 0L
+    private var lastTouchVX = 0f
+    private var lastTouchVY = 0f
     private var longPressFired = false
     var confirmMsg = ""
     var confirmAction = ""
