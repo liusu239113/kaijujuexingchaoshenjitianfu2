@@ -149,7 +149,7 @@ private fun GameView.codexFilterLabel(): String = when (codexTab) {
 
 internal fun GameView.tapMeta(id: String) {
     when (id) {
-        "meta_back" -> setScreen(metaReturn)
+        "meta_back" -> goScreen(metaReturn)
         "meta_hub" -> goScreen(GameView.Screen.HUB)
         "meta_growth" -> goScreen(GameView.Screen.GROWTH)
         "meta_codex" -> goScreen(GameView.Screen.CODEX)
