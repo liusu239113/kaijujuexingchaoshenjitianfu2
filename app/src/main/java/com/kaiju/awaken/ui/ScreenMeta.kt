@@ -95,7 +95,7 @@ internal fun GameView.drawCodexFullScreen(c: Canvas) {
                     r.text(c, if (seen) t.name else "？？？", UiKit.MARGIN + 54f, y + 24f, 13f,
                         if (seen) Palette.TEXT else Palette.TEXT_FAINT, true)
                     r.text(c, if (seen) t.school.cn else "未觉醒", w - UiKit.MARGIN - 12f, y + 24f, 10.5f, col, false, Paint.Align.RIGHT)
-                    if (seen) r.wrap(c, t.desc, UiKit.MARGIN + 54f, y + 42f, contentW() - 90f, 10f, Palette.TEXT_DIM, 0f)
+                    if (seen) r.wrap(c, t.desc, UiKit.MARGIN + 54f, y + 42f, contentW() - 90f, 10f, Palette.TEXT_DIM, 13f)
                     y += 64f
                 }
                 y += 6f
@@ -108,7 +108,7 @@ internal fun GameView.drawCodexFullScreen(c: Canvas) {
                 card(c, UiKit.MARGIN, y, contentW(), 56f, if (seen) r.withAlpha(Palette.CYAN, 170) else Palette.BORDER_SOFT, UiKit.RADIUS)
                 r.text(c, if (seen) e.name else "未知遭遇", UiKit.MARGIN + 14f, y + 26f, 13f,
                     if (seen) Palette.TEXT else Palette.TEXT_FAINT, true)
-                if (seen) r.wrap(c, e.intro, UiKit.MARGIN + 14f, y + 44f, contentW() - 28f, 10f, Palette.TEXT_DIM, 0f)
+                if (seen) r.wrap(c, e.intro, UiKit.MARGIN + 14f, y + 44f, contentW() - 28f, 10f, Palette.TEXT_DIM, 13f)
                 y += 62f
             }
         }

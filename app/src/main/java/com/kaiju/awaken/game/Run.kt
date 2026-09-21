@@ -70,6 +70,8 @@ class RunState {
     var level = 1
     var exp = 0
     var skillPoints = 0
+    /** 战技等级（skillId -> 1..3），战技点消耗的落点 */
+    val skillLevels = HashMap<String, Int>()
     var alive = true
 
     val party = ArrayList<Unit>()

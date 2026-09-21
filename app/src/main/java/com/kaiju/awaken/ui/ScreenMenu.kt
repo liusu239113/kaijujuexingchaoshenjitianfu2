@@ -12,7 +12,9 @@ import com.kaiju.awaken.game.TowerService
 import com.kaiju.awaken.ui.GameView.Screen
 
 internal fun GameView.drawMenuScreen(c: Canvas) {
-    val titleY = h * 0.20f
+    // 底部按钮自 h-276 起排布，标题区必须整体上移，否则在 16:9 等矮屏上会压住战绩卡与按钮。
+    val btnTop = h - 276f
+    val titleY = (h * 0.20f).coerceAtMost((btnTop - 340f).coerceAtLeast(20f)).coerceAtLeast(20f)
     // 主标题
     r.text(c, "觉醒", w / 2f, titleY, 46f, Palette.TEXT, true, Paint.Align.CENTER)
     r.text(c, "曜神天赋", w / 2f, titleY + 54f, 42f, Palette.PINK, true, Paint.Align.CENTER)
@@ -45,7 +47,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
 
     // 当前存档提示
     val savedRun = run
-    var by = py + 118f
+    var by = py + 106f
     if (savedRun != null) {
         card(c, 24f, by, pw, 62f, r.withAlpha(Palette.CYAN, 170))
         r.text(c, "延续轮回", 40f, by + 27f, 14f, Palette.CYAN, true)
@@ -63,7 +65,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_slots", "存档", 48f, h - 104f, (bw - 12f) / 2f, 44f, Palette.CYAN)
     ghostButton(c, "menu_about", "关于", 48f + (bw - 12f) / 2f + 12f, h - 104f, (bw - 12f) / 2f, 44f, Palette.TEXT_DIM)
 
-    r.text(c, "v1.1.6 · PixelForge", w / 2f, h - 40f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.1.7 · PixelForge", w / 2f, h - 40f, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
 }
 
 internal fun GameView.tapMenu(id: String) {
@@ -88,7 +90,9 @@ internal fun GameView.tapMenu(id: String) {
 internal fun GameView.drawSetupScreen(c: Canvas) {
     drawTopBar(c, "轮回编成", "选择模式与职阶，随后觉醒神格", "setup_back", null, null)
 
-    var y = 118f
+    // 改为可滚动：旧实现内容总高约 740，在 h=711 的 16:9 屏上「职阶网格」
+    // 会与底部「觉醒天赋」按钮重叠，职阶说明卡直接被挤出屏幕。
+    var y = beginScroll(c, 118f)
     r.text(c, "试炼强度", 24f, y, 15f, Palette.CYAN, true)
     y += 12f
     val modes = GameMode.values()
@@ -153,6 +157,8 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
     r.text(c, "「${cls.title}」 ${cls.name}", 38f, y + 26f, 14f, classColor(cls.id), true)
     r.wrap(c, cls.desc, 38f, y + 46f, w - 76f, 12f, Palette.TEXT_DIM, 16f)
     r.text(c, "主面板：${primaryLabel(cls.primary)}   战技 ${cls.skills.size} 个", 38f, y + 66f, 11f, Palette.TEXT_FAINT)
+
+    endScroll(c, y + 14f)
 
     button(c, "setup_go", "觉 醒 天 赋", 48f, h - 92f, w - 96f, 58f, Palette.PINK)
 }
@@ -243,7 +249,8 @@ internal fun GameView.drawDraftScreen(c: Canvas) {
 
     val cardW = w - 56f
     val cardH = 118f
-    var y = if (p != null) 262f else 168f
+    // 加滚动：旧实现第 4 张天赋卡（大号字体/矮屏时连第 3 张）会落到屏幕外且无法触达。
+    var y = beginScroll(c, if (p != null) 262f else 168f)
     for (i in draftOptions.indices) {
         val o = draftOptions[i]
         drawTalentCard(c, o.talent, 28f, y, cardW, cardH, "draft_pick_$i", o.star)
@@ -253,6 +260,7 @@ internal fun GameView.drawDraftScreen(c: Canvas) {
         }
         y += cardH + 12f
     }
+    endScroll(c, y)
 }
 
 private fun GameView.drawReplacePicker(c: Canvas) {

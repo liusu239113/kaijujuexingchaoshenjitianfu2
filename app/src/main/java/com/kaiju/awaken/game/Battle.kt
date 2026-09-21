@@ -525,7 +525,7 @@ class Battle(
                 else -> target?.let { listOf(it) } ?: listOfNotNull(friends.minByOrNull { it.hpPct() })
             }
             for (t in targets) {
-                val amount = statOf(actor, skill.stat) * skill.coeff * (1.0 + actor.stats.healPower)
+                val amount = statOf(actor, skill.stat) * skill.coeff * lvMul(skill) * (1.0 + actor.stats.healPower)
                 t.heal(amount)
                 addFloat("+${amount.toInt()}", 0xFF66E28A.toInt(), t)
             }
@@ -538,7 +538,7 @@ class Battle(
                 else -> listOfNotNull(target ?: friends.minByOrNull { it.hpPct() })
             }
             for (t in targets) {
-                val amount = statOf(actor, skill.stat) * skill.coeff
+                val amount = statOf(actor, skill.stat) * skill.coeff * lvMul(skill)
                 t.addShield(amount)
                 addFloat("盾 ${amount.toInt()}", 0xFF7FD3FF.toInt(), t)
             }
@@ -673,6 +673,13 @@ class Battle(
 
     // ------------------------------------------------------------ 伤害核心
 
+    /** 战技等级系数：Lv.1 = x1.0，每级 +12%（面板消耗战技点提升，最高 Lv.3）。 */
+    private fun lvMul(skill: Skill?): Double {
+        if (skill == null) return 1.0
+        val lv = (run.skillLevels[skill.id] ?: 1).coerceIn(1, 3)
+        return 1.0 + 0.12 * (lv - 1)
+    }
+
     fun dealDamage(attacker: Unit, target: Unit, skill: Skill?, critExtra: Double, penExtra: Double): Double {
         if (!target.alive) return 0.0
         // 闪避
@@ -688,7 +695,7 @@ class Battle(
 
         val statKey = skill?.stat ?: "atk"
         val statVal = max(1.0, statOf(attacker, statKey))
-        val coeff = skill?.coeff ?: 1.0
+        val coeff = (skill?.coeff ?: 1.0) * lvMul(skill)
         var def = max(0.0, target.stats.def)
         val ab = target.buffStacks("armor_break")
         if (ab > 0) def *= max(0.0, 1.0 - 0.05 * min(ab, 15))

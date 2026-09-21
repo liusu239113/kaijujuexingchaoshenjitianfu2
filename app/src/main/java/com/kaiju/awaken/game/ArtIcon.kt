@@ -60,7 +60,8 @@ object ArtIcon {
 
     /** 伙伴头像小图标：cp03 → ic_cp_03；非伙伴则返回空串。 */
     fun companion(avatarKey: String): String =
-        if (avatarKey.startsWith("cp") && avatarKey.length == 4) "ic_" + avatarKey else ""
+        // 资源名是 ic_cp_01（带下划线），旧实现拼成 ic_cp01 永远取不到图。
+        if (avatarKey.startsWith("cp") && avatarKey.length == 4) "ic_cp_" + avatarKey.substring(2) else ""
 
     /** 转职徽记：berserker → em_berserker。 */
     fun emblem(promoId: String): String = "em_" + promoId

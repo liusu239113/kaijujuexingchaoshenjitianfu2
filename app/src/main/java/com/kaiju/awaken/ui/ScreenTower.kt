@@ -24,31 +24,21 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
     ghostButton(c, "tower_panel_talents", "天赋", w - bw * 2f - 22f, navY, bw, 34f, Palette.CYAN)
     ghostButton(c, "tower_panel_attrs", "面板", w - bw - 14f, navY, bw, 34f, Palette.PINK)
 
-    // 路径
+    // 路径（只画一次）
     drawFloorPath(c, 118f)
 
-    drawFloorPath(c, 118f)
-    val stageY2 = 214f
-    val fe2 = TowerService.currentEvent(p)
-    if (fe2 == null) {
-        card(c, 18f, stageY2, w - 36f, h - stageY2 - 108f, r.withAlpha(Palette.BORDER, 200), 18f)
-        r.text(c, "本层已肃清。", w / 2f, stageY2 + 80f, 18f, Palette.CYAN, true, Paint.Align.CENTER)
-        button(c, "tower_next_floor", "深入下一层", 48f, stageY2 + 120f, w - 96f, 56f, Palette.PINK)
-    } else {
-        drawEventStage(c, stageY2, fe2)
-    }
-    drawBottomNav(c)
-    // 事件舞台
+    // 事件舞台：全屏唯一绘制点。
+    // 旧实现把这一整段复制了两遍 —— 第二遍的 opaque card 会盖住第一遍已画好的内容，
+    // 导致「事件标题/选项被色块压住」的 UI 重叠，同时 hit 被重复注册、音效与结算双触发。
     val stageY = 214f
     val fe = TowerService.currentEvent(p)
     card(c, 18f, stageY, w - 36f, h - stageY - 108f, r.withAlpha(Palette.BORDER, 200), 18f)
     if (fe == null) {
         r.text(c, "本层已肃清。", w / 2f, stageY + 80f, 18f, Palette.CYAN, true, Paint.Align.CENTER)
         button(c, "tower_next_floor", "深入下一层", 48f, stageY + 120f, w - 96f, 56f, Palette.PINK)
-        drawBottomNav(c)
-        return
+    } else {
+        drawEventStage(c, stageY, fe)
     }
-    drawEventStage(c, stageY, fe)
     drawBottomNav(c)
     if (perm.seenIntro == false) {
         r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 236))
@@ -169,7 +159,8 @@ private fun GameView.drawEventStage(c: Canvas, top: Float, fe: com.kaiju.awaken.
             "combat_elite" -> "精锐战 · 掉落提升"
             else -> "凡庸战"
         }
-        r.text(c, kindLabel, w / 2f, top + h - 150f, 12f, accent, true, Paint.Align.CENTER)
+        // 旧写法 top + h - 150f 把提示画到了屏幕外（top 已含 214 偏移），这里修正为贴底栏
+        r.text(c, kindLabel, w / 2f, h - 150f, 12f, accent, true, Paint.Align.CENTER)
     }
 }
 

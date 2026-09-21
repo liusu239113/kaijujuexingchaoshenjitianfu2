@@ -344,17 +344,20 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 val src = android.graphics.Rect(0, 0, bmp.width, bmp.height)
                 val dst = android.graphics.RectF(0f, 0f, w, h)
                 r.fill.shader = null
-                r.fill.alpha = 255
+                r.fill.alpha = if (screen == Screen.MENU) 116 else 152
                 c.drawBitmap(bmp, src, dst, r.fill)
-                r.fill.color = r.withAlpha(0xFF0B0620.toInt(), 120)
-                c.drawRect(0f, 0f, w, h, r.fill)
-                r.fill.color = r.withAlpha(0xFF0B0620.toInt(), if (screen == Screen.MENU) 132 else 196)
+                r.fill.alpha = 255
+                r.fill.color = r.withAlpha(0xFF0B0620.toInt(), if (screen == Screen.MENU) 118 else 168)
                 c.drawRect(0f, 0f, w, h, r.fill)
             }
         }
-        r.fill.shader = LinearGradient(0f, 0f, w * 0.4f, h, Palette.BG_TOP, Palette.BG_BOTTOM, Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, w, h, r.fill)
-        r.fill.shader = null
+        // 只有「没有背景插画」时才铺全屏底色渐变；有插画时插画本身就是底色。
+        // 旧实现无条件把不透明渐变画在插画之上，背景图被 100% 遮住，全部背景资源等于没接。
+        if (bitmap(bgNameForScreen()) == null) {
+            r.fill.shader = LinearGradient(0f, 0f, w * 0.4f, h, Palette.BG_TOP, Palette.BG_BOTTOM, Shader.TileMode.CLAMP)
+            c.drawRect(0f, 0f, w, h, r.fill)
+            r.fill.shader = null
+        }
 
         // 极光光斑
         val t = time * 0.16f
@@ -384,7 +387,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         val a = (toastTime.coerceAtMost(1f) * 200).toInt().coerceIn(0, 200)
         val tw = r.measure(toast, 15f, true) + 40f
         val x = (w - tw) / 2f
-        val y = h - 150f
+        // 抬到各屏底部操作区之上，避免盖住「领取神格点 / 前往轮回淬炼」等按钮
+        val y = h - 252f
         r.solid(c, x, y, tw, 42f, 21f, r.withAlpha(0xFF120A2A.toInt(), a))
         r.outline(c, x, y, tw, 42f, 21f, r.withAlpha(Palette.CYAN, a), 1.5f)
         r.text(c, toast, w / 2f, y + 27f, 15f, r.withAlpha(Palette.TEXT, a), true, Paint.Align.CENTER)
@@ -473,7 +477,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     }
 
     fun drawPortrait(c: Canvas, key: String, cx: Float, cy: Float, size: Float, border: Int) {
-        val bmp = bitmap("pt_$key")
+        // 立绘优先走 pt_ 前缀；宠物等直接用资源名命名（pet_01）的键回退原名，
+        // 避免「资源明明存在却永远画成 ★ 占位」的立绘错配。
+        val bmp = bitmap("pt_$key") ?: bitmap(key)
         if (bmp != null) {
             val half = size / 2f
             val src = android.graphics.Rect(0, 0, bmp.width, bmp.height)
@@ -598,6 +604,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             MotionEvent.ACTION_DOWN -> {
                 dragLastY = vy
                 dragMoved = 0f
+                // 关键：每次按下都要复位长按标记。否则一次长按之后，本次会话内所有点击都被吞掉。
+                longPressFired = false
                 touchDownMs = System.currentTimeMillis()
                 lastTouchVX = vx
                 lastTouchVY = vy
@@ -613,13 +621,13 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 }
             }
             MotionEvent.ACTION_UP -> {
+                val held = System.currentTimeMillis() - touchDownMs
                 touchDownMs = 0L
                 if (dragMoved < 14f && !longPressFired) {
                     var i = hits.size - 1
                     while (i >= 0) {
                         val hh = hits[i]
                         if (hh.enabled && hh.contains(vx, vy)) {
-                            val held = System.currentTimeMillis() - touchDownMs
                             if (held >= 380L) {
                                 audio.play("page")
                                 handleLongPress(hh.id)

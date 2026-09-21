@@ -27,6 +27,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
         "attrs" -> "面板"
         "items" -> "道具"
         "settings" -> "设定"
+        "merc" -> "伙伴"
         else -> ""
     }
     r.text(c, title, w / 2f, top + 42f, 21f, Palette.CYAN, true, Paint.Align.CENTER)
@@ -40,7 +41,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
     var y = scrollTop + 8f - panelScroll
     when (panel) {
         "bag" -> {
-            if (p == null) return
+            if (p == null) { c.restore(); return }
             val gridTop = y
             val cols = 5
             val gap = 6f
@@ -83,7 +84,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 116f
         }
         "equip" -> {
-            if (p == null) return
+            if (p == null) { c.restore(); return }
             for (slot in Content.slots) {
                 val e = p.equipped[slot.id]
                 val rowH = if (e == null) 46f else 92f
@@ -103,10 +104,14 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 }
                 y += rowH + 8f
             }
-            ghostButton(c, "panel_auto", "一键换装（自动装备更强的装备）", 36f, bottom - 64f, w - 72f, 48f, Palette.GREEN)
+            // 旧实现把它钉在 bottom-64，正好落在裁剪线(h-136)以下，只剩 6px 可见，
+            // 且与底栏「关 闭」重叠 —— 点到的按钮看不见。改为跟随列表滚动。
+            y += 6f
+            ghostButton(c, "panel_auto", "一键换装（自动装备更强的装备）", 36f, y, w - 72f, 48f, Palette.GREEN)
+            y += 56f
         }
         "skills" -> {
-            if (p == null) return
+            if (p == null) { c.restore(); return }
             val hero = p.hero()
             r.text(c, "战技点 ${p.skillPoints} · Lv.${p.level}", 36f, y, 13f, Palette.GOLD, true)
             y += 14f
@@ -116,7 +121,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 drawIcon(c, com.kaiju.awaken.game.ArtIcon.skill(s), 68f, y + 44f, 46f, if (s.isUltimate) Palette.GOLD else Palette.CYAN)
                 r.text(c, s.name, 102f, y + 26f, 14f, Palette.TEXT, true)
                 r.text(c, (if (s.isUltimate) "终极技 · " else "") + "耗能 ${s.cost} 冷却 ${s.cd} · Lv.$lv/3", 102f, y + 46f, 11f, Palette.TEXT_DIM)
-                r.wrap(c, s.desc, 102f, y + 66f, w - 200f, 10.5f, Palette.TEXT_FAINT, 0f)
+                r.wrap(c, s.desc, 102f, y + 66f, w - 200f, 10.5f, Palette.TEXT_FAINT, 14f)
                 if (lv < 3) {
                     val cost = listOf(1, 2, 3)[lv.coerceIn(0, 2)]
                     ghostButton(c, "panel_learn_${s.id}", "升级 $cost", w - 108f, y + 28f, 68f, 34f, Palette.CYAN)
@@ -125,7 +130,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             }
         }
         "talents" -> {
-            if (p == null) return
+            if (p == null) { c.restore(); return }
             drawResonanceStrip(c, p, y)
             y += 106f
             val dv = p.grid.divinity
@@ -147,10 +152,12 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 }
                 y += 72f
             }
-            r.text(c, "神格点：${perm.talentPoints}", 36f, bottom - 76f, 12f, Palette.GOLD)
+            y += 6f
+            r.text(c, "神格点：${perm.talentPoints}", 36f, y + 12f, 12f, Palette.GOLD)
+            y += 26f
         }
         "attrs" -> {
-            if (p == null) return
+            if (p == null) { c.restore(); return }
             val hero = p.hero()
             val rows = listOf(
                 "生命" to "${hero.stats.maxHp.toInt()}",
@@ -178,7 +185,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             r.text(c, "共鸣：" + p.grid.resonanceBonus().label() + " · " + (Data.classById[p.classId]?.name ?: ""), 36f, y + 16f, 12f, Palette.CYAN, true)
         }
         "items" -> {
-            if (p == null) return
+            if (p == null) { c.restore(); return }
             for (it in Content.allItems) {
                 val cnt = p.items[it.id] ?: 0
                 card(c, 36f, y, w - 72f, 62f, if (cnt > 0) r.withAlpha(Palette.GOLD, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 12f)
@@ -189,7 +196,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             }
         }
         "merc" -> {
-            if (p == null) return
+            if (p == null) { c.restore(); return }
             if (p.party.size <= 1) {
                 r.text(c, "尚未招募伙伴。", w / 2f, y + 40f, 14f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
                 r.wrap(c, "在「游侠营地」事件或酒肆中可以花金币招募伙伴。伙伴拥有独立专长、星级与装备。", 44f, y + 70f, w - 88f, 12f, Palette.TEXT_DIM, 18f)
@@ -213,7 +220,9 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 ghostButton(c, "panel_merc_fire_" + i, "解雇", w - 126f, y + 56f, 90f, 34f, Palette.RED)
                 y += 112f
             }
-            r.text(c, "队伍上限 3 人（含主角）", 24f, bottom - 76f, 11f, Palette.TEXT_FAINT)
+            y += 4f
+            r.text(c, "队伍上限 3 人（含主角）", 24f, y + 12f, 11f, Palette.TEXT_FAINT)
+            y += 26f
         }
         "settings" -> {
             r.text(c, "🎵 乐曲音量 ${perm.musicVolume}%", 40f, y + 20f, 14f, Palette.TEXT)
@@ -246,6 +255,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             y += 62f
             ghostButton(c, "panel_export", "导出存档文本", 40f, y, (w - 88f) / 2f, 46f, Palette.CYAN)
             ghostButton(c, "panel_reset", "清空存档", 40f + (w - 88f) / 2f + 8f, y, (w - 88f) / 2f, 46f, Palette.RED)
+            // 旧实现漏了 y 累加，panelScrollMax 少算这一行，滚到底按钮仍贴着裁剪线（可见 0px）
+            y += 54f
         }
     }
     panelScrollMax = (y + panelScroll - scrollBottom).coerceAtLeast(0f)
@@ -262,7 +273,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
     ghostButton(c, "panel_close", "关 闭", 36f, bottom - 52f, w - 72f, 44f, Palette.TEXT_DIM)
 }
 private fun heroSkillLevel(p: com.kaiju.awaken.game.RunState, skillId: String): Int =
-    p.hero().cooldowns.keys.size.let { 1 }
+    p.skillLevels[skillId] ?: 1
 
 internal fun slotGlyph(slot: String): String = when (slot) {
     "weapon" -> "\u2694"
@@ -298,19 +309,21 @@ internal fun GameView.tapPanel(id: String) {
     // 这些操作不依赖本轮进度（主菜单也能打开设定）
     when (id) {
         "panel_close" -> { panel = ""; return }
-        "panel_vol_25" -> { setVol(25); return }
-        "panel_vol_50" -> { setVol(50); return }
-        "panel_vol_75" -> { setVol(75); return }
-        "panel_vol_100" -> { setVol(100); return }
+        "panel_vol_25" -> { setVol(25); Save.savePerm(context, perm); return }
+        "panel_vol_50" -> { setVol(50); Save.savePerm(context, perm); return }
+        "panel_vol_75" -> { setVol(75); Save.savePerm(context, perm); return }
+        "panel_vol_100" -> { setVol(100); Save.savePerm(context, perm); return }
         "panel_toggle_music" -> {
             perm.musicOn = perm.musicOn.not()
             audio.setMusicEnabled(perm.musicOn)
             if (perm.musicOn && run != null) audio.playBgm(if (screen == Screen.COMBAT) "battle" else "tower")
+            Save.savePerm(context, perm)
             return
         }
         "panel_toggle_sfx" -> {
             perm.sfxOn = perm.sfxOn.not()
             audio.sfxOn = perm.sfxOn
+            Save.savePerm(context, perm)
             return
         }
         "panel_toggle_vib" -> {
@@ -397,14 +410,22 @@ internal fun GameView.tapPanel(id: String) {
         }
         id.startsWith("panel_learn_") -> {
             val sid = id.removePrefix("panel_learn_")
+            // 旧实现取了 sid 却从不使用：等级永远 Lv.1、也没有满级拦截，
+            // 连点会把战技点全部扣光而技能毫无变化（「逻辑不通」的直接来源）。
+            val lv = p.skillLevels[sid] ?: 1
+            if (lv >= 3) {
+                showToast("该战技已满级")
+                return
+            }
             if (p.skillPoints <= 0) {
                 showToast("战技点不足")
                 return
             }
             p.skillPoints--
+            p.skillLevels[sid] = lv + 1
             RunService.recalcAll(p, perm)
             audio.play("levelup")
-            showToast("战技已锻铸")
+            showToast("战技提升至 Lv." + (lv + 1))
         }
         id.startsWith("panel_bagsel_") -> {
             bagSelected = id.removePrefix("panel_bagsel_").toIntOrNull() ?: 0
