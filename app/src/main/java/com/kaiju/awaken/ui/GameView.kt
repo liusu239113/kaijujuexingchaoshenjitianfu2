@@ -150,7 +150,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         if (perm.chapterClaimed.contains(ch.index.toString())) return false
         if (storyShownChapter == ch.index) return false
         storyShownChapter = ch.index
-        openStory(com.kaiju.awaken.game.StoryScript.chapter(ch, heroName()), Screen.TOWER)
+        openStory(com.kaiju.awaken.game.StoryScript.chapter(ch.index, heroName()), Screen.TOWER)
         return true
     }
 
