@@ -63,6 +63,7 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         Triple("hub_talents", "星语环", "enabled"),
         Triple("hub_merc", "伙伴", "party"),
         Triple("hub_growth", "轮回淬炼", "always"),
+        Triple("hub_recruit", "招募所", "party"),
         Triple("hub_story", "主线", "always"),
         Triple("hub_pet", "宠物", "always")
     )
@@ -114,6 +115,10 @@ internal fun GameView.tapHub(id: String) {
         "hub_talents" -> { panel = "talents"; panelScroll = 0f }
         "hub_merc" -> { panel = "merc"; panelScroll = 0f }
         "hub_settings" -> { panel = "settings"; panelScroll = 0f }
+        "hub_recruit" -> {
+            recruitList = com.kaiju.awaken.game.TowerService.tavernCandidates(run?.floor ?: 1)
+            screen = GameView.Screen.RECRUIT
+        }
         "hub_story" -> screen = GameView.Screen.STORY
         "hub_pet" -> screen = GameView.Screen.PET
         "hub_growth" -> screen = GameView.Screen.GROWTH

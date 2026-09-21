@@ -143,6 +143,34 @@ class Audio(private val ctx: Context) {
         }
     }
 
+
+    private var voice: MediaPlayer? = null
+
+    /** 播放人物语音（覆盖式，同一时刻只播一条）。 */
+    fun playVoice(name: String) {
+        if (\!sfxOn) return
+        val id = rawId(name)
+        if (id == 0) return
+        try {
+            voice?.release()
+            voice = MediaPlayer.create(ctx, id)?.apply {
+                setVolume(0.9f, 0.9f)
+                start()
+                setOnCompletionListener { it.release() }
+            }
+        } catch (t: Throwable) {
+        }
+    }
+
+    /** 按职阶选择男声/女声。 */
+    fun isFemaleClass(clsId: String): Boolean =
+        clsId == "mage" || clsId == "ranger" || clsId == "priest" || clsId == "puppeteer"
+
+    fun playClassVoice(clsId: String, kind: String) {
+        val p = if (isFemaleClass(clsId)) "v_f_" else "v_m_"
+        playVoice(p + kind)
+    }
+
     fun pauseAll() {
         try {
             bgm?.pause()
@@ -166,6 +194,11 @@ class Audio(private val ctx: Context) {
         } catch (t: Throwable) {
         }
         stopAmbience()
+        try {
+            voice?.release()
+            voice = null
+        } catch (t: Throwable) {
+        }
         try {
             pool?.release()
             pool = null

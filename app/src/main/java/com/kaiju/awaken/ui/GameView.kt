@@ -35,7 +35,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     enum class Screen {
         MENU, HUB, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
-        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS, ENDING, PET, STORY
+        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS, ENDING, PET, STORY, RECRUIT
     }
 
     companion object {
@@ -92,6 +92,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var runStartMs = 0L
     var pendingAchievements = ArrayList<com.kaiju.awaken.game.AchDef>()
     var codexTab = 0
+    var recruitList: List<com.kaiju.awaken.game.Unit> = emptyList()
     var panelScroll = 0f
     var bagSelected = 0
     var detailTitle = ""
@@ -193,6 +194,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.ENDING -> { screen = Screen.REINCARNATION; true }
             Screen.PET -> { screen = Screen.HUB; true }
             Screen.STORY -> { screen = Screen.HUB; true }
+            Screen.RECRUIT -> { screen = Screen.HUB; true }
             else -> false
         }
     }
@@ -283,6 +285,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.ENDING -> drawEndingScreen(canvas)
             Screen.PET -> drawPetScreen(canvas)
             Screen.STORY -> drawStoryScreen(canvas)
+            Screen.RECRUIT -> drawRecruitScreen(canvas)
             Screen.CODEX -> drawCodexFullScreen(canvas)
             Screen.ACHIEVEMENTS -> drawAchievementsScreen(canvas)
             Screen.SHOP -> drawShopScreen(canvas)
@@ -304,6 +307,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         Screen.ENDING -> "bg_ending"
         Screen.PET -> "bg_void"
         Screen.STORY -> "bg_corridor"
+        Screen.RECRUIT -> "bg_menu"
         Screen.GROWTH, Screen.CODEX -> "bg_result"
     }
 
@@ -728,6 +732,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("end_") -> tapEnding(id)
             id.startsWith("pet_") -> tapPet(id)
             id.startsWith("story_") -> tapStory(id)
+            id.startsWith("rec_") -> tapRecruit(id)
             id.startsWith("codex_") -> tapCodex(id)
             id.startsWith("dust_") -> tapDust(id)
             id.startsWith("slot_") -> tapSlot(id)
@@ -764,6 +769,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         audio.play("draft")
     }
 
+    fun playLevelVoice() {
+        run?.let { audio.playClassVoice(it.classId, "level") }
+    }
+
     fun afterDraft() {
         val p = run ?: return
         RunService.recalcAll(p, perm)
@@ -788,6 +797,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         combatDelay = 0.4f
         screen = Screen.COMBAT
         audio.playBgm(if (kind == "boss") "boss" else "battle")
+        audio.playClassVoice(p.classId, if (kind == "boss") "ult" else "start")
     }
 
     fun onBattleFinished(b: Battle) {
@@ -797,6 +807,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             lastRewards = rw
             battleResult = if (b.timedOut) "回合耗尽 · 按胜利结算（奖励减半）" else "遭遇战告捷"
             audio.play("victory")
+            audio.playClassVoice(p.classId, "win")
             Tracker.bump(perm, "chapterBoss", if (b.kind == "boss" && b.floor % 10 == 0) 1 else 0)
             if (b.timedOut) Tracker.bump(perm, "timeout")
             if (b.allies.all { it.hp >= it.stats.maxHp }) Tracker.bump(perm, "perfect")
@@ -820,6 +831,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             p.alive = false
             battleResult = "全员战殁"
             audio.play("defeat")
+            audio.playClassVoice(p.classId, "lose")
         }
         overlay = "battle_end"
         audio.playBgm("tower")

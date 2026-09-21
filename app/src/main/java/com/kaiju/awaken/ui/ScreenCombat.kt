@@ -211,6 +211,8 @@ private fun GameView.drawCommandBar(c: Canvas, b: Battle) {
     }
 }
 
+private var lastVoiceMs = 0L
+
 internal fun GameView.tapCombat(id: String) {
     val b = battle ?: return
     when {
@@ -249,6 +251,12 @@ internal fun GameView.tapCombat(id: String) {
             }
             b.playerAct(s, target)
             audio.play(com.kaiju.awaken.game.ArtIcon.skillSfx(s))
+            if (s.isUltimate) {
+                (run)?.let { audio.playClassVoice(it.classId, "ult") }
+            } else if (System.currentTimeMillis() - lastVoiceMs > 4500L) {
+                lastVoiceMs = System.currentTimeMillis()
+                (run)?.let { audio.playClassVoice(it.classId, "skill") }
+            }
             combatDelay = 0.32f
         }
     }
