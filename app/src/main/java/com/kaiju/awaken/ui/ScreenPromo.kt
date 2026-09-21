@@ -24,6 +24,8 @@ internal fun GameView.drawPromotionScreen(c: Canvas) {
         card(c, 22f, y, w - 44f, cardH, col, 18f)
         r.glowPanel(c, 22f, y, w - 44f, cardH, 18f, col, 42)
         drawPortrait(c, "pc_" + promo.id, 64f, y + 54f, 78f, col)
+        val emk = com.kaiju.awaken.game.ArtIcon.emblem(promo.id)
+        if (bitmap(emk) != null) drawIcon(c, emk, w - 66f, y + 44f, 44f, col)
         r.text(c, promo.name, 116f, y + 40f, 20f, Palette.TEXT, true)
         r.text(c, if (promoTier == 1) "一转路线" else "二转路线", w - 42f, y + 32f, 11.5f, col, false, Paint.Align.RIGHT)
         r.wrap(c, promo.desc, 116f, y + 60f, w - 154f, 11.5f, Palette.TEXT_DIM, 16f)

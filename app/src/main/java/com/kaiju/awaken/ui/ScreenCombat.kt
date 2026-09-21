@@ -90,12 +90,15 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, isEnem
         }
         val key = u.avatarKey.ifEmpty { u.clsId }
         val psize = if (cw < 110f) 44f else 54f
-        drawPortrait(c, key, x + cw / 2f, gridTop + psize * 0.52f, psize, if (isEnemy) Palette.RED else classColor(u.clsId))
+        val cpIcon = if (isEnemy) "" else com.kaiju.awaken.game.ArtIcon.companion(key)
+        if (cpIcon.isNotEmpty() && bitmap(cpIcon) != null) {
+            drawIcon(c, cpIcon, x + cw / 2f, gridTop + psize * 0.52f, psize, Palette.CYAN)
+        } else {
+            drawPortrait(c, key, x + cw / 2f, gridTop + psize * 0.52f, psize, if (isEnemy) Palette.RED else classColor(u.clsId))
+        }
         r.text(c, u.name, x + cw / 2f, gridTop + psize + 18f, if (cw < 110f) 10.5f else 12f, Palette.TEXT, true, Paint.Align.CENTER)
         val barY = gridTop + psize + 24f
-        r.bar(c, x + 8f, barY, cw - 16f, 9f, u.hpPct().toFloat(),
-            if (u.hpPct() < 0.3) Palette.HP_LOW else Palette.HP_A,
-            if (u.hpPct() < 0.3) Palette.HP_LOW else Palette.HP_B)
+        r.bar(c, x + 8f, barY, cw - 16f, 9f, u.hpPct().toFloat(), hpColor(u.hpPct()), hpColorDark(u.hpPct()))
         r.text(c, u.hp.toInt().toString() + "/" + u.stats.maxHp.toInt(), x + cw / 2f, barY + 21f, 10f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
         if (u.shield > 0.0) {
             r.bar(c, x + 8f, barY + 24f, cw - 16f, 5f, (u.shield / u.stats.maxHp).toFloat().coerceIn(0f, 1f), Palette.SHIELD, Palette.SHIELD)

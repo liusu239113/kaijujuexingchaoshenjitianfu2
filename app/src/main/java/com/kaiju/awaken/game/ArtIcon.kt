@@ -57,6 +57,14 @@ object ArtIcon {
 
     fun item(id: String): String = itemMap[id] ?: "ic_it_heal"
 
+
+    /** 伙伴头像小图标：cp03 → ic_cp_03；非伙伴则返回空串。 */
+    fun companion(avatarKey: String): String =
+        if (avatarKey.startsWith("cp") && avatarKey.length == 4) "ic_" + avatarKey else ""
+
+    /** 转职徽记：berserker → em_berserker。 */
+    fun emblem(promoId: String): String = "em_" + promoId
+
     const val GOLD = "ic_gold"
     const val TALENT = "ic_talent"
     const val DUST = "ic_dust"

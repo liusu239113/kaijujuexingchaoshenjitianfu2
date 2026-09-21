@@ -49,6 +49,12 @@ class Renderer {
         textAlign = Paint.Align.LEFT
     }
 
+    /** 全局字号缩放（1.0 = 100%）。 */
+    var fontScale = 1f
+
+    /** 文案翻译钩子：由 I18n 注入，null 表示不翻译。 */
+    var translator: ((String) -> String)? = null
+
     /** 注入游戏字体（打包在 assets/fonts 下的中文黑体）。 */
     fun setTypeface(tf: Typeface) {
         textPaint.typeface = tf
@@ -60,21 +66,23 @@ class Renderer {
 
     fun text(c: Canvas, s: String, x: Float, y: Float, size: Float, color: Int, bold: Boolean = false, align: Paint.Align = Paint.Align.LEFT) {
         val p = if (bold) boldPaint else textPaint
-        p.textSize = size
+        p.textSize = size * fontScale
         p.color = color
         p.textAlign = align
-        c.drawText(s, x, y, p)
+        val out = translator?.invoke(s) ?: s
+        c.drawText(out, x, y, p)
     }
 
     fun measure(s: String, size: Float, bold: Boolean = false): Float {
         val p = if (bold) boldPaint else textPaint
-        p.textSize = size
-        return p.measureText(s)
+        p.textSize = size * fontScale
+        val out = translator?.invoke(s) ?: s
+        return p.measureText(out)
     }
 
     fun wrap(c: Canvas, s: String, x: Float, y: Float, maxW: Float, size: Float, color: Int, lineH: Float, bold: Boolean = false): Float {
         val p = if (bold) boldPaint else textPaint
-        p.textSize = size
+        p.textSize = size * fontScale
         p.color = color
         p.textAlign = Paint.Align.LEFT
         var line = StringBuilder()

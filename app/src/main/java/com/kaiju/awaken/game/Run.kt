@@ -31,6 +31,8 @@ class PermState {
     var settingsFontScale = 100
     var settingsColorBlind = false
     var settingsBattleSpeed = 1
+    var settingsLanguage = "zh"
+    var settingsFontSize = 1
     var totalRuns = 0
     var pity = 0
     var musicOn = true

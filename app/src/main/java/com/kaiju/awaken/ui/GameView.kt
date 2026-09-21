@@ -35,7 +35,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     enum class Screen {
         MENU, HUB, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
-        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS
+        GROWTH, REINCARNATION, CODEX, ACHIEVEMENTS, SHOP, ABOUT, SAVE_SLOTS, ENDING
     }
 
     companion object {
@@ -121,6 +121,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         }
         Save.init(context)
         perm = Save.loadPerm(context)
+        applyDisplaySettings()
         audio.init()
         audio.musicOn = perm.musicOn
         audio.musicVolume = perm.musicVolume / 100f
@@ -184,6 +185,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.SAVE_SLOTS -> { screen = Screen.MENU; true }
             Screen.TOWER -> { screen = Screen.MENU; true }
             Screen.REINCARNATION -> { screen = Screen.MENU; true }
+            Screen.ENDING -> { screen = Screen.REINCARNATION; true }
             else -> false
         }
     }
@@ -265,6 +267,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             Screen.COMBAT -> drawCombatScreen(canvas)
             Screen.GROWTH -> drawGrowthScreen(canvas)
             Screen.REINCARNATION -> drawReincarnationScreen(canvas)
+            Screen.ENDING -> drawEndingScreen(canvas)
             Screen.CODEX -> drawCodexFullScreen(canvas)
             Screen.ACHIEVEMENTS -> drawAchievementsScreen(canvas)
             Screen.SHOP -> drawShopScreen(canvas)
@@ -283,6 +286,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         Screen.TOWER, Screen.DRAFT, Screen.DIVINITY, Screen.PROMOTION -> "bg_corridor"
         Screen.COMBAT -> "bg_battle"
         Screen.REINCARNATION -> "bg_ending"
+        Screen.ENDING -> "bg_ending"
         Screen.GROWTH, Screen.CODEX -> "bg_result"
     }
 
@@ -460,7 +464,36 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         else -> Palette.CYAN
     }
 
-    fun rarityColor(rr: Rarity): Int = rr.color
+    /** 色弱安全的稀有度配色（蓝/橙/黄/紫/青 区分度更高）。 */
+    private val cbRarity = intArrayOf(
+        0xFFB0BEC5.toInt(), 0xFF64B5F6.toInt(), 0xFF4DD0E1.toInt(),
+        0xFFFFB74D.toInt(), 0xFFFF7043.toInt(), 0xFFFFE082.toInt()
+    )
+
+    fun rarityColor(rr: Rarity): Int =
+        if (perm.settingsColorBlind) cbRarity[(rr.rank - 1).coerceIn(0, 5)] else rr.color
+
+    fun hpColor(pct: Double): Int = if (perm.settingsColorBlind) {
+        if (pct < 0.3) 0xFFFF7043.toInt() else 0xFF64B5F6.toInt()
+    } else {
+        if (pct < 0.3) Palette.HP_LOW else Palette.HP_A
+    }
+
+    fun hpColorDark(pct: Double): Int = if (perm.settingsColorBlind) {
+        if (pct < 0.3) 0xFFD84315.toInt() else 0xFF1E88E5.toInt()
+    } else {
+        if (pct < 0.3) Palette.HP_LOW else Palette.HP_B
+    }
+
+    /** 应用设置里的字号 / 语言。 */
+    fun applyDisplaySettings() {
+        r.fontScale = when (perm.settingsFontSize) {
+            0 -> 0.88f
+            2 -> 1.14f
+            else -> 1f
+        }
+        r.translator = { s -> com.kaiju.awaken.game.I18n.translate(s, perm.settingsLanguage) }
+    }
 
 
     /** 事件 → 场景插画映射；没有对应插画时返回 null（回退到 emoji）。 */
@@ -558,6 +591,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("promo_") -> tapPromotion(id)
             id.startsWith("meta_") -> tapMeta(id)
             id.startsWith("hub_") -> tapHub(id)
+            id.startsWith("end_") -> tapEnding(id)
             id.startsWith("codex_") -> tapCodex(id)
             id.startsWith("dust_") -> tapDust(id)
             id.startsWith("slot_") -> tapSlot(id)
@@ -751,7 +785,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         val newly = Tracker.evaluate(perm)
         if (newly.isNotEmpty()) pendingAchievements = ArrayList(newly)
         p.runOver = true
-        screen = Screen.REINCARNATION
+        val clearedRun = p.mode.endFloor > 0 && p.floor > p.mode.endFloor
+        screen = if (clearedRun) Screen.ENDING else Screen.REINCARNATION
         audio.play("levelup")
         Save.savePerm(context, perm)
         Save.clearRun(context)

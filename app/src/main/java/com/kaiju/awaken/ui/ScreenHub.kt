@@ -21,7 +21,12 @@ internal fun GameView.drawHubScreen(c: Canvas) {
     if (hero != null) {
         drawPortrait(c, hero.avatarKey.ifEmpty { hero.clsId }, 76f, y + 64f, 96f, classColor(hero.clsId))
         r.text(c, Data.classById[hero.clsId]?.name ?: "", 138f, y + 36f, 19f, Palette.TEXT, true)
-        val promo = RunService.promotionOf(p).joinToString(" → ") { it.name }
+        val promos = RunService.promotionOf(p)
+        val emblemKey = promos.lastOrNull()?.let { com.kaiju.awaken.game.ArtIcon.emblem(it.id) }
+        if (emblemKey != null && bitmap(emblemKey) != null) {
+            drawIcon(c, emblemKey, w - 52f, y + 44f, 44f, Palette.GOLD)
+        }
+        val promo = promos.joinToString(" → ") { it.name }
         if (promo.isNotEmpty()) r.text(c, promo, 138f, y + 56f, 11f, Palette.GOLD)
         r.text(c, "Lv." + p.level + "   神格环 " + p.grid.resonanceBonus().label(), 138f, y + 78f, 11.5f, Palette.CYAN)
         r.text(c, "生命 " + hero.stats.maxHp.toInt() + "   攻 " + hero.stats.atk.toInt() + "   法 " + hero.stats.matk.toInt() + "   防 " + hero.stats.def.toInt(), 138f, y + 98f, 10.5f, Palette.TEXT_DIM)
