@@ -28,7 +28,20 @@ object Content2 {
     val eliteAvatars = listOf("e01", "e02", "e03", "e04", "e05", "e06", "e07", "e08")
     val bossAvatars = listOf("b01", "b02", "b03", "b04", "b05", "b06", "b07", "b08", "b09", "b10", "b11", "b12")
     val monsterAvatars = (1..32).map { "m" + it.toString().padStart(2, '0') }
-    val companionAvatars = (1..12).map { "cp" + it.toString().padStart(2, '0') }
+    /**
+     * 伙伴立绘池，按「语音性别」分成两组。
+     * 旧实现是 12 张男女混在一起随机抽，和职阶语音性别无关 ——
+     * 男声的森语者伙伴会抽到少女立绘（真机反馈过）。cp02 是中性少年，两组都可出现。
+     */
+    val companionAvatarsFemale = listOf("cp01", "cp02", "cp04", "cp06", "cp07", "cp08", "cp09", "cp11")
+    val companionAvatarsMale = listOf("cp02", "cp03", "cp05", "cp10", "cp12")
+
+    /** 出男声的职阶（其余按女声处理），与 Audio.voiceProfile 的取向一一对应。 */
+    private val maleVoiceClasses = setOf("warrior", "vampire")
+
+    /** 按职阶语音性别取一张伙伴立绘。 */
+    fun companionAvatarFor(classId: String): String =
+        (if (classId in maleVoiceClasses) companionAvatarsMale else companionAvatarsFemale).random()
 
     // ---------------------------------------------------------------- 章节首领机制
 

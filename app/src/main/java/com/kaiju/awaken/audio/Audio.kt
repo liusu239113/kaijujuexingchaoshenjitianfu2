@@ -230,11 +230,14 @@ class Audio(private val ctx: Context) {
 
     /** 职阶 → 音色档案（4 套音色覆盖 8 个职阶）。 */
     fun voiceProfile(clsId: String): String = when (clsId) {
-        "assassin", "vampire" -> "blade"    // 夜刃 · 冷冽男声
+        // 立绘为女性的职阶：夜刃 / 森语者 / 星咏者 / 鸣丝使。
+        // 这三条线的专属技能语音已按女声重录，回退音色必须一起改，
+        // 否则同一个角色会出现「放技能是女声、开场/获胜/倒下是男声」。
+        "assassin", "druid", "mage", "puppeteer" -> "f"
+        "vampire" -> "blade"                // 绯血裔 · 立绘为男性 → 冷冽男声
         "priest" -> "priest"                // 圣歌使 · 治愈女声
         "ranger" -> "ranger"                // 岚射手 · 元气女声
-        "mage", "puppeteer" -> "f"          // 星咏者 · 清冷女声
-        else -> "m"                         // 曜铁卫 · 热血男声（战士 / 德鲁伊）
+        else -> "m"                         // 曜铁卫 · 热血男声
     }
 
     fun playClassVoice(clsId: String, kind: String) {

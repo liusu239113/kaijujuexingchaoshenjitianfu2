@@ -88,7 +88,10 @@ internal fun GameView.tapPromotion(id: String) {
     val promo = promoOptions.getOrNull(idx) ?: return
     val p = run ?: return
     if (promo.tier == 1) p.promotionId = promo.id else p.tier2Id = promo.id
-    p.hero().avatarKey = "pc_" + promo.id
+    // 性别对不上的转职保留原职阶立绘（见 Promotions.artLocked）
+    if (promo.id !in com.kaiju.awaken.game.Promotions.artLocked) {
+        p.hero().avatarKey = "pc_" + promo.id
+    }
     RunService.rebuildSkills(p.hero(), p.classId, p.promotionId, p.tier2Id)
     RunService.recalcAll(p, perm)
     audio.play("levelup")

@@ -231,7 +231,7 @@ object RunService {
             clsId = classId,
             level = level,
             rarity = rarity,
-            avatarKey = Content2.companionAvatars.random()
+            avatarKey = Content2.companionAvatarFor(classId)
         )
         u.base.maxHp = cd.baseHp * 0.8 * mul
         u.base.atk = cd.baseAtk * 0.8 * mul
