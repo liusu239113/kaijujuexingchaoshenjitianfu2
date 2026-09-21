@@ -81,7 +81,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 48f + bGap
 
-    r.text(c, "v1.2.7 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.3.0 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
