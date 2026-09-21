@@ -817,6 +817,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         screen = Screen.COMBAT
         audio.playBgm(if (kind == "boss") "boss" else "battle")
         audio.playClassVoice(p.classId, if (kind == "boss") "ult" else "start")
+        if (b.playCry.isNotEmpty()) {
+            audio.play(b.playCry)
+            b.playCry = ""
+        }
     }
 
     fun onBattleFinished(b: Battle) {

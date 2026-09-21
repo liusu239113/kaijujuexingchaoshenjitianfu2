@@ -162,14 +162,21 @@ class Audio(private val ctx: Context) {
         }
     }
 
-    /** 按职阶选择男声/女声。 */
-    fun isFemaleClass(clsId: String): Boolean =
-        clsId == "mage" || clsId == "ranger" || clsId == "priest" || clsId == "puppeteer"
+    /** 职阶 → 音色档案（4 套音色覆盖 8 个职阶）。 */
+    fun voiceProfile(clsId: String): String = when (clsId) {
+        "assassin", "vampire" -> "blade"    // 夜刃 · 冷冽男声
+        "priest" -> "priest"                // 圣歌使 · 治愈女声
+        "ranger" -> "ranger"                // 岚射手 · 元气女声
+        "mage", "puppeteer" -> "f"          // 星咏者 · 清冷女声
+        else -> "m"                         // 曜铁卫 · 热血男声（战士 / 德鲁伊）
+    }
 
     fun playClassVoice(clsId: String, kind: String) {
-        val p = if (isFemaleClass(clsId)) "v_f_" else "v_m_"
-        playVoice(p + kind)
+        playVoice("v_" + voiceProfile(clsId) + "_" + kind)
     }
+
+    /** 任意角色（含伙伴）按自身职阶播放语音。 */
+    fun playUnitVoice(clsId: String, kind: String) = playClassVoice(clsId, kind)
 
     fun pauseAll() {
         try {

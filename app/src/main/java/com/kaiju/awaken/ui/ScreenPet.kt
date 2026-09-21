@@ -68,6 +68,7 @@ internal fun GameView.tapPet(id: String) {
             Save.savePerm(context, perm)
             com.kaiju.awaken.game.RunService.recalcAll(run ?: return, perm)
             audio.play("starup")
+            audio.play(com.kaiju.awaken.game.Pets.cry(pid))
             showToast("出击宠物：" + (Pets.of(pid)?.name ?: ""))
         }
     }

@@ -33,6 +33,8 @@ class Battle(
     var auto = false
     var itemUsedThisTurn = false
     var pendingLevelUps = 0
+    /** 本场需要播放的宠物叫声（由 GameView 消费）。 */
+    var playCry: String = ""
 
     private val queue = ArrayList<Unit>()
     private var queueIdx = 0
@@ -65,6 +67,7 @@ class Battle(
                 "open_dmg" -> for (u in allies) if (u.alive) u.addBuff(Buff("rage", "狂野", 3, 1, 0.15, false))
                 else -> UnitSizes.noop()
             }
+            playCry = Pets.cry(pet.id)
             addLog("宠物【" + pet.name + "】同行。")
         }
         for (u in allies) {

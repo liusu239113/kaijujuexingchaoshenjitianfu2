@@ -45,6 +45,23 @@ object Pets {
     fun of(id: String?): PetDef? = if (id == null) null else byId[id]
 
     /** 未拥有的随机宠物；全拥有则返回 null。 */
+    /** 宠物叫声音效名（对应 res/raw/sfx_xxx.mp3）。 */
+    fun cry(id: String?): String = when (id) {
+        "pet_01" -> "pet_cry_fox"
+        "pet_02" -> "pet_cry_bird"
+        "pet_03" -> "pet_cry_beast"
+        "pet_04" -> "pet_cry_bird"
+        "pet_05" -> "pet_cry_beast"
+        "pet_06" -> "pet_cry_magic"
+        "pet_07" -> "pet_cry_bat"
+        "pet_08" -> "pet_cry_beast"
+        "pet_09" -> "pet_cry_beast"
+        "pet_10" -> "pet_cry_magic"
+        "pet_11" -> "pet_cry_beast"
+        "pet_12" -> "pet_cry_dragon"
+        else -> "pet_cry_beast"
+    }
+
     fun randomUnowned(owned: Set<String>): PetDef? =
         all.filter { !owned.contains(it.id) }.randomOrNull()
 }
