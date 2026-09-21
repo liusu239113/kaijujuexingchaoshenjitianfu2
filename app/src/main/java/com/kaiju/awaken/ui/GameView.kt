@@ -654,6 +654,88 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         }
     }
 
+    // ------------------------------------------------------------ 行内图标
+    // 游戏内所有「emoji 夹在文字里」的位置都改用这几个助手：
+    // 有 PNG 就画图、没 PNG 就回退原来的字符，两边宽度算法一致，不会串位。
+
+    /** 图标相对字号的默认边长。 */
+    fun iconSz(textSize: Float): Float = textSize * 1.2f
+
+    /**
+     * 在 [x] 处画一个行内图标，返回后续文字应起始的 X。
+     * [baselineY] 是该行文字的基线；[glyph] 为缺图时回退的原字符。
+     */
+    fun inlineIcon(
+        c: Canvas, key: String, glyph: String, x: Float, baselineY: Float,
+        textSize: Float, color: Int, size: Float = iconSz(textSize)
+    ): Float {
+        val gap = 4f
+        if (key.isNotEmpty() && bitmap(key) \!= null) {
+            drawIcon(c, key, x + size / 2f, baselineY - textSize * 0.34f, size, null)
+            return x + size + gap
+        }
+        if (glyph.isEmpty()) return x
+        r.text(c, glyph, x, baselineY, textSize, color, true)
+        return x + r.measure(glyph, textSize, true) + gap
+    }
+
+    /** 「图标 + 数值」小片的宽度，与 [statChip] 保持一致，便于居中排版。 */
+    fun chipW(value: String, textSize: Float, size: Float = iconSz(textSize)): Float =
+        size + 4f + r.measure(value, textSize, true)
+
+    /** 画一组「图标 + 数值」，返回下一组的起始 X。 */
+    fun statChip(
+        c: Canvas, key: String, glyph: String, value: String, x: Float, baselineY: Float,
+        textSize: Float, color: Int, gap: Float = 14f, size: Float = iconSz(textSize)
+    ): Float {
+        val cx = inlineIcon(c, key, glyph, x, baselineY, textSize, color, size)
+        r.text(c, value, cx, baselineY, textSize, color, true)
+        return cx + r.measure(value, textSize, true) + gap
+    }
+
+    /** 右对齐的「数值 + 图标」：图标贴右边界，数值在左；返回整组左边界 X。 */
+    fun priceRight(
+        c: Canvas, text: String, key: String, glyph: String, rightX: Float,
+        baselineY: Float, textSize: Float, color: Int, size: Float = iconSz(textSize)
+    ): Float {
+        val gap = 3f
+        val tw = r.measure(text, textSize, true)
+        if (key.isNotEmpty() && bitmap(key) \!= null) {
+            drawIcon(c, key, rightX - size / 2f, baselineY - textSize * 0.34f, size, null)
+            r.text(c, text, rightX - size - gap, baselineY, textSize, color, true, Paint.Align.RIGHT)
+            return rightX - size - gap - tw
+        }
+        if (glyph.isEmpty()) return rightX
+        r.text(c, glyph, rightX, baselineY, textSize, color, true, Paint.Align.RIGHT)
+        r.text(c, text, rightX - r.measure(glyph, textSize, true), baselineY, textSize, color, true, Paint.Align.RIGHT)
+        return rightX - r.measure(glyph, textSize, true) - tw
+    }
+
+    /** 画 [n] 颗星（ic_star），返回结束 X；缺图时回退连续 ★ 文字。 */
+    fun starRow(c: Canvas, n: Int, x: Float, baselineY: Float, size: Float, color: Int): Float {
+        val cnt = n.coerceIn(0, 6)
+        if (cnt == 0) return x
+        if (bitmap("ic_star") == null) {
+            val t = "★".repeat(cnt)
+            r.text(c, t, x, baselineY, size, color, true)
+            return x + r.measure(t, size, true)
+        }
+        var cx = x
+        for (i in 0 until cnt) {
+            drawIcon(c, "ic_star", cx + size / 2f, baselineY - size * 0.34f, size, null)
+            cx += size + 1f
+        }
+        return cx
+    }
+
+    /** 「星级数字」写法（★ + 数字，如 ★2），返回结束 X。 */
+    fun starLevel(c: Canvas, n: Int, x: Float, baselineY: Float, size: Float, color: Int): Float {
+        val cx = starRow(c, 1, x, baselineY, size, color)
+        val t = n.toString()
+        r.text(c, t, cx + 1f, baselineY, size * 0.88f, color, true)
+        return cx + 1f + r.measure(t, size * 0.88f, true)
+    }
+
     fun classColor(clsId: String): Int = when (clsId) {
         "warrior" -> 0xFFFF8A5C.toInt()
         "mage" -> 0xFF8C7BFF.toInt()
@@ -846,13 +928,25 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                     com.kaiju.awaken.game.TargetKind.ALLY_ALL -> "全体队友"
                     else -> "自身"
                 })
-                if (sk.hits > 1) sb.appendLine("段数：" + sk.hits + " 段")
+                val lvNow = com.kaiju.awaken.game.skillLvOf(run?.skillLevels?.get(sk.id) ?: 1)
+                val mulNow = com.kaiju.awaken.game.skillLvMul(lvNow)
+                val hitsNow = com.kaiju.awaken.game.skillHits(sk.hits, lvNow)
+                if (sk.hits > 1) {
+                    sb.appendLine(if (hitsNow > sk.hits) "段数：" + sk.hits + " → " + hitsNow + " 段（满级追加）"
+                    else "段数：" + sk.hits + " 段")
+                }
                 if (sk.coeff > 0.0) sb.appendLine("系数：" + (sk.coeff * 100).toInt() + "% × " + sk.stat)
+                if (sk.dotCoeff > 0.0) sb.appendLine("持续伤害系数：" + (sk.dotCoeff * 100).toInt() + "% × " + sk.stat)
                 val tg = sk.tags.joinToString(" · ") { tagName(it) }
                 if (tg.isNotEmpty()) sb.appendLine("效果：" + tg)
-                val lvNow = run?.skillLevels?.get(sk.id) ?: 1
                 sb.appendLine()
-                sb.appendLine("当前等级 Lv." + lvNow + " / 3（每级系数 +12%）")
+                // 等级收益要给出实数，否则玩家无法判断战技点花得值不值
+                sb.appendLine("当前等级 Lv." + lvNow + " / 3（每级 +12%，作用于伤害/治疗/护盾/增益/持续伤害）")
+                if (lvNow > 1) {
+                    if (sk.coeff > 0.0) sb.appendLine("  · 系数 " + (sk.coeff * 100).toInt() + "% → " + ((sk.coeff * mulNow) * 100).toInt() + "%")
+                    if (sk.dotCoeff > 0.0) sb.appendLine("  · 持续伤害 " + (sk.dotCoeff * 100).toInt() + "% → " + ((sk.dotCoeff * mulNow) * 100).toInt() + "%")
+                    if (hitsNow > sk.hits) sb.appendLine("  · 段数 " + sk.hits + " → " + hitsNow)
+                }
                 showDetail(sk.name, sb.toString(), com.kaiju.awaken.game.ArtIcon.skill(sk))
             }
             id.startsWith("panel_item_") -> {
@@ -983,6 +1077,66 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     fun goScreen(s0: Screen) {
         if (screen != s0) screenScroll = 0f
         screen = s0
+    }
+
+    /**
+     * 清空所有「属于当前存档 / 当前这一局」的界面状态。
+     * 换存档槽、开新档、结算回标题都要走一遍，否则上一档的弹层、详情页、
+     * 战斗对象、剧情分页会被下一个存档原样继承（含滚动位置）。
+     */
+    fun resetTransientUi() {
+        // 滚动
+        screenScroll = 0f
+        screenScrollMax = 0f
+        panelScroll = 0f
+        panelScrollMax = 0f
+        // 弹层
+        panel = ""
+        overlay = ""
+        detailTitle = ""
+        detailBody = ""
+        detailIcon = ""
+        exportText = ""
+        confirmMsg = ""
+        confirmAction = ""
+        // 局内交互
+        shopStock = emptyList()
+        tavernList = ArrayList()
+        recruitList = ArrayList()
+        bagSelected = 0
+        enhanceTarget = -1
+        preferredTargetId = null
+        // 战斗
+        battle = null
+        autoBattle = false
+        combatDelay = 0f
+        selectedSkill = null
+        selectedItem = null
+        battleResult = ""
+        lastRewards = null
+        hitFlashTarget = null
+        hitFlashTime = 0f
+        shakeTime = 0f
+        shakeMag = 0f
+        // 抽卡 / 觉醒
+        draftOptions = emptyList()
+        divinityOptions = emptyList()
+        picksLeft = 0
+        picksTotal = 3
+        replacePick = false
+        pendingOption = null
+        promoOptions = emptyList()
+        promoTier = 1
+        // 剧情
+        storyPages = emptyList()
+        storyPage = 0
+        storyFade = 0f
+        storyShownChapter = -1
+        // 进度展示
+        pendingAchievements = ArrayList()
+        codexTab = 0
+        metaReturn = Screen.MENU
+        eventResult = ""
     }
 
     fun handleTap(id: String) {

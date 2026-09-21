@@ -2,6 +2,7 @@ package com.kaiju.awaken.ui
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.kaiju.awaken.game.ArtIcon
 import com.kaiju.awaken.game.Data
 import com.kaiju.awaken.game.GameMode
 import com.kaiju.awaken.game.Rarity
@@ -17,19 +18,21 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     // 够高的屏幕仍用留白把按钮压到底部，观感不变。
     var y = beginScroll(c, 18f, h - 12f)
 
-    val titleY = y + 42f
+    // 矮屏（4:3 平板 h≈533）压缩标题区留白，把纵向空间让给按钮
+    val ts = if (h < 620f) 0.76f else 1f
+    val titleY = y + 42f * ts
     // 主标题
     r.text(c, "觉醒", w / 2f, titleY, 46f, Palette.TEXT, true, Paint.Align.CENTER)
     r.text(c, "曜神天赋", w / 2f, titleY + 54f, 42f, Palette.PINK, true, Paint.Align.CENTER)
     r.sparkle(c, w * 0.16f, titleY - 18f, 16f, Palette.CYAN)
     r.sparkle(c, w * 0.85f, titleY + 30f, 12f, Palette.PINK)
 
-    r.text(c, "曜 界 回 廊", w / 2f, titleY + 96f, 17f, Palette.CYAN, true, Paint.Align.CENTER)
-    r.text(c, "神格环上同源共鸣，这一次轮回更接近晨曦。", w / 2f, titleY + 128f, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    r.text(c, "曜 界 回 廊", w / 2f, titleY + 96f * ts, 17f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.text(c, "神格环上同源共鸣，这一次轮回更接近晨曦。", w / 2f, titleY + 128f * ts, 12.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
 
     // 战绩面板
     val pw = w - 48f
-    val py = titleY + 158f
+    val py = titleY + 158f * ts
     card(c, 24f, py, pw, 96f, r.withAlpha(Palette.BORDER, 190))
     val cols = 3
     val cellW = pw / cols
@@ -62,20 +65,23 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     // 标题界面只保留「开始/继续 · 设置 · 关于」。
     // 图鉴 / 成就 / 星尘兑换 / 存档 属于游戏内功能，已迁到「回廊前厅」，
     // 不再在开局堆一屏玩家看不懂用途的按钮。
-    val blockH = 56f + 16f + 48f + 16f + 48f + 20f + 14f
+    // 矮屏把按钮间距从 16 收到 6：整块高度从 218 降到 188，
+    // 按钮之间不再挤成一片，也不会因为压缩而互相压叠。
+    val bGap = if (h < 620f) 6f else 16f
+    val blockH = 56f + 48f + 48f + bGap * 3 + 20f + 14f
     val pushTo = h - 12f - blockH - 8f
     if (by + 20f < pushTo) by = pushTo - 20f
     by += 20f
 
     val bw = w - 96f
     button(c, "menu_start", if (savedRun == null) "开 始 游 戏" else "继 续 游 戏", 48f, by, bw, 56f, Palette.PINK)
-    by += 72f
+    by += 56f + bGap
     ghostButton(c, "menu_settings", "设 置", 48f, by, bw, 48f, Palette.CYAN)
-    by += 64f
+    by += 48f + bGap
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
-    by += 68f
+    by += 48f + bGap
 
-    r.text(c, "v1.2.6 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.2.7 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
@@ -112,21 +118,27 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
     y += 12f
     val modes = GameMode.values()
     val mw = (w - 48f - 12f) / 2f
+    // 模式卡高度与行距跟随字号：大字号下固定 60f 卡片会压住下一行
+    val modeStep = r.lh(70f)
+    val modeH = r.lh(60f)
     for (i in modes.indices) {
         val col = i % 2
         val row = i / 2
         val x = 24f + col * (mw + 12f)
-        val yy = y + row * 70f
+        val yy = y + row * modeStep
         val sel = setupMode == modes[i]
         val border = if (sel) Palette.PINK else Palette.BORDER_SOFT
-        card(c, x, yy, mw, 60f, border, 14f)
-        if (sel) r.glowPanel(c, x, yy, mw, 60f, 14f, Palette.PINK, 46)
-        r.text(c, modes[i].glyph + " " + modes[i].cn, x + 14f, yy + 26f, 15f, if (sel) Palette.PINK else Palette.TEXT, true)
+        card(c, x, yy, mw, modeH, border, 14f)
+        if (sel) r.glowPanel(c, x, yy, mw, modeH, 14f, Palette.PINK, 46)
+        // 模式 emoji 换成 PNG 图标（缺图自动回退原字符）
+        val mcol = if (sel) Palette.PINK else Palette.TEXT
+        val mtx = inlineIcon(c, ArtIcon.mode(modes[i]), modes[i].glyph, x + 14f, yy + 26f, 15f, mcol, 17f)
+        r.text(c, modes[i].cn, mtx, yy + 26f, 15f, mcol, true)
         val sub = if (modes[i].endFloor == 0) "无界 · 难度 ×${modes[i].mult}" else "目标 ${modes[i].endFloor} 层 · 难度 ×${modes[i].mult}"
         r.text(c, sub, x + 14f, yy + 46f, 11f, Palette.TEXT_DIM)
-        hit("setup_mode_" + modes[i].id, x, yy, mw, 60f)
+        hit("setup_mode_" + modes[i].id, x, yy, mw, modeH)
     }
-    y += 70f * 3 + 6f
+    y += modeStep * 3 + 6f
 
     if (setupMode == GameMode.CLIMB) {
         val tier = com.kaiju.awaken.game.Content2.climbTiers[(setupClimbLevel - 1).coerceIn(0, 49)]
@@ -137,7 +149,7 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
         ghostButton(c, "setup_climb_down", "－", w - 144f, y + 14f, 42f, 34f, Palette.TEXT_DIM)
         ghostButton(c, "setup_climb_up", "＋", w - 96f, y + 14f, 42f, 34f, Palette.CYAN)
         r.text(c, "已解锁 " + perm.climbMaxUnlocked + " 档", w - 154f, y + 34f, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)
-        y += 70f
+        y += modeStep
     }
     y += 8f
 
@@ -252,8 +264,9 @@ internal fun GameView.drawTalentCard(c: Canvas, t: Talent, x: Float, y: Float, w
     r.text(c, t.school.glyph, hexCx, hexCy + 8f, 20f, col, true, Paint.Align.CENTER)
 
     r.text(c, t.name, x + 74f, y + 32f, 18f, Palette.TEXT, true)
-    val rl = t.rarity.cn + " · " + t.school.cn + " · " + "★".repeat(star.coerceIn(1, 3))
+    val rl = t.rarity.cn + " · " + t.school.cn + " · "
     r.text(c, rl, x + 74f, y + 52f, 11.5f, col)
+    starRow(c, star.coerceIn(1, 3), x + 74f + r.measure(rl, 11.5f), y + 52f, 12f, col)
     r.wrap(c, t.desc, x + 74f, y + 74f, ww - 92f, 12f, Palette.TEXT_DIM, 16f)
     hit(id, x, y, ww, hh)
 }
@@ -271,7 +284,7 @@ internal fun GameView.drawDraftScreen(c: Canvas) {
     if (p != null) drawResonanceStrip(c, p, 158f)
 
     val cardW = w - 56f
-    val cardH = 118f
+    val cardH = r.lh(118f)
     // 加滚动：旧实现第 4 张天赋卡（大号字体/矮屏时连第 3 张）会落到屏幕外且无法触达。
     var y = beginScroll(c, if (p != null) 262f else 168f)
     for (i in draftOptions.indices) {
@@ -307,7 +320,9 @@ private fun GameView.drawReplacePicker(c: Canvas) {
             r.hexFrame(c, x + 34f, y + 34f, 20f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
             r.text(c, t.school.glyph, x + 34f, y + 41f, 17f, col, true, Paint.Align.CENTER)
             r.text(c, t.name, x + 62f, y + 28f, 14f, Palette.TEXT, true)
-            r.text(c, t.rarity.cn + " · ★".repeat(1) + "${p.grid.stars[i]}", x + 62f, y + 46f, 11f, col)
+            val rs = t.rarity.cn + " · "
+            r.text(c, rs, x + 62f, y + 46f, 11f, col)
+            starLevel(c, p.grid.stars[i], x + 62f + r.measure(rs, 11f), y + 46f, 11.5f, Palette.GOLD)
             r.wrap(c, t.desc, x + 12f, y + 70f, cw - 24f, 10.5f, Palette.TEXT_DIM, 13f)
             hit("draft_slot_$i", x, y, cw, 104f)
         }

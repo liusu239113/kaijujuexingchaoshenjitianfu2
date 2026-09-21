@@ -57,7 +57,7 @@ internal fun GameView.drawAboutScreen(c: Canvas) {
     drawTopBar(c, "关于与隐私", "本作完全离线运行", "meta_back", null, null)
     var y = beginScroll(c, 112f)
     val lines = listOf(
-        "《共鸣觉醒 · 星塔回廊》  v1.1.6" to "",
+        "《共鸣觉醒 · 星塔回廊》  v1.2.7" to "",
         "运行方式" to "单机离线游戏，无服务器、无账号体系、无联网权限。",
         "隐私说明" to "不收集任何个人信息，不集成任何第三方 SDK，不申请网络权限。",
         "数据存储" to "全部进度保存在设备本地的应用私有目录中，卸载应用即彻底删除。可在设定中导出为文本换机。",
@@ -89,14 +89,14 @@ internal fun GameView.drawCodexFullScreen(c: Canvas) {
                 for (t in list) {
                     val seen = perm.codexSeen.contains("t:" + t.id)
                     val col = if (seen) rarityColor(t.rarity) else Palette.BORDER_SOFT
-                    card(c, UiKit.MARGIN, y, contentW(), 58f, r.withAlpha(col, 170), UiKit.RADIUS)
+                    card(c, UiKit.MARGIN, y, contentW(), r.lh(58f), r.withAlpha(col, 170), UiKit.RADIUS)
                     r.hexFrame(c, UiKit.MARGIN + 28f, y + 29f, 17f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
                     r.text(c, t.school.glyph, UiKit.MARGIN + 28f, y + 35f, 14f, col, true, Paint.Align.CENTER)
                     r.text(c, if (seen) t.name else "？？？", UiKit.MARGIN + 54f, y + 24f, 13f,
                         if (seen) Palette.TEXT else Palette.TEXT_FAINT, true)
                     r.text(c, if (seen) t.school.cn else "未觉醒", w - UiKit.MARGIN - 12f, y + 24f, 10.5f, col, false, Paint.Align.RIGHT)
                     if (seen) r.wrap(c, t.desc, UiKit.MARGIN + 54f, y + 42f, contentW() - 90f, 10f, Palette.TEXT_DIM, 13f)
-                    y += 64f
+                    y += r.lh(64f)
                 }
                 y += 6f
             }
@@ -105,18 +105,18 @@ internal fun GameView.drawCodexFullScreen(c: Canvas) {
             y = sectionHeader(c, "随机遭遇 · " + Content.allEvents.size + " 项", y)
             for (e in Content.allEvents) {
                 val seen = perm.codexSeen.contains("e:" + e.id)
-                card(c, UiKit.MARGIN, y, contentW(), 56f, if (seen) r.withAlpha(Palette.CYAN, 170) else Palette.BORDER_SOFT, UiKit.RADIUS)
+                card(c, UiKit.MARGIN, y, contentW(), r.lh(56f), if (seen) r.withAlpha(Palette.CYAN, 170) else Palette.BORDER_SOFT, UiKit.RADIUS)
                 r.text(c, if (seen) e.name else "未知遭遇", UiKit.MARGIN + 14f, y + 26f, 13f,
                     if (seen) Palette.TEXT else Palette.TEXT_FAINT, true)
                 if (seen) r.wrap(c, e.intro, UiKit.MARGIN + 14f, y + 44f, contentW() - 28f, 10f, Palette.TEXT_DIM, 13f)
-                y += 62f
+                y += r.lh(62f)
             }
         }
         else -> {
             y = sectionHeader(c, "魔物 · 精锐 · 首领", y, Palette.PINK)
             for (n in Content2.monsterAvatars + Content2.eliteAvatars + Content2.bossAvatars) {
                 val seen = perm.codexSeen.contains("m:" + n)
-                card(c, UiKit.MARGIN, y, contentW(), 64f, if (seen) r.withAlpha(Palette.PINK, 160) else Palette.BORDER_SOFT, UiKit.RADIUS)
+                card(c, UiKit.MARGIN, y, contentW(), r.lh(64f), if (seen) r.withAlpha(Palette.PINK, 160) else Palette.BORDER_SOFT, UiKit.RADIUS)
                 if (seen) drawPortrait(c, n, UiKit.MARGIN + 34f, y + 32f, 48f, Palette.PINK)
                 else {
                     r.hexFrame(c, UiKit.MARGIN + 34f, y + 32f, 22f, Palette.BORDER_SOFT, r.withAlpha(Palette.PANEL_SOFT, 255))
@@ -124,7 +124,7 @@ internal fun GameView.drawCodexFullScreen(c: Canvas) {
                 }
                 r.text(c, if (seen) monsterName(n) else "未遭遇", UiKit.MARGIN + 70f, y + 36f, 13f,
                     if (seen) Palette.TEXT else Palette.TEXT_FAINT, true)
-                y += 70f
+                y += r.lh(70f)
             }
         }
     }
@@ -195,6 +195,9 @@ internal fun GameView.tapSlot(id: String) {
     perm = Save.loadPerm(context)
     applyDisplaySettings()
     run = Save.loadRun(context, perm)
+    // 换档等于换了一整份进度：弹层、详情、战斗、抽卡、剧情分页全部重建
+    resetTransientUi()
+    runStartMs = System.currentTimeMillis()
     showToast("已切换到存档 " + (n + 1))
     goScreen(GameView.Screen.MENU)
 }
@@ -207,7 +210,7 @@ internal fun GameView.drawSaveSlotsScreen(c: Canvas) {
     for (i in slots.indices) {
         val info = slots[i]
         val cur = Save.currentSlot == i
-        card(c, UiKit.MARGIN, y, contentW(), 104f, if (cur) Palette.GOLD else Palette.BORDER_SOFT, 14f)
+        card(c, UiKit.MARGIN, y, contentW(), r.lh(104f), if (cur) Palette.GOLD else Palette.BORDER_SOFT, 14f)
         r.text(c, "存档 " + (i + 1), UiKit.MARGIN + 16f, y + 30f, 16f, if (cur) Palette.GOLD else Palette.TEXT, true)
         if (info.isEmpty) {
             r.text(c, "空存档位", UiKit.MARGIN + 16f, y + 56f, 12f, Palette.TEXT_FAINT)
@@ -217,7 +220,7 @@ internal fun GameView.drawSaveSlotsScreen(c: Canvas) {
         }
         if (cur) r.text(c, "使用中", w - UiKit.MARGIN - 16f, y + 40f, 13f, Palette.GOLD, true, Paint.Align.RIGHT)
         else ghostButton(c, "slot_pick_$i", "切换到此槽", w - UiKit.MARGIN - 130f, y + 44f, 116f, 40f, Palette.CYAN)
-        y += 114f
+        y += r.lh(114f)
     }
     y = sectionHeader(c, "说明", y + 4f)
     r.wrap(c, "每个存档槽独立保存轮回淬炼、星尘、成就、图鉴与当前远征进度。切换后原槽数据不会被覆盖。", UiKit.MARGIN, y, contentW(), 11.5f, Palette.TEXT_DIM, 18f)

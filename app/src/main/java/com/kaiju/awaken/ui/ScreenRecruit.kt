@@ -34,10 +34,12 @@ internal fun GameView.drawRecruitScreen(c: Canvas) {
         val cost = TowerService.mercenaryCost(u)
         val full = p.party.size >= 3
         val afford = p.gold >= cost
-        card(c, 20f, y, w - 40f, 108f, if (full) r.withAlpha(Palette.BORDER_SOFT, 150) else col, 14f)
+        card(c, 20f, y, w - 40f, r.lh(108f), if (full) r.withAlpha(Palette.BORDER_SOFT, 150) else col, 14f)
         drawPortrait(c, u.avatarKey.ifEmpty { u.clsId }, 66f, y + 54f, 68f, col)
         r.text(c, u.name + " · " + (Data.classById[u.clsId]?.name ?: ""), 110f, y + 30f, 14.5f, Palette.TEXT, true)
-        r.text(c, u.rarity.cn + " · Lv." + u.level + " · " + "★".repeat(u.star), 110f, y + 50f, 11.5f, col)
+        val umeta = u.rarity.cn + " · Lv." + u.level + " · "
+        r.text(c, umeta, 110f, y + 50f, 11.5f, col)
+        starRow(c, u.star, 110f + r.measure(umeta, 11.5f), y + 50f, 12f, col)
         val tr = u.traitId?.let { Content2.traitById[it] }
         r.text(c, "专长：" + (tr?.name ?: "无"), 110f, y + 68f, 11f, Palette.CYAN)
         r.text(c, tr?.desc ?: "", 110f, y + 86f, 9.5f, Palette.TEXT_DIM)
@@ -46,7 +48,7 @@ internal fun GameView.drawRecruitScreen(c: Canvas) {
         } else {
             ghostButton(c, "rec_hire_$i", cost.toString() + " 金", w - 116f, y + 34f, 84f, 40f, if (afford) Palette.GOLD else Palette.TEXT_FAINT)
         }
-        y += 118f
+        y += r.lh(118f)
     }
 
     r.wrap(c, "提示：伙伴拥有独立专长与星级，可用金币升星；长按队伍可查看详情。", UiKit.MARGIN, y + 8f, contentW(), 11f, Palette.TEXT_FAINT, 17f)

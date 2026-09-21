@@ -57,6 +57,63 @@ object ArtIcon {
 
     fun item(id: String): String = itemMap[id] ?: "ic_it_heal"
 
+    // ------------------------------------------------------------ 全套图标映射
+    // 以下映射把此前散落在 UI 里的 emoji / 符号统一换成 PNG 资源。
+    // 全部走「有图标用图标、缺图回退原字符」的双轨，缺资源也不会出现空白。
+
+    /** 试炼强度（选人页模式卡）。 */
+    fun mode(m: GameMode): String = when (m) {
+        GameMode.NORMAL -> "md_normal"
+        GameMode.ADVENTURE -> "md_adventure"
+        GameMode.HERO -> "md_hero"
+        GameMode.KING -> "md_king"
+        GameMode.ENDLESS -> "md_endless"
+        GameMode.CLIMB -> "md_climb"
+    }
+
+    private val eventIcon = mapOf(
+        "evt_hospital" to "ic_ev_medic",
+        "evt_bounty" to "ic_ev_bounty",
+        "evt_enchanter" to "ic_ev_enchanter",
+        "evt_battlefield" to "ic_ev_battlefield",
+        "evt_crossroads" to "ic_ev_crossroads",
+        "evt_lost_cart" to "ic_ev_lost_cart",
+        "evt_grove" to "ic_ev_grove",
+        "evt_sealed_chest" to "ic_ev_chest",
+        "evt_wandering_monk" to "ic_ev_monk",
+        "evt_war_room" to "ic_ev_war_room",
+        "evt_ancient_tome" to "ic_ev_tome",
+        "evt_wandering_sage" to "ic_ev_tome",
+        "evt_star_altar" to "ic_ev_star_altar",
+        "evt_pilgrim" to "ic_ev_pilgrim",
+        "evt_weapon_rack" to "ic_ev_weapon_rack",
+        "evt_soul_forge" to "ic_ev_soul_forge",
+        "evt_trap_corridor" to "ic_ev_trap",
+        "evt_echoing_hall" to "ic_ev_echo_hall",
+        "evt_alchemy_lab" to "ic_ev_alchemy",
+        // 6 个回廊守望剧情节点共用同一张「守望之烛」
+        "story_10" to "ic_ev_warden",
+        "story_20" to "ic_ev_warden",
+        "story_30" to "ic_ev_warden",
+        "story_40" to "ic_ev_warden",
+        "story_50" to "ic_ev_warden",
+        "story_60" to "ic_ev_warden"
+    )
+
+    /** 事件兜底图标：这 25 个事件没有场景插画，此前用 emoji 顶替。未登记返回空串。 */
+    fun event(id: String?): String = if (id == null) "" else eventIcon[id] ?: ""
+
+    /** 塔层遭遇类型图标（战斗舞台左侧；有插画的走 sceneFor，这里是兜底）。 */
+    fun towerKind(kind: String, eventId: String?): String = when (kind) {
+        "boss" -> "ic_tw_boss"
+        "combat_elite" -> "ic_tw_elite"
+        "combat_normal" -> "ic_tw_normal"
+        "shop" -> "ic_tw_shop"
+        "tavern" -> "ic_tw_tavern"
+        "story" -> "ic_ev_warden"
+        else -> event(eventId).ifEmpty { "ic_tw_event" }
+    }
+
 
     /** 伙伴头像小图标：cp03 → ic_cp_03；非伙伴则返回空串。 */
     fun companion(avatarKey: String): String =
@@ -101,4 +158,6 @@ object ArtIcon {
     const val DUST = "ic_dust"
     const val FLOOR = "ic_floor"
     const val SKILL_POINT = "ic_skillpoint"
+    const val MUSIC = "ic_music"
+    const val STAR = "ic_star"
 }

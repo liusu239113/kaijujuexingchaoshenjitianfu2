@@ -5,6 +5,25 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 
+// ---------------------------------------------------------------- 战技等级规则
+// 集中在这里，避免「结算层」和「面板层」各写一套导致数值对不上。
+
+/** 战技等级上限。 */
+const val SKILL_LV_MAX = 3
+
+/** 等级收敛到 1..3。 */
+fun skillLvOf(lv: Int): Int = lv.coerceIn(1, SKILL_LV_MAX)
+
+/**
+ * 战技等级系数：Lv.1 = x1.00，每级 +12%。
+ * 伤害 / 治疗 / 护盾 / 增益数值 / 持续伤害系数全部共用它。
+ */
+fun skillLvMul(lv: Int): Double = 1.0 + 0.12 * (skillLvOf(lv) - 1)
+
+/** 实际段数：多段战技满级（Lv.3）追加一段，单段战技不变。 */
+fun skillHits(baseHits: Int, lv: Int): Int =
+    baseHits + if (skillLvOf(lv) >= SKILL_LV_MAX && baseHits >= 2) 1 else 0
+
 class PermState {
     var talentPoints = 0
     var bestFloor = 0

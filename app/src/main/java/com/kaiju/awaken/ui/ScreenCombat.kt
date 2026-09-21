@@ -33,27 +33,37 @@ internal fun GameView.drawCombatScreen(c: Canvas) {
     // ---- 自适应行高 ----
     val cmdTop = h - CMD_H
     val avail = cmdTop - TOP_H - 46f
-    val rowH = ((avail - 70f) / 2f).coerceIn(118f, 176f)
-    val enemyTop = TOP_H + 8f
+    // 行高下限跟随字号：大字号下卡片文字会撑破固定行高
+    val rowH = ((avail - 70f) / 2f).coerceIn(118f * r.fontScale, 176f)
+    val bodyTop = TOP_H + 8f
+    val bodyBottom = cmdTop - 6f
+    // 两行单位 + 日志最小高度（3 行字）塞不下时，整块吃下滚动，
+    // 而不是把日志压成一条线或让内容越过指令栏。
+    val minLog = (3f * 15f * r.fontScale) + 22f
+    val scrolling = rowH * 2f + 24f + minLog > bodyBottom - bodyTop
+    val oy = if (scrolling) beginScroll(c, bodyTop, bodyBottom) - bodyTop else 0f
+
+    val enemyTop = bodyTop + oy
     val allyTop = enemyTop + rowH + 14f
     val logTop = allyTop + rowH + 10f
 
     drawUnitRow(c, b.enemies, enemyTop, rowH, true, b, accent)
     drawUnitRow(c, b.allies, allyTop, rowH, false, b, Palette.CYAN)
 
-    val logBottom = (cmdTop - 8f).coerceAtLeast(logTop + 46f)
+    val logBottom = if (scrolling) logTop + minLog else (cmdTop - 8f).coerceAtLeast(logTop + 46f)
     card(c, 10f, logTop, w - 20f, logBottom - logTop, r.withAlpha(Palette.BORDER_SOFT, 180), 12f)
-    var ly = logTop + 20f
-    val maxLines = (((logBottom - logTop - 22f) / 15f).toInt()).coerceAtLeast(1)
+    val logStep = r.lh(15f)
+    var ly = logTop + r.lh(20f)
+    val maxLines = (((logBottom - logTop - r.lh(22f)) / logStep).toInt()).coerceAtLeast(1)
     for (s in b.log.takeLast(maxLines)) {
         if (ly > logBottom - 6f) break
         r.text(c, s, 22f, ly, 11f, Palette.TEXT_DIM)
-        ly += 15f
+        ly += logStep
     }
 
     // ---- 飘字（在日志之上）----
     for (ft in b.floatTexts) {
-        val pos = unitPosition(ft.target, b, rowH) ?: continue
+        val pos = unitPosition(ft.target, b, rowH, oy) ?: continue
         val rise = (1f - ft.life) * 38f
         val alpha = (ft.life.coerceIn(0f, 1f) * 255).toInt()
         val size = if (ft.isCrit) 24f else 18f
@@ -61,6 +71,7 @@ internal fun GameView.drawCombatScreen(c: Canvas) {
         r.text(c, ft.text, pos.first, pos.second - rise, size, r.withAlpha(ft.color, alpha), true, Paint.Align.CENTER)
     }
 
+    if (scrolling) endScroll(c, logBottom)
     drawCommandBar(c, b)
 }
 
@@ -114,20 +125,21 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: 
         }
         // 旧值 gridTop+12+psize 只比立绘下沿低 4px，中文名的字身会压进立绘里
         // （截图上就是「名字糊在人物图上」）。改为立绘下沿再留 13px。
-        var cy = gridTop + 8f + psize + 13f
+        // 卡片内部行距同样跟随字号，否则大字号下这几行会挤在一起
+        var cy = gridTop + 8f + psize + r.lh(13f)
         r.text(c, u.name, x + cw / 2f, cy, 11.5f, Palette.TEXT, true, Paint.Align.CENTER)
-        cy += 10f
+        cy += r.lh(10f)
         if (isEnemy && cw > 112f) {
             r.text(c, "攻" + u.stats.atk.toInt() + " 防" + u.stats.def.toInt(), x + cw / 2f, cy, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
-            cy += 10f
+            cy += r.lh(10f)
         }
         r.bar(c, x + 8f, cy, cw - 16f, 8f, u.hpPct().toFloat(), hpColor(u.hpPct()), hpColorDark(u.hpPct()))
-        cy += 15f
+        cy += r.lh(15f)
         r.text(c, u.hp.toInt().toString() + "/" + u.stats.maxHp.toInt(), x + cw / 2f, cy, 10f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
-        cy += 8f
+        cy += r.lh(8f)
         if (u.shield > 0.0) {
             r.bar(c, x + 8f, cy, cw - 16f, 4f, (u.shield / u.stats.maxHp).toFloat().coerceIn(0f, 1f), Palette.SHIELD, Palette.SHIELD)
-            cy += 7f
+            cy += r.lh(7f)
         }
         val buffs = u.buffs.filter { !it.id.startsWith("affix_") }.take(3)
         if (buffs.isNotEmpty()) {
@@ -142,8 +154,8 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: 
     }
 }
 
-private fun GameView.unitPosition(u: Unit, b: Battle, rowH: Float): Pair<Float, Float>? {
-    val enemyTop = TOP_H + 8f
+private fun GameView.unitPosition(u: Unit, b: Battle, rowH: Float, offY: Float = 0f): Pair<Float, Float>? {
+    val enemyTop = TOP_H + 8f + offY
     val allyTop = enemyTop + rowH + 14f
     val ei = b.enemies.indexOf(u)
     if (ei >= 0) {

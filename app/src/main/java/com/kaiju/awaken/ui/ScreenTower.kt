@@ -2,6 +2,7 @@ package com.kaiju.awaken.ui
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.kaiju.awaken.game.ArtIcon as AI
 import com.kaiju.awaken.game.Content
 import com.kaiju.awaken.game.Data
 import com.kaiju.awaken.game.RunService
@@ -16,7 +17,10 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
     c.drawRect(0f, 102f, w, 104f, r.fill)
     r.text(c, "第 ${p.floor} 层", 20f, 40f, 22f, Palette.TEXT, true)
     r.text(c, p.mode.cn + "模式 · 目标 ${if (p.mode.endFloor == 0) "无界" else p.mode.endFloor.toString() + " 层"}", 20f, 62f, 11.5f, Palette.TEXT_DIM)
-    r.text(c, "Lv.${p.level}   💰${p.gold}   ✨${p.skillPoints}", 20f, 86f, 13f, Palette.GOLD)
+    // 货币 / 战技点原本靠 emoji 提示，改为图标 + 数值（缺图自动回退原 emoji）
+    var hx = statChip(c, "", "", "Lv.${p.level}", 20f, 86f, 13f, Palette.GOLD)
+    hx = statChip(c, AI.GOLD, "💰", "${p.gold}", hx, 86f, 13f, Palette.GOLD)
+    statChip(c, AI.SKILL_POINT, "✨", "${p.skillPoints}", hx, 86f, 13f, Palette.GOLD)
 
     val navY = 22f
     val bw = 62f
@@ -129,16 +133,28 @@ private fun GameView.drawEventStage(c: Canvas, top: Float, fe: com.kaiju.awaken.
     if (sceneKey != null) {
         drawScene(c, sceneKey, w - 84f, top + 54f, 72f)
     } else {
-        r.text(c, glyph, 46f, top + 62f, 34f, accent, true)
+        // 无场景插画时用图标顶替 emoji（glyph 仅作缺图回退）
+        val iconKey = AI.towerKind(fe.kind, fe.event?.id)
+        val iconW = 44f
+        if (bitmap(iconKey) != null) {
+            drawIcon(c, iconKey, 46f + iconW / 2f, top + 62f, iconW, accent)
+        } else {
+            r.text(c, glyph, 46f, top + 62f, 34f, accent, true)
+        }
     }
     r.text(c, title, 92f, top + 50f, 19f, Palette.TEXT, true)
     r.text(c, "第 ${p.floor} 层", 92f, top + 72f, 11.5f, Palette.TEXT_DIM)
     r.wrap(c, intro, 30f, top + 104f, w - 96f, 12.5f, Palette.TEXT_DIM, 18f)
 
     val choices = fe.event?.choices ?: emptyList()
-    var y = top + 150f
+    val isFight = fe.kind == "boss" || fe.kind == "combat_elite" || fe.kind == "combat_normal"
+    // 选项多 + 大字号时，旧实现会一路画到卡片外并压住底部导航。
+    // 这里把选项区做成滚动区：卡片下沿再内缩，战斗提示留在滚动区之下。
+    val listBottom = if (isFight) h - 162f else h - 118f
+    var y = beginScroll(c, top + 150f, listBottom)
     if (choices.isEmpty()) {
         button(c, "evt_enter", "进 入", 48f, y, w - 96f, 54f, accent)
+        y += 62f
     } else {
         for (i in choices.indices) {
             val ch = choices[i]
@@ -147,20 +163,22 @@ private fun GameView.drawEventStage(c: Canvas, top: Float, fe: com.kaiju.awaken.
             r.text(c, ch.detail, 48f, y + 47f, 11f, Palette.TEXT_DIM)
             if (ch.gold > 0) {
                 val afford = p.gold >= ch.gold
-                r.text(c, "${ch.gold}💰", w - 52f, y + 26f, 12f, if (afford) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)
+                priceRight(c, "${ch.gold}", AI.GOLD, "💰", w - 52f, y + 26f, 12f,
+                    if (afford) Palette.GOLD else Palette.RED)
             }
             hit("evt_choice_$i", 34f, y, w - 68f, 62f).enabled = ch.gold <= 0 || p.gold >= ch.gold
             y += 70f
         }
     }
-    if (fe.kind == "boss" || fe.kind == "combat_elite" || fe.kind == "combat_normal") {
+    endScroll(c, y)
+    if (isFight) {
         val kindLabel = when (fe.kind) {
             "boss" -> "首领战 · 奖励丰厚"
             "combat_elite" -> "精锐战 · 掉落提升"
             else -> "凡庸战"
         }
         // 旧写法 top + h - 150f 把提示画到了屏幕外（top 已含 214 偏移），这里修正为贴底栏
-        r.text(c, kindLabel, w / 2f, h - 150f, 12f, accent, true, Paint.Align.CENTER)
+        r.text(c, kindLabel, w / 2f, h - 138f, 12f, accent, true, Paint.Align.CENTER)
     }
 }
 
@@ -252,7 +270,8 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
         r.text(c, it.name, 96f, y + 30f, 15f, Palette.TEXT, true)
         // 描述必须避开右侧价格（价格右对齐于 w-60），否则长描述会铺到价格底下
         r.wrapClamp(c, it.desc, 96f, y + 52f, w - 200f, 11f, Palette.TEXT_DIM, 14f, 1)
-        r.text(c, "${it.price}💰", w - 60f, y + 44f, 14f, if (afford) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)
+        priceRight(c, "${it.price}", AI.GOLD, "💰", w - 60f, y + 44f, 14f,
+            if (afford) Palette.GOLD else Palette.RED)
         hit("shop_buy_$i", 40f, y, w - 80f, 76f).enabled = afford
         y += 84f
     }
@@ -303,7 +322,8 @@ internal fun GameView.drawTavernOverlay(c: Canvas) {
         drawPortrait(c, u.avatarKey.ifEmpty { u.clsId }, 84f, y + 48f, 56f, col)
         r.text(c, u.name + " · " + (Data.classById[u.clsId]?.name ?: ""), 124f, y + 32f, 15f, Palette.TEXT, true)
         r.text(c, u.rarity.cn + " · Lv.${u.level} · 攻击 ${u.base.atk.toInt()} 生命 ${u.base.maxHp.toInt()}", 124f, y + 54f, 11f, Palette.TEXT_DIM)
-        r.text(c, "$cost 💰", w - 60f, y + 60f, 15f, if (p.gold >= cost && !full) Palette.GOLD else Palette.RED, true, Paint.Align.RIGHT)
+        priceRight(c, "$cost", AI.GOLD, "💰", w - 60f, y + 60f, 15f,
+            if (p.gold >= cost && !full) Palette.GOLD else Palette.RED)
         hit("tavern_hire_$i", 40f, y, w - 80f, 96f).enabled = !full && p.gold >= cost
         y += 104f
     }

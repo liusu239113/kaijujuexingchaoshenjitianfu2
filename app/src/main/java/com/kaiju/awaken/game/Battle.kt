@@ -546,13 +546,13 @@ class Battle(
         // 增益
         if (skill.tags.contains(Tag.BUFF_ATK)) {
             val targets = if (skill.target == TargetKind.ALLY_ALL) friends else listOf(actor)
-            for (t in targets) t.addBuff(Buff("atk_up", "攻击淬炼", skill.buffDur, 1, skill.coeff, false))
+            for (t in targets) t.addBuff(Buff("atk_up", "攻击淬炼", skill.buffDur, 1, skill.coeff * lvMul(skill), false))
         }
         if (skill.tags.contains(Tag.BUFF_DODGE)) {
-            actor.addBuff(Buff("evasion", "闪避提升", skill.buffDur, 1, skill.coeff, false))
+            actor.addBuff(Buff("evasion", "闪避提升", skill.buffDur, 1, skill.coeff * lvMul(skill), false))
         }
         if (skill.tags.contains(Tag.BUFF_REGEN)) {
-            actor.addBuff(Buff("regen_pct", "再生", skill.buffDur, 1, skill.coeff, false))
+            actor.addBuff(Buff("regen_pct", "再生", skill.buffDur, 1, skill.coeff * lvMul(skill), false))
         }
         if (skill.tags.contains(Tag.TAUNT)) {
             actor.addBuff(Buff("taunt", "嘲讽", skill.buffDur, 1, 0.0, false))
@@ -586,7 +586,8 @@ class Battle(
             for (t in targets) {
                 if (!t.alive) continue
                 var sum = 0.0
-                for (h in 0 until max(1, skill.hits)) {
+                val hitCount = max(1, skillHits(skill.hits, lvOf(skill)))
+                for (h in 0 until hitCount) {
                     if (!t.alive) break
                     val d = dealDamage(actor, t, skill, critExtra, penExtra)
                     sum += d
@@ -627,14 +628,14 @@ class Battle(
         if (skill.tags.contains(Tag.DOT_BURN)) {
             val t = target ?: foes.firstOrNull()
             if (t != null) {
-                val v = statOf(actor, skill.stat) * skill.dotCoeff
+                val v = statOf(actor, skill.stat) * skill.dotCoeff * lvMul(skill)
                 t.addBuff(Buff("burn", "灼烧", if (skill.dotDur > 0) skill.dotDur else 3, 1, v, true))
             }
         }
         if (skill.tags.contains(Tag.DOT_POISON)) {
             val t = target ?: foes.firstOrNull()
             if (t != null) {
-                val v = statOf(actor, skill.stat) * skill.dotCoeff
+                val v = statOf(actor, skill.stat) * skill.dotCoeff * lvMul(skill)
                 t.addBuff(Buff("poison", "中毒", if (skill.dotDur > 0) skill.dotDur else 3, 1, v, true))
             }
         }
@@ -673,12 +674,12 @@ class Battle(
 
     // ------------------------------------------------------------ 伤害核心
 
+    /** 该战技在本轮的等级（1..3）。 */
+    private fun lvOf(skill: Skill?): Int =
+        if (skill == null) 1 else skillLvOf(run.skillLevels[skill.id] ?: 1)
+
     /** 战技等级系数：Lv.1 = x1.0，每级 +12%（面板消耗战技点提升，最高 Lv.3）。 */
-    private fun lvMul(skill: Skill?): Double {
-        if (skill == null) return 1.0
-        val lv = (run.skillLevels[skill.id] ?: 1).coerceIn(1, 3)
-        return 1.0 + 0.12 * (lv - 1)
-    }
+    private fun lvMul(skill: Skill?): Double = skillLvMul(lvOf(skill))
 
     fun dealDamage(attacker: Unit, target: Unit, skill: Skill?, critExtra: Double, penExtra: Double): Double {
         if (!target.alive) return 0.0
@@ -871,7 +872,7 @@ class Battle(
         victory = win
         timedOut = byTimeout
         awaitingInput = false
-        if (byTimeout) addLog("⏳ 坚持到 500 回合仍未战败，按胜利结算，奖励减半。")
+        if (byTimeout) addLog("坚持到 500 回合仍未战败，按胜利结算，奖励减半。")
     }
 
     fun aliveAllies(): List<Unit> = allies.filter { it.alive }

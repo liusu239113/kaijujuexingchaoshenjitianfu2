@@ -114,11 +114,11 @@ internal fun GameView.drawStoryScreen(c: Canvas) {
         val claimed = perm.chapterClaimed.contains(ch.index.toString())
         val passed = perm.storyIndex > ch.index - 1
         val col = if (claimed) Palette.GREEN else if (passed) Palette.GOLD else Palette.BORDER_SOFT
-        card(c, 18f, y, w - 36f, 44f, r.withAlpha(col, 170), 10f)
+        card(c, 18f, y, w - 36f, r.lh(44f), r.withAlpha(col, 170), 10f)
         r.text(c, "第 " + ch.index + " 章  " + ch.title, 32f, y + 27f, 12.5f, if (passed) Palette.TEXT else Palette.TEXT_FAINT, true)
         val status = if (claimed) "已领取" else if (passed) "可领取" else ("目标 " + ch.goalFloor + " 层")
         r.text(c, status, w - 32f, y + 27f, 11f, col, false, Paint.Align.RIGHT)
-        y += 50f
+        y += r.lh(50f)
     }
     endScroll(c, y)
     ghostButton(c, "story_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 46f, Palette.TEXT_DIM)

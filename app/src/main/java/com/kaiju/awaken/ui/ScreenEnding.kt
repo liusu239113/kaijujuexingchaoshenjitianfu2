@@ -58,11 +58,16 @@ internal fun GameView.drawEndingScreen(c: Canvas) {
     }
 
     // ---- 3) 主体卡 ----
+    // 主体（卡片 + 成就列表）在矮屏或大字号下会顶到底部操作区，
+    // 因此整块放进裁剪区：装不下时可直接上下拖动查看。
+    val bodyTop = 144f
+    val bodyBottom = h - 176f
     val bodyK = ((t - 2.2f) / 1.2f).coerceIn(0f, 1f)
     if (bodyK > 0f) {
         val a = (bodyK * 255).toInt()
         val slide = (1f - bodyK) * 40f
-        var y = 168f + slide
+        val scrolled = beginScroll(c, bodyTop, bodyBottom)
+        var y = scrolled + (168f - bodyTop) + slide
         card(c, 26f, y, w - 52f, 186f, r.withAlpha(Palette.GOLD, a), 0f)
 
         val hero = p.party.firstOrNull()
@@ -102,9 +107,12 @@ internal fun GameView.drawEndingScreen(c: Canvas) {
                     y += 17f
                 }
             } else {
-                r.wrap(c, "同源星语在环上相邻即结成共鸣链，链越长增益越高。下次轮回优先凑齐 3 条以上共鸣边。",
+                y = r.wrap(c, "同源星语在环上相邻即结成共鸣链，链越长增益越高。下次轮回优先凑齐 3 条以上共鸣边。",
                     UiKit.MARGIN + 24f, y, contentW() - 48f, 12f, r.withAlpha(Palette.TEXT_DIM, aa), 18f)
             }
+            endScroll(c, y)
+        } else {
+            endScroll(c, y)
         }
     }
 
