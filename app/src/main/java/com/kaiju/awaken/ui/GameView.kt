@@ -283,7 +283,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         }
         return when (screen) {
             Screen.MENU -> false
-            Screen.SETUP -> { screen = Screen.MENU; true }
+            // 编成页返回：有角色就回前厅（那里才是中枢），没角色才回标题
+            Screen.SETUP -> { screen = if (perm.playerName.isBlank()) Screen.MENU else Screen.HUB; true }
             Screen.GROWTH -> { screen = Screen.MENU; true }
             Screen.HUB -> { goMenu(); true }
             Screen.CODEX -> { screen = Screen.MENU; true }

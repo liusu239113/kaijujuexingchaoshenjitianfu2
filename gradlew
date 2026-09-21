@@ -1,4 +1,4 @@
-#\!/bin/sh
+#!/bin/sh
 
 #
 # Copyright © 2015-2021 the original authors.
@@ -44,7 +44,7 @@ APP_BASE_NAME=${0##*/}
 
 DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
 
-# Use the maximum available, or set MAX_FD \!= -1 to use that value.
+# Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 
 warn () {
@@ -79,7 +79,7 @@ if [ -n "$JAVA_HOME" ] ; then
     else
         JAVACMD=$JAVA_HOME/bin/java
     fi
-    if [ \! -x "$JAVACMD" ] ; then
+    if [ ! -x "$JAVACMD" ] ; then
         die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME"
     fi
 else
@@ -88,7 +88,7 @@ else
 fi
 
 # Increase the maximum file descriptors if we can.
-if \! "$cygwin" && \! "$darwin" && \! "$nonstop" ; then
+if ! "$cygwin" && ! "$darwin" && ! "$nonstop" ; then
     case $MAX_FD in
       max*)
         MAX_FD=$( ulimit -H -n ) ||
@@ -164,7 +164,7 @@ set -- \
         "$@"
 
 # Stop when "xargs" is not available.
-if \! command -v xargs >/dev/null 2>&1 ; then
+if ! command -v xargs >/dev/null 2>&1 ; then
     die "xargs is not available"
 fi
 
