@@ -1176,20 +1176,47 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
 
     // ------------------------------------------------------------ 流程
 
+    /** 用存档里的角色档案初始化编成页（角色名 / 职阶 / 试炼强度）。 */
+    fun prepareSetup() {
+        if (perm.playerName.isNotBlank()) {
+            playerName = perm.playerName
+            setupClass = perm.lastClass
+            setupMode = GameMode.byId(perm.lastMode)
+            setupClimbLevel = setupClimbLevel.coerceIn(1, perm.climbMaxUnlocked)
+        }
+    }
+
+    /**
+     * 创建角色：只写入角色档案（名字 / 职阶 / 试炼强度），随即播一次序章，
+     * 播完进「回廊前厅」。真正的远征要玩家在城镇里按「出发远征」才开始 ——
+     * 旧流程是剧情一完就直接丢进塔里，城镇变成了一个看不懂的空页面。
+     */
+    fun createCharacter() {
+        perm.playerName = playerName
+        perm.lastClass = setupClass
+        perm.lastMode = setupMode.id
+        Save.savePerm(context, perm)
+        audio.playBgm("city")
+        val clsName = com.kaiju.awaken.game.Data.classById[setupClass]?.name ?: ""
+        openStory(com.kaiju.awaken.game.StoryScript.prologue(heroName(), clsName), Screen.HUB)
+    }
+
     fun startRun() {
         val p = RunService.newRun(setupMode, setupClass, perm)
         p.climbLevel = if (setupMode == GameMode.CLIMB) setupClimbLevel.coerceIn(1, perm.climbMaxUnlocked) else 1
         runStartMs = System.currentTimeMillis()
         perm.classPlayed.add(setupClass)
+        // 记住本局的编成：下次从回廊前厅出发时沿用同一套默认值
+        perm.lastClass = setupClass
+        perm.lastMode = setupMode.id
         Save.savePerm(context, perm)
         run = p
         if (playerName.isNotBlank()) p.hero().name = playerName
         RunService.recalcAll(p, perm)
         divinityOptions = com.kaiju.awaken.game.DraftService.rollDivinityChoices()
         for (t in divinityOptions) perm.codexSeen.add("t:" + t.id)
-        // 创角后立刻进黑屏序章，播完再进神格三选一
-        val clsName = com.kaiju.awaken.game.Data.classById[setupClass]?.name ?: ""
-        openStory(com.kaiju.awaken.game.StoryScript.prologue(heroName(), clsName), Screen.DIVINITY)
+        // 序章只在「创建角色」时播一次；从城镇出发直接进神格觉醒
+        goScreen(Screen.DIVINITY)
         audio.playBgm("city")
     }
 

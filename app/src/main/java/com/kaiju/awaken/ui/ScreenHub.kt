@@ -35,11 +35,14 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         r.text(c, "生命 " + hero.stats.maxHp.toInt() + "   攻 " + hero.stats.atk.toInt() + "   法 " + hero.stats.matk.toInt() + "   防 " + hero.stats.def.toInt(), 138f, y + 98f, 10.5f, Palette.TEXT_DIM)
         r.text(c, "伙伴 " + (p.party.size - 1) + "/2   行囊 " + p.bag.size, 138f, y + 116f, 10.5f, Palette.TEXT_FAINT)
     } else {
-        val who = if (perm.playerName.isBlank()) "拾语者" else perm.playerName
-        r.text(c, who, 76f, y + 62f, 15f, Palette.TEXT, true, Paint.Align.CENTER)
-        r.text(c, "尚无进行中的远征", 138f, y + 56f, 13f, Palette.TEXT_DIM)
-        r.text(c, "点下方「出发远征」选择试炼强度与职阶", 138f, y + 78f, 11f, Palette.TEXT_FAINT)
-        r.text(c, "每次倒下都会让下一次更远", 138f, y + 100f, 10.5f, Palette.TEXT_FAINT)
+        // 没有进行中的远征时也要显示角色本身：这里是他轮回无数次攒下来的身份，
+        // 旧版只写「拾语者 / 尚未开启远征」，玩家会以为角色被清空了。
+        val cls = perm.lastClass.ifBlank { "warrior" }
+        drawPortrait(c, cls, 76f, y + 64f, 96f, classColor(cls))
+        r.text(c, if (perm.playerName.isBlank()) "拾语者" else perm.playerName, 138f, y + 36f, 19f, Palette.TEXT, true)
+        r.text(c, "职阶 · " + (Data.classById[cls]?.name ?: ""), 138f, y + 58f, 11.5f, Palette.CYAN)
+        r.text(c, "最高 " + perm.bestFloor + " 层   轮回 " + perm.totalRuns + " 次   神格点 " + perm.talentPoints, 138f, y + 80f, 10.5f, Palette.TEXT_DIM)
+        r.text(c, "整备完毕就从下方「出发远征」再上路", 138f, y + 102f, 10.5f, Palette.TEXT_FAINT)
     }
     y += 138f
 
@@ -120,7 +123,10 @@ internal fun GameView.drawHubScreen(c: Canvas) {
 internal fun GameView.tapHub(id: String) {
     val p = run
     when (id) {
-        "hub_start" -> screen = GameView.Screen.SETUP
+        "hub_start" -> {
+            prepareSetup()
+            screen = GameView.Screen.SETUP
+        }
         "hub_resume" -> {
             if (p != null) {
                 if (p.floorEvents.isEmpty()) com.kaiju.awaken.game.TowerService.generateFloor(p)

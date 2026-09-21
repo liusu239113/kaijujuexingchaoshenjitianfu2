@@ -123,6 +123,8 @@ object Save {
         o.put("sfxOn", perm.sfxOn)
         o.put("seenIntro", perm.seenIntro)
         o.put("playerName", perm.playerName)
+        o.put("lastClass", perm.lastClass)
+        o.put("lastMode", perm.lastMode)
 
         val g = JSONObject()
         for ((k, v) in perm.growthLevels) g.put(k, v)
@@ -176,6 +178,8 @@ object Save {
             perm.sfxOn = o.optBoolean("sfxOn", true)
             perm.seenIntro = o.optBoolean("seenIntro", false)
             perm.playerName = o.optString("playerName", "")
+            perm.lastClass = o.optString("lastClass", "warrior")
+            perm.lastMode = o.optString("lastMode", "normal")
             o.optJSONObject("growth")?.let { g ->
                 for (k in g.keys()) perm.growthLevels[k] = g.optInt(k, 0)
             }

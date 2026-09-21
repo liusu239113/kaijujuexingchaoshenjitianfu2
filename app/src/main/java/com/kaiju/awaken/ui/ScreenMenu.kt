@@ -60,6 +60,18 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
         r.text(c, "远征进行中", 40f, by + 27f, 14f, Palette.CYAN, true)
         r.text(c, "${Data.classById[savedRun.classId]?.name ?: ""} · ${savedRun.mode.cn}模式 · 第 ${savedRun.floor} 层", 40f, by + 48f, 12f, Palette.TEXT_DIM)
         by += 62f
+    } else if (perm.playerName.isNotBlank()) {
+        // 有角色、只是没有进行中的远征：展示角色档案（旧版这里是一片空白，
+        // 玩家会以为存档丢了，然后被「开始远征」直接丢进城镇，完全不知道自己在哪）。
+        by += 12f
+        card(c, 24f, by, pw, 62f, r.withAlpha(Palette.GOLD, 180))
+        r.text(c, perm.playerName, 40f, by + 27f, 14f, Palette.GOLD, true)
+        r.text(
+            c,
+            (Data.classById[perm.lastClass]?.name ?: "") + " · 最高 " + perm.bestFloor + " 层 · 神格点 " + perm.talentPoints,
+            40f, by + 48f, 12f, Palette.TEXT_DIM
+        )
+        by += 62f
     }
 
     // 标题界面只保留「开始/继续 · 设置 · 关于」。
@@ -74,12 +86,9 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     by += 20f
 
     val bw = w - 96f
-    // 三种状态分开写死文案：有存档→继续；已创角但没在跑→开始远征；完全新档→开始游戏
-    val startLabel = when {
-        savedRun \!= null -> "继 续 游 戏"
-        perm.playerName.isNotBlank() -> "开 始 远 征"
-        else -> "开 始 游 戏"
-    }
+    // 只要有角色（无论本轮远征是否进行中）都走「继续游戏」回回廊前厅；
+    // 完全新档才显示「开始游戏」并进入创建角色流程。
+    val startLabel = if (savedRun != null || perm.playerName.isNotBlank()) "继 续 游 戏" else "开 始 游 戏"
     button(c, "menu_start", startLabel, 48f, by, bw, 56f, Palette.PINK)
     by += 56f + bGap
     ghostButton(c, "menu_settings", "设 置", 48f, by, bw, 48f, Palette.CYAN)
@@ -87,7 +96,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 48f + bGap
 
-    r.text(c, "v1.3.1 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.3.2 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
@@ -98,8 +107,8 @@ internal fun GameView.tapMenu(id: String) {
         // 下一个可滚动屏幕会继承菜单的滚动位置
         "menu_start" -> {
             run?.let { RunService.recalcAll(it, perm) }
-            // 还没创角就直接进编成页（玩家点「开始游戏」的预期就是创建角色）；
-            // 已有角色则回前厅——那里有角色卡和全部功能，可以从容整备再出发。
+            // 还没创角 → 创建角色；已有角色 → 回廊前厅（整备中枢，从这里再出发）
+            prepareSetup()
             goScreen(if (perm.playerName.isBlank()) Screen.SETUP else Screen.HUB)
         }
         "menu_about" -> { metaReturn = Screen.MENU; goScreen(Screen.ABOUT) }
@@ -108,7 +117,14 @@ internal fun GameView.tapMenu(id: String) {
 }
 
 internal fun GameView.drawSetupScreen(c: Canvas) {
-    drawTopBar(c, "远征编成", "选好试炼强度与职阶，出发后觉醒神格", "setup_back", null, null)
+    // 首次进入 = 创建角色；已有角色从回廊前厅进来 = 远征编成
+    val firstTime = perm.playerName.isBlank()
+    drawTopBar(
+        c,
+        if (firstTime) "创建角色" else "远征编成",
+        if (firstTime) "① 命名  ② 选职阶  ③ 选试炼强度" else "确认试炼强度与职阶，出发后觉醒神格",
+        "setup_back", null, null
+    )
 
     // 改为可滚动：旧实现内容总高约 740，在 h=711 的 16:9 屏上「职阶网格」
     // 会与底部「觉醒天赋」按钮重叠，职阶说明卡直接被挤出屏幕。
@@ -123,8 +139,13 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
     r.text(c, "角 色 名", 102f, y + 28f, 11.5f, Palette.TEXT_DIM)
     r.text(c, if (nameSet) playerName else "点 击 这 里 命 名", 102f, y + 56f, 19f,
         if (nameSet) Palette.GOLD else Palette.TEXT, true)
-    r.text(c, if (nameSet) "命名后不可更改" else "第一步 · 必填", w - 40f, y + 56f, 10.5f,
-        if (nameSet) Palette.TEXT_FAINT else Palette.PINK, false, Paint.Align.RIGHT)
+    r.text(
+        c,
+        if (firstTime) (if (nameSet) "命名后不可更改" else "① 必填") else "① 已锁定",
+        w - 40f, y + 56f, 10.5f,
+        if (!firstTime) Palette.TEXT_FAINT else if (nameSet) Palette.TEXT_FAINT else Palette.PINK,
+        false, Paint.Align.RIGHT
+    )
     hit("setup_name", 24f, y, w - 48f, nameH)
     y += nameH + 12f
 
@@ -201,7 +222,7 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
 
     endScroll(c, y + 14f)
 
-    button(c, "setup_go", "觉 醒 天 赋", 48f, h - 92f, w - 96f, 58f, Palette.PINK)
+    button(c, "setup_go", if (firstTime) "开 始 游 戏" else "出 发 远 征", 48f, h - 92f, w - 96f, 58f, Palette.PINK)
 }
 
 private fun primaryLabel(p: String): String = when (p) {
@@ -213,7 +234,7 @@ private fun primaryLabel(p: String): String = when (p) {
 
 internal fun GameView.tapSetup(id: String) {
     when {
-        id == "setup_back" -> screen = Screen.MENU
+        id == "setup_back" -> screen = if (perm.playerName.isBlank()) Screen.MENU else Screen.HUB
         id.startsWith("setup_mode_") -> setupMode = GameMode.byId(id.removePrefix("setup_mode_"))
         id.startsWith("setup_class_") -> {
             val cid = id.removePrefix("setup_class_")
@@ -223,14 +244,17 @@ internal fun GameView.tapSetup(id: String) {
                 showToast("该职阶未解锁，可在「星尘兑换」中解锁")
             }
         }
-        id == "setup_name" -> askPlayerName()
+        id == "setup_name" -> {
+            if (perm.playerName.isBlank()) askPlayerName() else showToast("角色名已锁定，可在存档管理中新建档")
+        }
         id == "setup_go" -> {
             if (playerName.isBlank()) {
                 audio.play("error")
                 showToast("请先给角色命名")
                 return
             }
-            startRun()
+            // 首次：建立角色 → 序章 → 回廊前厅；之后：正式出发开始本轮远征
+            if (perm.playerName.isBlank()) createCharacter() else startRun()
         }
         id == "setup_climb_up" -> {
             if (setupClimbLevel < perm.climbMaxUnlocked) setupClimbLevel++

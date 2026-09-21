@@ -56,6 +56,9 @@ class PermState {
     var petId: String? = null
     /** 角色名：创角时写入并永久保留，轮回后不必重新命名 */
     var playerName = ""
+    /** 上次编成的职阶与试炼强度：前厅角色卡与编成页的默认值 */
+    var lastClass = "warrior"
+    var lastMode = "normal"
     /** 主线进度 */
     var storyIndex = 0
     val chapterClaimed = HashSet<String>()
