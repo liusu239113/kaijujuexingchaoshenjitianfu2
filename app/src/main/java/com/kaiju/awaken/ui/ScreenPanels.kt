@@ -665,11 +665,20 @@ private fun GameView.drawBattleEndOverlay(c: Canvas) {
         for (nt in rw.notes) lines.add(OverlayLine(nt, 11.5f, Palette.TEXT_DIM, false, 22f))
     }
 
+    if (!win) {
+        // 失败时卡片原本是空的：补一段战报，玩家才知道这次死换来了什么
+        lines.add(OverlayLine("抵达第 " + (b?.floor ?: 0) + " 层", 15f, Palette.CYAN, false, 30f))
+        lines.add(OverlayLine("本轮收益 " + (run?.talentPointValue() ?: 0) + " 神格点，可带回前厅永久强化", 11.5f, Palette.TEXT_DIM, false, 22f))
+    }
+
     val cardTop = 130f
     var contentEnd = cardTop + 132f
     for (l in lines) contentEnd += l.step
     val btnTop = maxOf(h - 214f, contentEnd + 24f)
-    val cardH = maxOf(h - 300f, btnTop - cardTop + 74f)
+    // 卡片下沿要包住按钮和按钮下方的说明文字：
+    // 旧实现用 h-300f 兜底，在长屏上卡片底边落在说明文字之上，字被画到框外。
+    val footerH = if (win) 74f else 106f
+    val cardH = maxOf(contentEnd + 30f, btnTop - cardTop + footerH)
 
     card(c, 26f, cardTop, w - 52f, cardH, accent, 20f)
     r.text(c, if (win) "战 斗 胜 利" else "全 员 阵 亡", w / 2f, cardTop + 66f, 28f, accent, true, Paint.Align.CENTER)
@@ -783,8 +792,13 @@ internal fun GameView.tapReincarnation(id: String) {
             run = null
             Save.savePerm(context, perm)
             Save.clearRun(context)
-            showToast("获得 $pts 神格点")
-            screen = Screen.GROWTH
+            showToast("获得 $pts 神格点 · 可在「神格强化」中使用")
+            // 轮回后回前厅，而不是直接塞进强化页：
+            // 玩家在这里能看到角色卡、花掉神格点、整备完毕再「出发远征」，
+            // 而不是被丢回创角流程（角色名已经存在存档里了）。
+            resetTransientUi()
+            metaReturn = Screen.HUB
+            goScreen(Screen.HUB)
         }
         "reinc_growth" -> {
             val pts = p.talentPointValue()

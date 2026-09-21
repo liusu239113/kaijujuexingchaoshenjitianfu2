@@ -185,6 +185,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                     val t = input.text.toString().trim()
                     if (t.isNotEmpty()) {
                         playerName = t
+                        perm.playerName = t
+                        Save.savePerm(context, perm)
                         showToast("已命名为「" + t + "」")
                     }
                 }
@@ -225,6 +227,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         }
         Save.init(context)
         perm = Save.loadPerm(context)
+        // 角色名跟着存档走：轮回之后不该再让玩家重打一遍名字
+        playerName = perm.playerName
         applyDisplaySettings()
         audio.init()
         audio.musicOn = perm.musicOn
@@ -1213,6 +1217,19 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         audio.playBgm("tower")
     }
 
+    /**
+     * 把本队可能用到的语音先解码好。
+     * SoundPool 首次 load 是异步的，不预热的话第一次释放技能会「点了没声音」。
+     */
+    private fun preloadBattleVoices() {
+        val p = run ?: return
+        val names = ArrayList<String>()
+        for (u in p.party) {
+            for (sk in u.skills) names.add("v_sk_" + sk.id)
+        }
+        audio.preloadVoices(names)
+    }
+
     fun startBattle(kind: String) {
         val p = run ?: return
         RunService.recalcAll(p, perm)
@@ -1228,6 +1245,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         selectedItem = null
         combatDelay = 0.4f
         screen = Screen.COMBAT
+        preloadBattleVoices()
         audio.playBgm(if (kind == "boss") "boss" else "battle")
         audio.playClassVoice(p.classId, if (kind == "boss") "ult" else "start")
         if (b.playCry.isNotEmpty()) {

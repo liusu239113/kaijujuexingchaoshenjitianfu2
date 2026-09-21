@@ -154,6 +154,10 @@ class Audio(private val ctx: Context) {
     private var voicePool: SoundPool? = null
     private val voiceIds = HashMap<String, Int>()
     private var voiceStream = 0
+    /** 已解码完成的样本 id。SoundPool.load 是异步的，没解码完就 play 会静默失败。 */
+    private val voiceReady = HashSet<Int>()
+    /** 样本就绪后要补播的语音名。 */
+    private var pendingVoice: String? = null
 
     /** 语音播放速率。1.0 = 原速；大于 1 更快、音调略高。 */
     var voiceRate = 1.10f
@@ -165,7 +169,20 @@ class Audio(private val ctx: Context) {
                     .setUsage(AudioAttributes.USAGE_GAME)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build()
-                voicePool = SoundPool.Builder().setMaxStreams(2).setAudioAttributes(attrs).build()
+                val sp = SoundPool.Builder().setMaxStreams(2).setAudioAttributes(attrs).build()
+                voicePool = sp
+                // 「第一次点了没声音、第二次才有」的根因：load() 还没解码完，
+                // play() 会返回 0 且不报错。这里记下待播语音，样本就绪后立刻补播。
+                sp.setOnLoadCompleteListener { _, sampleId, status ->
+                    if (status == 0) {
+                        voiceReady.add(sampleId)
+                        val pending = pendingVoice
+                        if (pending != null && voiceIds[pending] == sampleId) {
+                            pendingVoice = null
+                            startVoice(sampleId)
+                        }
+                    }
+                }
             } catch (t: Throwable) {
                 voicePool = null
             }
@@ -173,11 +190,16 @@ class Audio(private val ctx: Context) {
         return voicePool
     }
 
+    private fun startVoice(sid: Int) {
+        val vp = voicePool ?: return
+        if (voiceStream != 0) vp.stop(voiceStream)
+        voiceStream = vp.play(sid, 0.9f, 0.9f, 1, 0, voiceRate)
+    }
+
     /** 播放人物语音（覆盖式，同一时刻只播一条）。 */
     fun playVoice(name: String) {
         if (!sfxOn) return
-        val vp = ensureVoicePool()
-        if (vp == null) return
+        val vp = ensureVoicePool() ?: return
         val cached = voiceIds[name]
         val sid: Int = if (cached == null) {
             val rid = rawId(name)
@@ -189,8 +211,21 @@ class Audio(private val ctx: Context) {
             cached
         }
         if (sid == 0) return
-        if (voiceStream != 0) vp.stop(voiceStream)
-        voiceStream = vp.play(sid, 0.9f, 0.9f, 1, 0, voiceRate)
+        if (voiceReady.contains(sid)) startVoice(sid) else pendingVoice = name
+    }
+
+    /**
+     * 预热：先把这些语音交给 SoundPool 解码。
+     * 进战斗前调用，玩家第一次点技能就有声音。
+     */
+    fun preloadVoices(names: List<String>) {
+        val vp = ensureVoicePool() ?: return
+        for (n in names) {
+            if (voiceIds.containsKey(n)) continue
+            val rid = rawId(n)
+            if (rid == 0) continue
+            voiceIds[n] = try { vp.load(ctx, rid, 1) } catch (t: Throwable) { 0 }
+        }
     }
 
     /** 职阶 → 音色档案（4 套音色覆盖 8 个职阶）。 */

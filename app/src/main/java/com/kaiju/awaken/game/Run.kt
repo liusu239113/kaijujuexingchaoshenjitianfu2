@@ -54,6 +54,8 @@ class PermState {
     val petsOwned = HashSet<String>()
     /** 当前出战宠物 */
     var petId: String? = null
+    /** 角色名：创角时写入并永久保留，轮回后不必重新命名 */
+    var playerName = ""
     /** 主线进度 */
     var storyIndex = 0
     val chapterClaimed = HashSet<String>()

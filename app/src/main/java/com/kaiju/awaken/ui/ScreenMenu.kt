@@ -74,14 +74,20 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     by += 20f
 
     val bw = w - 96f
-    button(c, "menu_start", if (savedRun == null) "开 始 游 戏" else "继 续 游 戏", 48f, by, bw, 56f, Palette.PINK)
+    // 三种状态分开写死文案：有存档→继续；已创角但没在跑→开始远征；完全新档→开始游戏
+    val startLabel = when {
+        savedRun \!= null -> "继 续 游 戏"
+        perm.playerName.isNotBlank() -> "开 始 远 征"
+        else -> "开 始 游 戏"
+    }
+    button(c, "menu_start", startLabel, 48f, by, bw, 56f, Palette.PINK)
     by += 56f + bGap
     ghostButton(c, "menu_settings", "设 置", 48f, by, bw, 48f, Palette.CYAN)
     by += 48f + bGap
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 48f + bGap
 
-    r.text(c, "v1.3.0 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.3.1 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
@@ -92,7 +98,9 @@ internal fun GameView.tapMenu(id: String) {
         // 下一个可滚动屏幕会继承菜单的滚动位置
         "menu_start" -> {
             run?.let { RunService.recalcAll(it, perm) }
-            goScreen(Screen.HUB)
+            // 还没创角就直接进编成页（玩家点「开始游戏」的预期就是创建角色）；
+            // 已有角色则回前厅——那里有角色卡和全部功能，可以从容整备再出发。
+            goScreen(if (perm.playerName.isBlank()) Screen.SETUP else Screen.HUB)
         }
         "menu_about" -> { metaReturn = Screen.MENU; goScreen(Screen.ABOUT) }
         "menu_settings" -> panel = "settings"
@@ -100,19 +108,25 @@ internal fun GameView.tapMenu(id: String) {
 }
 
 internal fun GameView.drawSetupScreen(c: Canvas) {
-    drawTopBar(c, "轮回编成", "选择模式与职阶，随后觉醒神格", "setup_back", null, null)
+    drawTopBar(c, "远征编成", "选好试炼强度与职阶，出发后觉醒神格", "setup_back", null, null)
 
     // 改为可滚动：旧实现内容总高约 740，在 h=711 的 16:9 屏上「职阶网格」
     // 会与底部「觉醒天赋」按钮重叠，职阶说明卡直接被挤出屏幕。
     var y = beginScroll(c, 100f)
 
-    // 角色名：进入游戏前必须先命名，且命名后角色不可更换
-    card(c, 24f, y, w - 48f, 58f, r.withAlpha(Palette.GOLD, 200), 14f)
-    r.text(c, "角色名", 38f, y + 24f, 11.5f, Palette.TEXT_DIM)
-    r.text(c, if (playerName.isBlank()) "点 击 命 名" else playerName, 38f, y + 46f, 16f,
-        if (playerName.isBlank()) Palette.TEXT_FAINT else Palette.GOLD, true)
-    hit("setup_name", 24f, y, w - 48f, 58f)
-    y += 70f
+    // 角色名：创角必填，命名后锁定。
+    // 旧版只有一个 58 高的窄条、字还是灰的，玩家很容易整条略过（「不特意看根本发现不了」）。
+    val nameSet = playerName.isNotBlank()
+    val nameH = r.lh(78f)
+    card(c, 24f, y, w - 48f, nameH, r.withAlpha(if (nameSet) Palette.GOLD else Palette.PINK, 215), 16f)
+    drawPortrait(c, setupClass, 66f, y + nameH / 2f, 54f, classColor(setupClass))
+    r.text(c, "角 色 名", 102f, y + 28f, 11.5f, Palette.TEXT_DIM)
+    r.text(c, if (nameSet) playerName else "点 击 这 里 命 名", 102f, y + 56f, 19f,
+        if (nameSet) Palette.GOLD else Palette.TEXT, true)
+    r.text(c, if (nameSet) "命名后不可更改" else "第一步 · 必填", w - 40f, y + 56f, 10.5f,
+        if (nameSet) Palette.TEXT_FAINT else Palette.PINK, false, Paint.Align.RIGHT)
+    hit("setup_name", 24f, y, w - 48f, nameH)
+    y += nameH + 12f
 
     r.text(c, "试炼强度", 24f, y, 15f, Palette.CYAN, true)
     y += 12f

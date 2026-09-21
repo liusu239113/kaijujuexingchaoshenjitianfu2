@@ -122,6 +122,7 @@ object Save {
         o.put("musicVolume", perm.musicVolume)
         o.put("sfxOn", perm.sfxOn)
         o.put("seenIntro", perm.seenIntro)
+        o.put("playerName", perm.playerName)
 
         val g = JSONObject()
         for ((k, v) in perm.growthLevels) g.put(k, v)
@@ -174,6 +175,7 @@ object Save {
             perm.musicVolume = o.optInt("musicVolume", 70)
             perm.sfxOn = o.optBoolean("sfxOn", true)
             perm.seenIntro = o.optBoolean("seenIntro", false)
+            perm.playerName = o.optString("playerName", "")
             o.optJSONObject("growth")?.let { g ->
                 for (k in g.keys()) perm.growthLevels[k] = g.optInt(k, 0)
             }

@@ -8,9 +8,10 @@ import com.kaiju.awaken.game.RunService
 /** 主城（回廊前厅）：远征前后的中枢页面。 */
 internal fun GameView.drawHubScreen(c: Canvas) {
     val p = run
-    // 整屏滚动化：功能格变多后内容会超过 16:9 的可视高度
-    // clip 顶边必须在首行文字的字身之上：旧值 92 正好压在第一行基线上，标题只剩下半截
-    var y = beginScroll(c, 64f, h - 12f)
+    // 整屏滚动化：功能格变多后内容会超过 16:9 的可视高度。
+    // 首行基线必须落在裁剪顶边「之下一个字身」——旧值让基线正好压在裁剪线上，
+    // 标题上半截永远看不见（截图里只剩半行字）。
+    var y = beginScroll(c, 34f, h - 12f) + 26f
 
     r.text(c, "回 廊 前 厅", w / 2f, y, 24f, Palette.TEXT, true, Paint.Align.CENTER)
     y += 22f
@@ -34,9 +35,11 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         r.text(c, "生命 " + hero.stats.maxHp.toInt() + "   攻 " + hero.stats.atk.toInt() + "   法 " + hero.stats.matk.toInt() + "   防 " + hero.stats.def.toInt(), 138f, y + 98f, 10.5f, Palette.TEXT_DIM)
         r.text(c, "伙伴 " + (p.party.size - 1) + "/2   行囊 " + p.bag.size, 138f, y + 116f, 10.5f, Palette.TEXT_FAINT)
     } else {
-        r.text(c, "拾语者", 76f, y + 70f, 15f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
-        r.text(c, "选择「出发」开始一次远征", 138f, y + 60f, 13f, Palette.TEXT_DIM)
-        r.text(c, "每次倒下都会让下一次更远", 138f, y + 82f, 11f, Palette.TEXT_FAINT)
+        val who = if (perm.playerName.isBlank()) "拾语者" else perm.playerName
+        r.text(c, who, 76f, y + 62f, 15f, Palette.TEXT, true, Paint.Align.CENTER)
+        r.text(c, "尚无进行中的远征", 138f, y + 56f, 13f, Palette.TEXT_DIM)
+        r.text(c, "点下方「出发远征」选择试炼强度与职阶", 138f, y + 78f, 11f, Palette.TEXT_FAINT)
+        r.text(c, "每次倒下都会让下一次更远", 138f, y + 100f, 10.5f, Palette.TEXT_FAINT)
     }
     y += 138f
 
@@ -56,6 +59,11 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         r.text(c, cols[i].second, cx + 10f, y + 27f, 14f, Palette.GOLD, true, Paint.Align.CENTER)
     }
     y += 56f
+
+    if (p == null) {
+        r.text(c, "行囊 / 装备 / 战技 / 星语环 要先开始一次远征才会开放", 24f, y, 10.5f, Palette.TEXT_FAINT)
+        y += 18f
+    }
 
     // 功能宫格
     // 图鉴 / 成就 / 星尘兑换 / 存档 从标题界面迁移到这里（功能归属游戏内）

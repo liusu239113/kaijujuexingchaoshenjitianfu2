@@ -57,7 +57,7 @@ internal fun GameView.drawAboutScreen(c: Canvas) {
     drawTopBar(c, "关于与隐私", "本作完全离线运行", "meta_back", null, null)
     var y = beginScroll(c, 112f)
     val lines = listOf(
-        "《共鸣觉醒 · 星塔回廊》  v1.3.0" to "",
+        "《共鸣觉醒 · 星塔回廊》  v1.3.1" to "",
         "运行方式" to "单机离线游戏，无服务器、无账号体系、无联网权限。",
         "隐私说明" to "不收集任何个人信息，不集成任何第三方 SDK，不申请网络权限。",
         "数据存储" to "全部进度保存在设备本地的应用私有目录中，卸载应用即彻底删除。可在设定中导出为文本换机。",
