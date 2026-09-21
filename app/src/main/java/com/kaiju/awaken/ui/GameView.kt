@@ -670,7 +670,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         textSize: Float, color: Int, size: Float = iconSz(textSize)
     ): Float {
         val gap = 4f
-        if (key.isNotEmpty() && bitmap(key) \!= null) {
+        if (key.isNotEmpty() && bitmap(key) != null) {
             drawIcon(c, key, x + size / 2f, baselineY - textSize * 0.34f, size, null)
             return x + size + gap
         }
@@ -700,7 +700,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     ): Float {
         val gap = 3f
         val tw = r.measure(text, textSize, true)
-        if (key.isNotEmpty() && bitmap(key) \!= null) {
+        if (key.isNotEmpty() && bitmap(key) != null) {
             drawIcon(c, key, rightX - size / 2f, baselineY - textSize * 0.34f, size, null)
             r.text(c, text, rightX - size - gap, baselineY, textSize, color, true, Paint.Align.RIGHT)
             return rightX - size - gap - tw
