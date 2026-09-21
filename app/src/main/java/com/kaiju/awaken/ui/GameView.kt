@@ -492,7 +492,6 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             2 -> 1.14f
             else -> 1f
         }
-        r.translator = { s -> com.kaiju.awaken.game.I18n.translate(s, perm.settingsLanguage) }
     }
 
 

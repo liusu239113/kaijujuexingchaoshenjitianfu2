@@ -52,9 +52,6 @@ class Renderer {
     /** 全局字号缩放（1.0 = 100%）。 */
     var fontScale = 1f
 
-    /** 文案翻译钩子：由 I18n 注入，null 表示不翻译。 */
-    var translator: ((String) -> String)? = null
-
     /** 注入游戏字体（打包在 assets/fonts 下的中文黑体）。 */
     fun setTypeface(tf: Typeface) {
         textPaint.typeface = tf
@@ -69,15 +66,13 @@ class Renderer {
         p.textSize = size * fontScale
         p.color = color
         p.textAlign = align
-        val out = translator?.invoke(s) ?: s
-        c.drawText(out, x, y, p)
+        c.drawText(s, x, y, p)
     }
 
     fun measure(s: String, size: Float, bold: Boolean = false): Float {
         val p = if (bold) boldPaint else textPaint
         p.textSize = size * fontScale
-        val out = translator?.invoke(s) ?: s
-        return p.measureText(out)
+        return p.measureText(s)
     }
 
     fun wrap(c: Canvas, s: String, x: Float, y: Float, maxW: Float, size: Float, color: Int, lineH: Float, bold: Boolean = false): Float {

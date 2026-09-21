@@ -227,8 +227,6 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             ghostButton(c, "panel_font_1", "中", 40f + (w - 96f) / 3f + 8f, y + 12f, (w - 96f) / 3f, 42f, if (perm.settingsFontSize == 1) Palette.CYAN else Palette.TEXT_DIM)
             ghostButton(c, "panel_font_2", "大", 40f + ((w - 96f) / 3f + 8f) * 2f, y + 12f, (w - 96f) / 3f, 42f, if (perm.settingsFontSize == 2) Palette.CYAN else Palette.TEXT_DIM)
             y += 64f
-            ghostButton(c, "panel_lang", "语言 / Language：" + com.kaiju.awaken.game.I18n.langName(perm.settingsLanguage), 40f, y, w - 80f, 46f, Palette.CYAN)
-            y += 56f
             r.text(c, "战斗速度", 40f, y, 13f, Palette.TEXT)
             ghostButton(c, "panel_speed_0", "慢", 40f, y + 12f, (w - 96f) / 3f, 42f, if (perm.settingsBattleSpeed == 0) Palette.CYAN else Palette.TEXT_DIM)
             ghostButton(c, "panel_speed_1", "中", 40f + (w - 96f) / 3f + 8f, y + 12f, (w - 96f) / 3f, 42f, if (perm.settingsBattleSpeed == 1) Palette.CYAN else Palette.TEXT_DIM)
@@ -326,12 +324,6 @@ internal fun GameView.tapPanel(id: String) {
         "panel_font_0" -> { perm.settingsFontSize = 0; applyDisplaySettings(); Save.savePerm(context, perm); return }
         "panel_font_1" -> { perm.settingsFontSize = 1; applyDisplaySettings(); Save.savePerm(context, perm); return }
         "panel_font_2" -> { perm.settingsFontSize = 2; applyDisplaySettings(); Save.savePerm(context, perm); return }
-        "panel_lang" -> {
-            perm.settingsLanguage = if (perm.settingsLanguage == com.kaiju.awaken.game.I18n.EN) com.kaiju.awaken.game.I18n.ZH else com.kaiju.awaken.game.I18n.EN
-            applyDisplaySettings()
-            Save.savePerm(context, perm)
-            return
-        }
         "panel_speed_0" -> { perm.settingsBattleSpeed = 0; Save.savePerm(context, perm); return }
         "panel_speed_1" -> { perm.settingsBattleSpeed = 1; Save.savePerm(context, perm); return }
         "panel_speed_2" -> { perm.settingsBattleSpeed = 2; Save.savePerm(context, perm); return }
