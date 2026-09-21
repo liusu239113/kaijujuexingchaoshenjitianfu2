@@ -42,7 +42,8 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
     c.clipRect(20f, scrollTop, w - 20f, scrollBottom)
     setHitClip(scrollTop, scrollBottom)
     panelScrollMax = 0f
-    var y = scrollTop + 8f - panelScroll
+    // 内容首行要低于裁剪顶边一个字身高，否则「战技点 / 行囊 N/40」这行上半截被切
+    var y = scrollTop + 20f - panelScroll
     when (panel) {
         "bag" -> {
             if (p == null) { c.restore(); clearHitClip(); return }
@@ -80,7 +81,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             } else {
                 r.text(c, sel.name, 36f, y + 26f, 14f, Palette.TEXT, true)
                 r.text(c, sel.rarity.cn + " · " + mainLabel(sel.mainKey) + " +" + sel.mainValue.toInt() + (if (sel.enhance > 0) "  ·  锻铸 +" + sel.enhance else ""), 36f, y + 46f, 11f, rarityColor(sel.rarity))
-                r.text(c, sel.affixes.take(3).joinToString("  ") { it.label + " +" + it.value.toInt() }, 36f, y + 64f, 10f, Palette.TEXT_DIM)
+                r.text(c, sel.affixes.take(3).joinToString("  ") { if (it.isMechanic) it.label else it.label + " +" + it.value.toInt() }, 36f, y + 64f, 10f, Palette.TEXT_DIM)
                 r.text(c, "变卖 " + sel.sellValue + " 金币", 36f, y + 86f, 10.5f, Palette.GOLD)
                 button(c, "panel_bag_equip", "装 备", w - 190f, y + 64f, 76f, 34f, Palette.CYAN)
                 ghostButton(c, "panel_bag_sell", "变卖", w - 106f, y + 64f, 76f, 34f, Palette.GOLD)
@@ -769,7 +770,8 @@ internal fun GameView.tapReincarnation(id: String) {
 }
 
 internal fun GameView.drawGrowthScreen(c: Canvas) {
-    drawTopBar(c, "轮回淬炼", "神格点：${perm.talentPoints} · 最高层数：${perm.bestFloor}", "growth_back", null, null)
+    // 改名：原名「轮回淬炼」会让玩家以为是重开角色，实际只是永久属性强化
+    drawTopBar(c, "神格强化", "角色已锁定 · 神格点：${perm.talentPoints} · 最高层数：${perm.bestFloor}", "growth_back", null, null)
     var y = beginScroll(c, 112f)
     for (g in Content.growth) {
         val lv = perm.growthLevel(g.id)
@@ -788,22 +790,11 @@ internal fun GameView.drawGrowthScreen(c: Canvas) {
         y += 92f
     }
     endScroll(c, y + 10f)
-    button(c, "growth_start", "开 始 新 一 轮", UiKit.MARGIN, h - 74f, contentW(), 52f, Palette.PINK)
 }
 
 internal fun GameView.tapGrowth(id: String) {
     when {
         id == "growth_back" -> goScreen(metaReturn)
-        id == "growth_start" -> {
-            // 「开始新一轮」会覆盖当前存档。旧实现直接 goScreen(SETUP)，
-            // 于是玩家从「轮回淬炼」点一下就被踹回创角界面、远征进度无声丢失。
-            val cur = run
-            if (cur != null && cur.floor > 1 && cur.runOver.not()) {
-                showConfirm("开始新一轮会放弃当前远征（第 " + cur.floor + " 层），确定重新创建角色吗？", "newrun")
-            } else {
-                goScreen(Screen.SETUP)
-            }
-        }
         id.startsWith("growth_up_") -> {
             val gid = id.removePrefix("growth_up_")
             val def = Content.growthById[gid] ?: return

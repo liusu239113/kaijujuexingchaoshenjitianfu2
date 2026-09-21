@@ -144,22 +144,53 @@ class Audio(private val ctx: Context) {
     }
 
 
-    private var voice: MediaPlayer? = null
+    private var voiceFallback: MediaPlayer? = null
+
+    /**
+     * 语音专用 SoundPool。
+     * 旧实现每次都用 MediaPlayer.create() 现场解码，单次 30~80ms ——
+     * 表现出来就是「点完技能要顿一下才出声」。SoundPool 首次加载后起播只要几毫秒。
+     */
+    private var voicePool: SoundPool? = null
+    private val voiceIds = HashMap<String, Int>()
+    private var voiceStream = 0
+
+    /** 语音播放速率。1.0 = 原速；大于 1 更快、音调略高。 */
+    var voiceRate = 1.10f
+
+    private fun ensureVoicePool(): SoundPool? {
+        if (voicePool == null) {
+            try {
+                val attrs = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                voicePool = SoundPool.Builder().setMaxStreams(2).setAudioAttributes(attrs).build()
+            } catch (t: Throwable) {
+                voicePool = null
+            }
+        }
+        return voicePool
+    }
 
     /** 播放人物语音（覆盖式，同一时刻只播一条）。 */
     fun playVoice(name: String) {
         if (!sfxOn) return
-        val id = rawId(name)
-        if (id == 0) return
-        try {
-            voice?.release()
-            voice = MediaPlayer.create(ctx, id)?.apply {
-                setVolume(0.9f, 0.9f)
-                start()
-                setOnCompletionListener { it.release() }
-            }
-        } catch (t: Throwable) {
+        val vp = ensureVoicePool()
+        if (vp == null) return
+        val cached = voiceIds[name]
+        val sid: Int = if (cached == null) {
+            val rid = rawId(name)
+            if (rid == 0) return
+            val s = try { vp.load(ctx, rid, 1) } catch (t: Throwable) { 0 }
+            voiceIds[name] = s
+            s
+        } else {
+            cached
         }
+        if (sid == 0) return
+        if (voiceStream != 0) vp.stop(voiceStream)
+        voiceStream = vp.play(sid, 0.9f, 0.9f, 1, 0, voiceRate)
     }
 
     /** 职阶 → 音色档案（4 套音色覆盖 8 个职阶）。 */
@@ -214,8 +245,14 @@ class Audio(private val ctx: Context) {
         }
         stopAmbience()
         try {
-            voice?.release()
-            voice = null
+            voiceFallback?.release()
+            voiceFallback = null
+        } catch (t: Throwable) {
+        }
+        try {
+            voicePool?.release()
+            voicePool = null
+            voiceIds.clear()
         } catch (t: Throwable) {
         }
         try {

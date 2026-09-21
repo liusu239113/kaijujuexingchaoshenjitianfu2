@@ -757,10 +757,14 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 val slotKey = id.removePrefix("panel_equip_")
                 val e = run?.equipped?.get(slotKey) ?: return
                 val sb = StringBuilder()
-                sb.appendLine(e.rarity.cn + " · " + slotKey + " · Lv." + e.level)
+                val slotCn = com.kaiju.awaken.game.Content.slots.firstOrNull { it.id == slotKey }?.cn ?: slotKey
+                sb.appendLine(e.rarity.cn + " · " + slotCn + " · Lv." + e.level)
                 sb.appendLine()
                 sb.appendLine(mainLabelOf(e.mainKey) + " +" + e.mainValue.toInt())
-                for (a in e.affixes) sb.appendLine(a.label + " +" + a.value.toInt())
+                for (a in e.affixes) {
+                    // 机制型词条的 label 本身已含数值（「生命窃取 8%」），再拼一次就成了「8% +0」
+                    if (a.isMechanic) sb.appendLine(a.label) else sb.appendLine(a.label + " +" + a.value.toInt())
+                }
                 if (e.setId != null) sb.appendLine("套装：" + e.setId)
                 sb.appendLine()
                 sb.appendLine("锻铸等级 +" + e.enhance + "（每级 +10% 主属性）")
@@ -781,7 +785,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 sb.appendLine(e.rarity.cn + " · " + e.slot)
                 sb.appendLine()
                 sb.appendLine(mainLabelOf(e.mainKey) + " +" + e.mainValue.toInt())
-                for (a in e.affixes) sb.appendLine(a.label + " +" + a.value.toInt())
+                for (a in e.affixes) {
+                    // 机制型词条的 label 本身已含数值（「生命窃取 8%」），再拼一次就成了「8% +0」
+                    if (a.isMechanic) sb.appendLine(a.label) else sb.appendLine(a.label + " +" + a.value.toInt())
+                }
                 if (e.setId != null) sb.appendLine("套装：" + e.setId)
                 sb.appendLine()
                 sb.appendLine("锻铸等级 +" + e.enhance + "    变卖 " + e.sellValue + " 金币")

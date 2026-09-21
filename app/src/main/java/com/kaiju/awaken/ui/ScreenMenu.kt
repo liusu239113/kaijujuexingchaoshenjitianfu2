@@ -75,7 +75,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 68f
 
-    r.text(c, "v1.2.1 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.2.2 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
@@ -98,7 +98,7 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
 
     // 改为可滚动：旧实现内容总高约 740，在 h=711 的 16:9 屏上「职阶网格」
     // 会与底部「觉醒天赋」按钮重叠，职阶说明卡直接被挤出屏幕。
-    var y = beginScroll(c, 118f)
+    var y = beginScroll(c, 100f)
     r.text(c, "试炼强度", 24f, y, 15f, Palette.CYAN, true)
     y += 12f
     val modes = GameMode.values()

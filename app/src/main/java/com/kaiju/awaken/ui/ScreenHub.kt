@@ -9,7 +9,8 @@ import com.kaiju.awaken.game.RunService
 internal fun GameView.drawHubScreen(c: Canvas) {
     val p = run
     // 整屏滚动化：功能格变多后内容会超过 16:9 的可视高度
-    var y = beginScroll(c, 92f, h - 12f)
+    // clip 顶边必须在首行文字的字身之上：旧值 92 正好压在第一行基线上，标题只剩下半截
+    var y = beginScroll(c, 64f, h - 12f)
 
     r.text(c, "回 廊 前 厅", w / 2f, y, 24f, Palette.TEXT, true, Paint.Align.CENTER)
     y += 22f
@@ -67,7 +68,7 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         Triple("hub_recruit", "招募所", "party"),
         Triple("hub_pet", "宠物", "always"),
         Triple("hub_story", "主线", "always"),
-        Triple("hub_growth", "轮回淬炼", "always"),
+        Triple("hub_growth", "神格强化", "always"),
         Triple("hub_codex", "图鉴", "always"),
         Triple("hub_ach", "成就", "always"),
         Triple("hub_shop", "星尘兑换", "always"),
