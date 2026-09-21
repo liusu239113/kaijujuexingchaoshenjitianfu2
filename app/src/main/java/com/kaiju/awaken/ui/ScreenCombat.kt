@@ -65,7 +65,7 @@ internal fun GameView.drawCombatScreen(c: Canvas) {
 }
 
 /** 每行卡片的几何：返回 (起始X, 卡宽, 行高)。 */
-private fun rowGeom(count: Int, rowH: Float): Triple<Float, Float, Float> {
+private fun GameView.rowGeom(count: Int, rowH: Float): Triple<Float, Float, Float> {
     val n = count.coerceAtLeast(1)
     val gap = 8f
     val maxW = 128f
