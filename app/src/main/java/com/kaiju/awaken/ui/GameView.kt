@@ -95,6 +95,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var recruitList: MutableList<com.kaiju.awaken.game.Unit> = ArrayList()
     var panelScroll = 0f
     var bagSelected = 0
+    var metaReturn: Screen = Screen.MENU
+    var screenScroll = 0f
+    var screenScrollMax = 0f
+    var scrollTopY = 0f
+    var scrollBottomY = 0f
     var detailTitle = ""
     var detailBody = ""
     private var touchDownMs = 0L
@@ -576,6 +581,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 dragMoved += kotlin.math.abs(dy)
                 if (panel.isNotEmpty() && panelScrollMax > 0f) {
                     panelScroll = (panelScroll - dy).coerceIn(0f, panelScrollMax)
+                } else if (overlay.isEmpty() && detailTitle.isEmpty() && exportText.isEmpty() && screenScrollMax > 0f) {
+                    screenScroll = (screenScroll - dy).coerceIn(0f, screenScrollMax)
                 }
             }
             MotionEvent.ACTION_UP -> {
@@ -709,6 +716,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         com.kaiju.awaken.game.Tag.LIFESTEAL_HIT -> "吸血"
         com.kaiju.awaken.game.Tag.EXTRA_TURN -> "额外行动"
         com.kaiju.awaken.game.Tag.DISPEL -> "驱散"
+    }
+
+    fun setScreen(s0: Screen) {
+        if (screen != s0) screenScroll = 0f
+        screen = s0
     }
 
     fun handleTap(id: String) {

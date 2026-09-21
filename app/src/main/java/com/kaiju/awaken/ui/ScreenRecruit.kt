@@ -12,20 +12,19 @@ import com.kaiju.awaken.game.Unit
 internal fun GameView.drawRecruitScreen(c: Canvas) {
     val p = run
     drawTopBar(c, "招募所", if (p == null) "需先开启远征" else "队伍 " + p.party.size + "/3 · 金币 " + p.gold, "rec_back", "rec_refresh", "刷新 " + refreshCost())
-    var y = 124f
+    var y = beginScroll(c, 112f)
 
     if (p == null) {
         card(c, 24f, y, w - 48f, 100f, r.withAlpha(Palette.BORDER_SOFT, 170), 14f)
         r.text(c, "尚未开启远征", w / 2f, y + 44f, 15f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
         r.text(c, "回到主城点击「出发远征」后再来招募", w / 2f, y + 68f, 11.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
-        ghostButton(c, "rec_back", "返回", 34f, h - 84f, w - 68f, 48f, Palette.TEXT_DIM)
+        ghostButton(c, "rec_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 48f, Palette.TEXT_DIM)
         return
     }
 
     if (recruitList.isEmpty()) recruitList = ArrayList(TowerService.tavernCandidates(p.floor))
 
-    r.text(c, "候选伙伴", 22f, y, 13f, Palette.CYAN, true)
-    y += 10f
+    y = sectionHeader(c, "候选伙伴", y)
     for (i in recruitList.indices) {
         val u = recruitList[i]
         val col = rarityColor(u.rarity)
@@ -47,8 +46,9 @@ internal fun GameView.drawRecruitScreen(c: Canvas) {
         y += 118f
     }
 
-    r.text(c, "提示：伙伴拥有独立专长与星级，可用金币升星；长按队伍可查看详情。", 24f, y + 8f, 11f, Palette.TEXT_FAINT)
-    ghostButton(c, "rec_back", "返回", 34f, h - 84f, w - 68f, 48f, Palette.TEXT_DIM)
+    r.wrap(c, "提示：伙伴拥有独立专长与星级，可用金币升星；长按队伍可查看详情。", UiKit.MARGIN, y + 8f, contentW(), 11f, Palette.TEXT_FAINT, 17f)
+    endScroll(c, y + 44f)
+    ghostButton(c, "rec_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 48f, Palette.TEXT_DIM)
 }
 
 internal fun refreshCost(): Int = 60
@@ -56,7 +56,7 @@ internal fun refreshCost(): Int = 60
 internal fun GameView.tapRecruit(id: String) {
     val p = run ?: return
     when {
-        id == "rec_back" -> screen = GameView.Screen.HUB
+        id == "rec_back" -> setScreen(GameView.Screen.HUB)
         id == "rec_refresh" -> {
             if (p.gold < refreshCost()) {
                 audio.play("error")

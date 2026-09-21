@@ -10,7 +10,7 @@ import com.kaiju.awaken.game.Tracker
 /** 宠物图鉴与出战选择。 */
 internal fun GameView.drawPetScreen(c: Canvas) {
     drawTopBar(c, "宠物", "已收集 " + perm.petsOwned.size + " / " + Pets.all.size, "pet_back", null, null)
-    var y = 120f
+    var y = beginScroll(c, 112f)
     val cols = 3
     val gap = 8f
     val cell = (w - 36f - gap * (cols - 1)) / cols
@@ -48,13 +48,14 @@ internal fun GameView.drawPetScreen(c: Canvas) {
         r.wrap(c, cur.desc, 106f, y + 54f, w - 140f, 11f, Palette.TEXT_DIM, 15f)
         y += 106f
     }
-    ghostButton(c, "pet_off", "取消出击", 30f, y + 4f, w - 60f, 42f, Palette.TEXT_DIM)
-    ghostButton(c, "pet_back", "返回", 30f, h - 74f, w - 60f, 46f, Palette.TEXT_DIM)
+    ghostButton(c, "pet_off", "取消出击", UiKit.MARGIN, y + 4f, contentW(), 42f, Palette.TEXT_DIM)
+    endScroll(c, y + 56f)
+    ghostButton(c, "pet_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 46f, Palette.TEXT_DIM)
 }
 
 internal fun GameView.tapPet(id: String) {
     when {
-        id == "pet_back" -> screen = GameView.Screen.HUB
+        id == "pet_back" -> setScreen(GameView.Screen.HUB)
         id == "pet_off" -> {
             perm.petId = null
             Save.savePerm(context, perm)
@@ -76,7 +77,7 @@ internal fun GameView.tapPet(id: String) {
 internal fun GameView.drawStoryScreen(c: Canvas) {
     val cur = Story.current(perm.storyIndex)
     drawTopBar(c, "主线 · 回廊的回声", "进度 " + perm.storyIndex + " / " + Story.total, "story_back", null, null)
-    var y = 120f
+    var y = beginScroll(c, 112f)
     if (cur != null) {
         val floorNow = run?.floor ?: 0
         val done = floorNow >= cur.goalFloor
@@ -108,7 +109,7 @@ internal fun GameView.drawStoryScreen(c: Canvas) {
     r.text(c, "章节一览", 22f, y, 13f, Palette.CYAN, true)
     y += 10f
     for (ch in Story.chapters) {
-        if (y > h - 110f) break
+        if (y > h + screenScroll - 60f) break
         val claimed = perm.chapterClaimed.contains(ch.index.toString())
         val passed = perm.storyIndex > ch.index - 1
         val col = if (claimed) Palette.GREEN else if (passed) Palette.GOLD else Palette.BORDER_SOFT
@@ -118,12 +119,13 @@ internal fun GameView.drawStoryScreen(c: Canvas) {
         r.text(c, status, w - 32f, y + 27f, 11f, col, false, Paint.Align.RIGHT)
         y += 50f
     }
-    ghostButton(c, "story_back", "返回", 30f, h - 74f, w - 60f, 46f, Palette.TEXT_DIM)
+    endScroll(c, y)
+    ghostButton(c, "story_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 46f, Palette.TEXT_DIM)
 }
 
 internal fun GameView.tapStory(id: String) {
     when (id) {
-        "story_back" -> screen = GameView.Screen.HUB
+        "story_back" -> setScreen(GameView.Screen.HUB)
         "story_claim" -> {
             val ch = Story.current(perm.storyIndex) ?: return
             if (perm.chapterClaimed.contains(ch.index.toString())) return

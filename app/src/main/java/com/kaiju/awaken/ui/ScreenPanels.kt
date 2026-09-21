@@ -713,7 +713,7 @@ internal fun GameView.tapReincarnation(id: String) {
 
 internal fun GameView.drawGrowthScreen(c: Canvas) {
     drawTopBar(c, "轮回淬炼", "神格点：${perm.talentPoints} · 最高层数：${perm.bestFloor}", "growth_back", null, null)
-    var y = 118f
+    var y = beginScroll(c, 112f)
     for (g in Content.growth) {
         val lv = perm.growthLevel(g.id)
         val cost = Content.growthCost(g, lv)
@@ -730,7 +730,8 @@ internal fun GameView.drawGrowthScreen(c: Canvas) {
         }
         y += 92f
     }
-    button(c, "growth_start", "开 始 新 一 轮", 40f, h - 82f, w - 80f, 56f, Palette.PINK)
+    endScroll(c, y + 10f)
+    button(c, "growth_start", "开 始 新 一 轮", UiKit.MARGIN, h - 74f, contentW(), 52f, Palette.PINK)
 }
 
 internal fun GameView.tapGrowth(id: String) {

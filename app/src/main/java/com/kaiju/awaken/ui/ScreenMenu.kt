@@ -75,12 +75,12 @@ internal fun GameView.tapMenu(id: String) {
             run?.let { RunService.recalcAll(it, perm) }
             screen = GameView.Screen.HUB
         }
-        "menu_growth" -> screen = Screen.GROWTH
-        "menu_codex" -> screen = Screen.CODEX
-        "menu_ach" -> screen = Screen.ACHIEVEMENTS
-        "menu_shop" -> screen = Screen.SHOP
-        "menu_slots" -> screen = Screen.SAVE_SLOTS
-        "menu_about" -> screen = Screen.ABOUT
+        "menu_growth" -> { metaReturn = Screen.MENU; screen = Screen.GROWTH }
+        "menu_codex" -> { metaReturn = Screen.MENU; screen = Screen.CODEX }
+        "menu_ach" -> { metaReturn = Screen.MENU; screen = Screen.ACHIEVEMENTS }
+        "menu_shop" -> { metaReturn = Screen.MENU; screen = Screen.SHOP }
+        "menu_slots" -> { metaReturn = Screen.MENU; screen = Screen.SAVE_SLOTS }
+        "menu_about" -> { metaReturn = Screen.MENU; screen = Screen.ABOUT }
         "menu_settings" -> panel = "settings"
     }
 }

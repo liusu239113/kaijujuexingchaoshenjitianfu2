@@ -121,9 +121,9 @@ internal fun GameView.tapHub(id: String) {
         }
         "hub_story" -> screen = GameView.Screen.STORY
         "hub_pet" -> screen = GameView.Screen.PET
-        "hub_growth" -> screen = GameView.Screen.GROWTH
-        "hub_codex" -> screen = GameView.Screen.CODEX
-        "hub_ach" -> screen = GameView.Screen.ACHIEVEMENTS
-        "hub_shop" -> screen = GameView.Screen.SHOP
+        "hub_growth" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.GROWTH }
+        "hub_codex" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.CODEX }
+        "hub_ach" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.ACHIEVEMENTS }
+        "hub_shop" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.SHOP }
     }
 }
