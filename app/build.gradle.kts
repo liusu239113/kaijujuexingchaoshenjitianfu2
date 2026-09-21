@@ -11,8 +11,8 @@ android {
         applicationId = "com.kaiju.awaken"
         minSdk = 24
         targetSdk = 34
-        versionCode = 125
-        versionName = "1.2.5"
+        versionCode = 126
+        versionName = "1.2.6"
     }
 
     buildTypes {

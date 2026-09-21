@@ -117,6 +117,22 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     /** 已经播过开场剧情的章节号，避免来回切层重复弹。 */
     private var storyShownChapter = -1
 
+    // ---- 战斗打击感 ----
+    /** 镜头震动剩余时间 / 强度（设计单位）。 */
+    var shakeTime = 0f
+    private var shakeMag = 0f
+    /** 刚受击的单位与其闪光剩余时间。 */
+    var hitFlashTarget: Unit? = null
+    var hitFlashTime = 0f
+
+    /** 触发一次打击反馈。isCrit 时震动更强、闪光更亮。 */
+    fun punch(target: Unit?, isCrit: Boolean) {
+        hitFlashTarget = target
+        hitFlashTime = if (isCrit) 0.26f else 0.18f
+        shakeTime = if (isCrit) 0.26f else 0.12f
+        shakeMag = if (isCrit) 7f else 2.6f
+    }
+
     /** 玩家在创角时输入的名字。 */
     var playerName = ""
 
@@ -312,6 +328,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         }
         r.pctPulse = (0.5f + 0.5f * kotlin.math.sin(time * 3.2f))
         if (storyFade < 1f) storyFade = (storyFade + dt * 2.6f).coerceAtMost(1f)
+        if (shakeTime > 0f) shakeTime = (shakeTime - dt).coerceAtLeast(0f)
+        if (hitFlashTime > 0f) hitFlashTime = (hitFlashTime - dt).coerceAtLeast(0f)
         if (toastTime > 0f) toastTime -= dt
         for (p in particles) {
             p.y -= p.vy * dt
@@ -344,6 +362,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         val ft = b.floatTexts.lastOrNull() ?: return
         if (ft.text == lastSfxText) return
         lastSfxText = ft.text
+        // 每出一条飘字就打一次反馈：受击方闪一下 + 镜头抖一下
+        punch(ft.target, ft.isCrit)
         when {
             ft.isCrit -> audio.play("crit")
             ft.text.startsWith("+") -> audio.play("heal")
@@ -374,6 +394,14 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         clearHitClip()
         canvas.save()
         canvas.scale(scale, scale)
+        // 受击/暴击时整屏轻微抖动（幅度随时间线性衰减）
+        if (shakeTime > 0f) {
+            val k = (shakeTime / 0.26f).coerceIn(0f, 1f)
+            canvas.translate(
+                (rand.nextFloat() - 0.5f) * 2f * shakeMag * k,
+                (rand.nextFloat() - 0.5f) * 2f * shakeMag * k
+            )
+        }
         drawBackground(canvas)
         when (screen) {
             Screen.MENU -> drawMenuScreen(canvas)

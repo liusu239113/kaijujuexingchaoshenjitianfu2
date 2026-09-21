@@ -99,6 +99,11 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: 
             r.text(c, "战殁", x + cw / 2f, gridTop + ch / 2f, 14f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
             continue
         }
+        // 刚受击：整张卡叠一层高光
+        if (u === hitFlashTarget && hitFlashTime > 0f) {
+            val fa = (hitFlashTime / 0.26f * 150f).toInt().coerceIn(0, 150)
+            r.solid(c, x, gridTop, cw, ch, 12f, r.withAlpha(0xFFFFFFFF.toInt(), fa))
+        }
         val key = u.avatarKey.ifEmpty { u.clsId }
         val psize = (cw * 0.52f).coerceIn(40f, 62f)
         val cpIcon = if (isEnemy) "" else com.kaiju.awaken.game.ArtIcon.companion(key)
