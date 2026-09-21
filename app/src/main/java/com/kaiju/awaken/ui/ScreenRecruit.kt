@@ -64,7 +64,7 @@ internal fun GameView.tapRecruit(id: String) {
                 return
             }
             p.gold -= refreshCost()
-            recruitList = TowerService.tavernCandidates(p.floor)
+            recruitList = ArrayList(TowerService.tavernCandidates(p.floor))
             audio.play("draw")
             showToast("已刷新候选")
         }
