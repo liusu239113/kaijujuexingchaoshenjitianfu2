@@ -26,8 +26,8 @@ android {
         applicationId = "com.dshx.game.shidai"
         minSdk = 24
         targetSdk = 34
-        versionCode = 100
-        versionName = "1.0.0"
+        versionCode = 101
+        versionName = "1.0.1"
     }
 
     signingConfigs {
@@ -68,7 +68,9 @@ android {
     }
 
     buildFeatures {
-        buildConfig = false
+        // 打开 BuildConfig：标题页的版本号直接读 BuildConfig.VERSION_NAME，
+        // 免得 gradle 里改成 1.0.0、界面上还硬编码着 v1.5.0。
+        buildConfig = true
     }
 }
 
@@ -87,6 +89,12 @@ dependencies {
     implementation(files("libs/tosin-baidu-adapter-9.450.aar"))
     implementation(files("libs/sigmob/tosin-sigmob_common-adapter-1.9.4.aar"))
     implementation(files("libs/sigmob/tosin-sigmob_windsdk-adapter-4.25.11.aar"))
+    // ↓↓↓ 这两个是 ADX 业务的必需组件，之前只放进了 app/libs/topon/
+    //     但忘了写进依赖，导致没打进 APK：SDK 每次启动都弹
+    //     「检测到 anythink_network_adx_*.aar 重要组件缺失」，
+    //     并且初始化直接失败 —— 表现就是所有「看广告」都提示没准备好。
+    implementation(files("libs/topon/tosin-anythink_adx_sdk_kuying_necessary-adapter-6.5.48.aar"))
+    implementation(files("libs/topon/tosin-anythink_network_adx_kuying_sdk_necessary-adapter.aar"))
     implementation(files("libs/topon/tosin-anythink_banner-adapter.aar"))
     implementation(files("libs/topon/tosin-anythink_china_core.aar"))
     implementation(files("libs/topon/tosin-anythink_core-adapter.aar"))

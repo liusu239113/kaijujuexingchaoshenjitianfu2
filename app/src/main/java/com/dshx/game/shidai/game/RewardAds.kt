@@ -20,6 +20,17 @@ object RewardAds {
     @Volatile
     var available: Boolean = false
 
+    /** 广告不可用时的原因（SDK 初始化失败 / 未配置），UI 直接展示给玩家。 */
+    @Volatile
+    var lastError: String = ""
+
+    /** 给 UI 用的一句话状态：可用，还是到底卡在哪。 */
+    fun statusText(): String = when {
+        isReady() -> "可看广告"
+        lastError.isNotEmpty() -> lastError
+        else -> "广告接入中"
+    }
+
     fun isReady(): Boolean = handler != null && available
 
     fun install(impl: (String, (Boolean) -> kotlin.Unit) -> kotlin.Unit) {

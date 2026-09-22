@@ -97,7 +97,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 48f + bGap
 
-    r.text(c, "v1.5.0 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v" + com.dshx.game.shidai.BuildConfig.VERSION_NAME + " · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
@@ -209,9 +209,15 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
             r.hexFrame(c, x + cw / 2f, yy + cw * 0.42f, cw * 0.3f, Palette.TEXT_FAINT, r.withAlpha(Palette.PANEL_SOFT, 255))
             r.text(c, "锁", x + cw / 2f, yy + cw * 0.46f, 14f, Palette.TEXT_FAINT, true, Paint.Align.CENTER)
         }
+        // 广告没就绪时不要写「看广告」——玩家点下去只会拿到一句失败提示，
+        // 和宠物页一样显示「接入中」更诚实。
+        val adReady = com.dshx.game.shidai.game.RewardAds.isReady()
         r.text(
-            c, if (unlocked) cls.name else "看广告", x + cw / 2f, yy + cw + 6f, 13f,
-            if (sel) accent else if (unlocked) Palette.TEXT_DIM else Palette.GOLD, true, Paint.Align.CENTER
+            c,
+            if (unlocked) cls.name else if (adReady) "看广告" else "接入中",
+            x + cw / 2f, yy + cw + 6f, 13f,
+            if (sel) accent else if (unlocked) Palette.TEXT_DIM else if (adReady) Palette.GOLD else Palette.TEXT_FAINT,
+            true, Paint.Align.CENTER
         )
         hit("setup_class_" + cls.id, x, yy, cw, cw + 18f)
     }

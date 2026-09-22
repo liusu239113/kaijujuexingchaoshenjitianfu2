@@ -19,6 +19,12 @@ object AdBridge {
         TosinAdInitializer.init(activity.application) { ok ->
             // 初始化成功才把 available 置 true：UI 上「看广告」入口据此显示可用/接入中
             RewardAds.available = ok && AdSdkConfig.rewardVideoId.isNotEmpty()
+            // 失败原因带出去，别让玩家（和开发者）只看到一句"没准备好"
+            RewardAds.lastError = when {
+                RewardAds.available -> ""
+                ok -> "激励视频广告位 ID 未配置"
+                else -> TosinAdInitializer.lastError.ifEmpty { "广告 SDK 初始化未完成" }
+            }
             if (RewardAds.available) {
                 // 初始化完立刻预热一条：玩家第一次点广告就是秒开，
                 // 而不是先盯着「广告加载中」等几秒（那是完播率最大的漏斗）。

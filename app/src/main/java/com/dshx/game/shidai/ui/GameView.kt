@@ -572,7 +572,12 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
     fun requestAd(placement: String, onReward: () -> kotlin.Unit) {
         if (!com.dshx.game.shidai.game.RewardAds.isReady()) {
             audio.play("error")
-            showToast("广告还没准备好，稍后再试")
+            // 没准备好：顺手再拉一次初始化（内部有冷却），并把真正的原因告诉玩家。
+            // 旧实现只说"还没准备好"，真机上根本不知道是 SDK 初始化挂了还是没配置。
+            val act = context as? android.app.Activity
+            if (act != null) com.dshx.game.shidai.ads.AdBridge.setup(act)
+            val why = com.dshx.game.shidai.game.RewardAds.lastError
+            showToast(if (why.isEmpty()) "广告还没准备好，稍后再试" else why)
             return
         }
         audio.play("click")
