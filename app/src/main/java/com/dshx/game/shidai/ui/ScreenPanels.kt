@@ -371,6 +371,12 @@ private fun mainLabel(key: String): String = when (key) {
     "maxHp" -> "生命"
     "def" -> "防御"
     "crit" -> "暴击"
+    "statusRes" -> "状态抗性"
+    "armorPen" -> "破甲"
+    "shieldPower" -> "护盾强度"
+    "healPower" -> "治疗强度"
+    "dmgBonus" -> "增伤"
+    "dmgReduction" -> "减伤"
     else -> key
 }
 
@@ -519,6 +525,12 @@ internal fun GameView.tapPanel(id: String) {
             bagSelected = 0
             audio.play("coins")
             showToast("变卖 " + e.name + " 获得 " + e.sellValue + " 金币")
+            // 卖完把详情弹层一起关掉，否则 overlay 留在 "detail" 上会卡住滚动
+            detailTitle = ""
+            detailBody = ""
+            detailIcon = ""
+            detailActionId = ""
+            overlay = ""
         }
         id.startsWith("panel_merc_star_") -> {
             val idx = id.removePrefix("panel_merc_star_").toIntOrNull() ?: return
@@ -608,6 +620,11 @@ private fun GameView.drawDetailOverlay(c: Canvas) {
         }
         ty = r.wrap(c, line, 44f, ty, w - 88f, 12f, Palette.TEXT_DIM, 17f)
     }
+    // 底部动作（装备变卖）：以前只能在行囊面板下面那颗按钮卖，
+    // 点开详情之后反而找不到卖的地方。
+    if (detailActionId.isNotEmpty()) {
+        button(c, detailActionId, detailActionLabel, 40f, top + boxH - 132f, w - 80f, 46f, Palette.GOLD)
+    }
     ghostButton(c, "detail_close", "关 闭", 40f, top + boxH - 58f, w - 80f, 46f, Palette.CYAN)
 }
 
@@ -616,6 +633,14 @@ internal fun GameView.tapConfirm(id: String) {
         "detail_close" -> {
             detailTitle = ""
             detailBody = ""
+            // 必须连 overlay 一起清掉：拖拽滚动的前置条件里有一项是 overlay.isEmpty()，
+            // 旧版只清了 title/body，overlay 永远停在 "detail" ——
+            // 结果就是「看过一次装备详情之后，所有界面都滑不动」，
+            // 直到玩家点开某个别的弹层再关掉才恢复。
+            detailIcon = ""
+            detailActionId = ""
+            detailActionLabel = ""
+            overlay = ""
         }
         "confirm_no" -> {
             overlay = ""

@@ -106,6 +106,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
     var detailTitle = ""
     var detailBody = ""
     var detailIcon = ""
+    /** 详情弹层底部的可选动作（装备变卖用）。 */
+    var detailActionId = ""
+    var detailActionLabel = ""
     /** 本次觉醒是否用过「看广告 +1 次」（每次觉醒限一次）。 */
     var draftAdUsed = false
     /** 本场战斗是否用过「看广告战果翻倍」。 */
@@ -1098,7 +1101,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
         return true
     }
 
-    fun showDetail(title: String, body: String, icon: String = "") {
+fun showDetail(title: String, body: String, icon: String = "", actionId: String = "", actionLabel: String = "") {
+        detailActionId = actionId
+        detailActionLabel = actionLabel
         detailTitle = title
         detailBody = body
         detailIcon = icon
@@ -1209,7 +1214,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
                 sb.appendLine()
                 sb.appendLine("锻铸等级 +" + e.enhance + "（每级 +10% 主属性）")
                 sb.appendLine("变卖价值 " + e.sellValue + " 金币")
-                showDetail(e.name, sb.toString(), com.dshx.game.shidai.game.ArtIcon.equip(e.slot, e.rarity))
+                showDetail(
+                    e.name, sb.toString(), com.dshx.game.shidai.game.ArtIcon.equip(e.slot, e.rarity),
+                    "panel_bag_sell", "变 卖 · " + e.sellValue + " 金币"
+                )
             }
             id.startsWith("panel_merc_detail_") -> {
                 val idx = id.removePrefix("panel_merc_detail_").toIntOrNull() ?: return
@@ -1222,14 +1230,26 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
                 val idx = id.removePrefix("panel_bagsel_").toIntOrNull() ?: return
                 val e = p.bag.getOrNull(idx) ?: return
                 val sb = StringBuilder()
-                sb.appendLine(e.rarity.cn + " · " + e.slot)
+                val slotCn = com.dshx.game.shidai.game.Content.slots.firstOrNull { it.id == e.slot }?.cn ?: e.slot
+                sb.appendLine(e.rarity.cn + " · " + slotCn + " · Lv." + e.level)
                 sb.appendLine()
                 sb.appendLine(mainLabelOf(e.mainKey) + " +" + e.mainValue.toInt())
                 for (a in e.affixes) {
                     // 机制型词条的 label 本身已含数值（「生命窃取 8%」），再拼一次就成了「8% +0」
                     if (a.isMechanic) sb.appendLine(a.label) else sb.appendLine(a.label + " +" + a.value.toInt())
                 }
-                if (e.setId != null) sb.appendLine("套装：" + e.setId)
+                val sid = e.setId
+                if (sid != null) {
+                    val sd = com.dshx.game.shidai.game.Content.sets.firstOrNull { it.id == sid }
+                    if (sd == null) {
+                        sb.appendLine("套装：" + sid)
+                    } else {
+                        val worn = run?.let { com.dshx.game.shidai.game.RunService.setCount(it, sid) } ?: 0
+                        sb.appendLine("套装 · " + sd.cn + "（已穿 " + worn + " 件）")
+                        sb.appendLine((if (worn >= 2) "  ✔ " else "  · ") + sd.desc)
+                        if (sd.desc2.isNotEmpty()) sb.appendLine((if (worn >= 4) "  ✔ " else "  · ") + sd.desc2)
+                    }
+                }
                 sb.appendLine()
                 sb.appendLine("锻铸等级 +" + e.enhance + "    变卖 " + e.sellValue + " 金币")
                 showDetail(e.name, sb.toString(), com.dshx.game.shidai.game.ArtIcon.equip(e.slot, e.rarity))
@@ -1282,6 +1302,12 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
         "lifesteal" -> "吸血"
         "energyRegen" -> "回能"
         "hpRegen" -> "回血"
+        "statusRes" -> "状态抗性"
+        "armorPen" -> "破甲"
+        "shieldPower" -> "护盾强度"
+        "healPower" -> "治疗强度"
+        "dmgBonus" -> "增伤"
+        "dmgReduction" -> "减伤"
         else -> key
     }
 
