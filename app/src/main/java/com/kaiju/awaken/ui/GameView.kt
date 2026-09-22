@@ -105,6 +105,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var detailTitle = ""
     var detailBody = ""
     var detailIcon = ""
+    /** 宠物详情浮层当前展示的宠物 id。 */
+    var petDetailId = ""
+    /** 上次召唤的结果（单抽 1 条 / 十连 10 条）。 */
+    var petPullResults: List<com.kaiju.awaken.game.Pets.PullResult> = emptyList()
 
     // ---- 剧情演出 ----
     /** 当前剧情的分页文本，每页一段。 */
@@ -1101,6 +1105,8 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         detailTitle = ""
         detailBody = ""
         detailIcon = ""
+        petDetailId = ""
+        petPullResults = emptyList()
         exportText = ""
         confirmMsg = ""
         confirmAction = ""
@@ -1298,8 +1304,15 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 val pet = com.kaiju.awaken.game.Pets.randomUnowned(perm.petsOwned)
                 if (pet != null) {
                     perm.petsOwned.add(pet.id)
+                    perm.petLevels.putIfAbsent(pet.id, 1)
                     if (perm.petId == null) perm.petId = pet.id
-                    showToast("获得宠物：" + pet.name)
+                    perm.petTickets += 1
+                    showToast("获得宠物：" + pet.name + "（附赠宠缘券 ×1）")
+                    audio.play("unlock")
+                } else {
+                    // 图鉴已集满：改为发券，避免「首领奖励变成空的」
+                    perm.petTickets += 3
+                    showToast("宠物已集齐，改为获得宠缘券 ×3")
                     audio.play("unlock")
                 }
             }

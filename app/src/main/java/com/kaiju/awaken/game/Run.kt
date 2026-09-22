@@ -54,6 +54,15 @@ class PermState {
     val petsOwned = HashSet<String>()
     /** 当前出战宠物 */
     var petId: String? = null
+    /** 宠缘券：宠物召唤用。来源为激励视频广告 / 星尘兑换 / 首领奖励。 */
+    var petTickets = 3
+    /** 召唤保底计数：连续 10 抽内必得「灿烂」及以上。 */
+    var petPity = 0
+    /** 每只宠物的等级：抽到重复宠物 +1 级，等级提高它的加成。 */
+    val petLevels = HashMap<String, Int>()
+
+    /** 宠物等级，未记录时按 1 级。 */
+    fun petLevel(id: String): Int = petLevels[id] ?: 1
     /** 角色名：创角时写入并永久保留，轮回后不必重新命名 */
     var playerName = ""
     /** 上次编成的职阶与试炼强度：前厅角色卡与编成页的默认值 */
@@ -331,7 +340,11 @@ object RunService {
 
             // 宠物加成
             Pets.of(perm.petId)?.let { pet ->
-                for ((key, v) in pet.statMod) {
+                // 等级倍率：抽到重复宠物会升级，加成随之提高
+                val lvMul = Pets.levelMul(perm.petLevel(pet.id))
+                for ((key0, v0) in pet.statMod) {
+                    val key = key0
+                    val v = v0 * lvMul
                     when (key) {
                         "atk" -> s.atk *= 1.0 + v
                         "matk" -> s.matk *= 1.0 + v
@@ -342,7 +355,9 @@ object RunService {
                         "dmgReduction" -> s.dmgReduction += v
                     }
                 }
-                for ((key, v) in pet.flatMod) {
+                for ((key0, v0) in pet.flatMod) {
+                    val key = key0
+                    val v = v0 * lvMul
                     when (key) {
                         "energyRegen" -> s.energyRegen += v
                         "lifesteal" -> s.lifesteal += v / 100.0

@@ -47,6 +47,15 @@ internal fun GameView.drawShopScreen(c: Canvas) {
         }
         y += UiKit.ROW_MED + 18f
     }
+    y = sectionHeader(c, "重复兑换", y + 4f)
+    card(c, UiKit.MARGIN, y, contentW(), UiKit.ROW_MED + 10f,
+        if (perm.dust >= 30) Palette.PINK else Palette.BORDER_SOFT, UiKit.RADIUS)
+    r.text(c, "宠缘券 ×1", UiKit.MARGIN + 14f, y + 26f, 13.5f, Palette.TEXT, true)
+    r.text(c, "用于宠物召唤；看广告也能获得", UiKit.MARGIN + 14f, y + 46f, 10.5f, Palette.TEXT_DIM)
+    ghostButton(c, "dust_ticket", "30 尘", w - UiKit.MARGIN - 104f, y + 14f, 90f, 40f,
+        if (perm.dust >= 30) Palette.PINK else Palette.TEXT_FAINT)
+    y += UiKit.ROW_MED + 18f
+
     y = sectionHeader(c, "累计", y + 4f)
     r.text(c, "累计获得星尘：" + perm.dustTotal + "　　星尘来自：通关模式 / 成就 / 章节奖励", UiKit.MARGIN, y + 12f, 11.5f, Palette.TEXT_FAINT)
     endScroll(c, y + 30f)
@@ -57,7 +66,7 @@ internal fun GameView.drawAboutScreen(c: Canvas) {
     drawTopBar(c, "关于与隐私", "本作完全离线运行", "meta_back", null, null)
     var y = beginScroll(c, 112f)
     val lines = listOf(
-        "《穿越星塔：全民登临时代》  v1.3.4" to "",
+        "《穿越星塔：全民登临时代》  v1.4.0" to "",
         "运行方式" to "单机离线游戏，无服务器、无账号体系、无联网权限。",
         "隐私说明" to "不收集任何个人信息，不集成任何第三方 SDK，不申请网络权限。",
         "数据存储" to "全部进度保存在设备本地的应用私有目录中，卸载应用即彻底删除。可在设定中导出为文本换机。",
@@ -169,6 +178,21 @@ internal fun GameView.tapCodex(id: String) {
 }
 
 internal fun GameView.tapDust(id: String) {
+    // 可重复兑换：宠缘券（与一次性解锁走同一入口）
+    if (id == "dust_ticket") {
+        val cost = 30
+        if (perm.dust < cost) {
+            audio.play("error")
+            showToast("星尘不足")
+            return
+        }
+        perm.dust -= cost
+        perm.petTickets += 1
+        Save.savePerm(context, perm)
+        audio.play("unlock")
+        showToast("获得宠缘券 ×1（当前 " + perm.petTickets + "）")
+        return
+    }
     if (!id.startsWith("dust_buy_")) return
     val uid = id.removePrefix("dust_buy_")
     val u = Meta.unlockById[uid] ?: return

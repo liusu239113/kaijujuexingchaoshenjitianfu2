@@ -526,6 +526,9 @@ internal fun GameView.drawOverlay(c: Canvas) {
         "tavern" -> drawTavernOverlay(c)
         "battle_end" -> drawBattleEndOverlay(c)
         "confirm" -> drawConfirmOverlay(c)
+        "pet_gacha" -> drawPetGachaOverlay(c)
+        "pet_result" -> drawPetResultOverlay(c)
+        "pet_detail" -> drawPetDetailOverlay(c)
     }
 }
 

@@ -101,6 +101,11 @@ object Save {
         o.put("petId", perm.petId ?: "")
         o.put("storyIndex", perm.storyIndex)
         o.put("petsOwned", strSet(perm.petsOwned))
+        o.put("petTickets", perm.petTickets)
+        o.put("petPity", perm.petPity)
+        val petLv = JSONObject()
+        for ((k, v) in perm.petLevels) petLv.put(k, v)
+        o.put("petLevels", petLv)
         o.put("chapterClaimed", strSet(perm.chapterClaimed))
         o.put("dustTotal", perm.dustTotal)
         o.put("settingsVibration", perm.settingsVibration)
@@ -156,6 +161,14 @@ object Save {
             perm.petId = if (pid2.isEmpty()) null else pid2
             perm.storyIndex = o.optInt("storyIndex", 0)
             readStrSet(o.optJSONArray("petsOwned"), perm.petsOwned)
+            // 老存档没有这几个字段：默认送 3 张券，让玩家能直接体验召唤
+            perm.petTickets = o.optInt("petTickets", 3)
+            perm.petPity = o.optInt("petPity", 0)
+            o.optJSONObject("petLevels")?.let { g ->
+                for (k in g.keys()) perm.petLevels[k] = g.optInt(k, 1)
+            }
+            // 老存档里已拥有的宠物补一个 1 级记录
+            for (pid in perm.petsOwned) perm.petLevels.putIfAbsent(pid, 1)
             readStrSet(o.optJSONArray("chapterClaimed"), perm.chapterClaimed)
             perm.dustTotal = o.optInt("dustTotal", 0)
             perm.settingsVibration = o.optBoolean("settingsVibration", true)

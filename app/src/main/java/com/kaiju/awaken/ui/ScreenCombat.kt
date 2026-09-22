@@ -34,7 +34,8 @@ internal fun GameView.drawCombatScreen(c: Canvas) {
     val cmdTop = h - CMD_H
     val avail = cmdTop - TOP_H - 46f
     // 行高下限跟随字号：大字号下卡片文字会撑破固定行高
-    val rowH = ((avail - 70f) / 2f).coerceIn(118f * r.fontScale, 176f)
+    // 行高下限从 118 提到 128：卡片里新增了能量条（技能耗能，玩家要看得见蓝条）
+    val rowH = ((avail - 70f) / 2f).coerceIn(128f * r.fontScale, 176f)
     val bodyTop = TOP_H + 8f
     val bodyBottom = cmdTop - 6f
     // 两行单位 + 日志最小高度（3 行字）塞不下时，整块吃下滚动，
@@ -89,6 +90,17 @@ private fun GameView.rowGeom(count: Int, rowH: Float): Triple<Float, Float, Floa
 
 private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: Float, isEnemy: Boolean, b: Battle, accent: Int) {
     r.text(c, if (isEnemy) "敌方 · 点击锁定目标" else "我方", 14f, top + 11f, 11.5f, accent, true)
+    // 宠物同行：不占上场位，但它的加成与开场效果要在战斗界面里看得见
+    if (!isEnemy) {
+        val pet = com.kaiju.awaken.game.Pets.of(perm.petId)
+        if (pet != null) {
+            val lbl = "宠物 " + pet.name + " Lv." + perm.petLevel(pet.id)
+            val tw = r.measure(lbl, 10.5f, true)
+            r.text(c, lbl, w - 16f, top + 11f, 10.5f, Palette.GOLD, true, Paint.Align.RIGHT)
+            // 小图必须收在「我方」这一行标题的高度里（top..top+16），否则会压到上一行卡片
+            drawPortrait(c, pet.avatar, w - 16f - tw - 11f, top + 8f, 15f, Palette.GOLD)
+        }
+    }
     val gridTop = top + 16f
     val ch = rowH - 18f
     val (startX, cw, _) = rowGeom(list.size, rowH)
@@ -137,6 +149,17 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: 
         cy += r.lh(15f)
         r.text(c, u.hp.toInt().toString() + "/" + u.stats.maxHp.toInt(), x + cw / 2f, cy, 10f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
         cy += r.lh(8f)
+        // 能量（蓝条）：战技要耗能，卡片上原本只有血条，玩家看不出还能放几个技能。
+        // 用「细条 + 行尾数值」压成一行，避免把卡片撑破。
+        val en = u.energyPct().toFloat()
+        r.bar(c, x + 8f, cy, cw - 40f, 5f, en, Palette.EN_A, Palette.EN_B)
+        r.text(
+            c, u.energy.toInt().toString() + "/" + u.stats.energyMax.toInt(),
+            x + cw - 8f, cy + 5f, 8.5f,
+            if (u.energy >= u.stats.energyMax) Palette.GOLD else Palette.EN_A,
+            true, Paint.Align.RIGHT
+        )
+        cy += r.lh(9f)
         if (u.shield > 0.0) {
             r.bar(c, x + 8f, cy, cw - 16f, 4f, (u.shield / u.stats.maxHp).toFloat().coerceIn(0f, 1f), Palette.SHIELD, Palette.SHIELD)
             cy += r.lh(7f)

@@ -38,6 +38,12 @@ class Audio(private val ctx: Context) {
     )
 
     private val ambienceFiles = listOf("amb_campfire", "amb_wind", "amb_water", "amb_bell")
+
+    /** 宠物叫声（资源名即作为播放 key）。 */
+    private val petCryFiles = listOf(
+        "pet_cry_fox", "pet_cry_bird", "pet_cry_beast",
+        "pet_cry_magic", "pet_cry_bat", "pet_cry_dragon"
+    )
     private var ambience: MediaPlayer? = null
     private var currentAmbience = ""
 
@@ -77,6 +83,15 @@ class Audio(private val ctx: Context) {
             pool = SoundPool.Builder().setMaxStreams(12).setAudioAttributes(attrs).build()
             for (name in sfxFiles) {
                 val id = rawId("sfx_$name")
+                if (id != 0) {
+                    val sid = pool?.load(ctx, id, 1)
+                    if (sid != null && sid != 0) sfxIds[name] = sid
+                }
+            }
+            // 宠物叫声的资源名就是 pet_cry_xxx（不带 sfx_ 前缀），
+            // 旧实现只加载 sfx_ 前缀，导致 Pets.cry() 拿到的名字永远查不到 → 叫声一直静音。
+            for (name in petCryFiles) {
+                val id = rawId(name)
                 if (id != 0) {
                     val sid = pool?.load(ctx, id, 1)
                     if (sid != null && sid != 0) sfxIds[name] = sid
