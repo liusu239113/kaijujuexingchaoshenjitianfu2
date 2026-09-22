@@ -183,7 +183,11 @@ object Pets {
         return picked
     }
 
-    /** 发奖：新宠物入库；重复则升级，满级后折算星尘。 */
+    /**
+     * 发奖：新宠物入库；重复的折算成星尘 —— 也就是宠物培养用的那个资源。
+     * 数量刻意压得不高（45~120），一只重复大概够 1/4 级，
+     * 想练满还是得回廊里慢慢攒，不至于抽几发就喂满。
+     */
     fun grant(perm: PermState, pet: PetDef): PullResult {
         val isNew = perm.petsOwned.add(pet.id)
         if (isNew) {
@@ -191,14 +195,9 @@ object Pets {
             if (perm.petId == null) perm.petId = pet.id
             return PullResult(pet, true, false, 0, false)
         }
-        val lv = perm.petLevel(pet.id)
-        if (lv < MAX_LEVEL) {
-            perm.petLevels[pet.id] = lv + 1
-            return PullResult(pet, false, true, 0, false)
-        }
-        val dust = 10 * pet.rarity.rank
+        val dust = 30 + pet.rarity.rank * 15
         Tracker.addDust(perm, dust)
-        return PullResult(pet, false, false, dust, true)
+        return PullResult(pet, false, false, dust, false)
     }
 
     /** 连抽。调用方负责先扣券。 */

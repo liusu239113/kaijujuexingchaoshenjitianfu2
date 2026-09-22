@@ -62,9 +62,16 @@ internal fun GameView.drawPetScreen(c: Canvas) {
         card(c, x, yy, cell, cell + 26f, if (active) Palette.GOLD else if (owned) rc else Palette.BORDER_SOFT, 14f)
         if (active) r.glowPanel(c, x, yy, cell, cell + 26f, 14f, Palette.GOLD, 60)
         if (owned) {
-            drawPortrait(c, pet.avatar, x + cell / 2f, yy + cell * 0.40f, cell * 0.72f, if (active) Palette.GOLD else rc)
-            r.text(c, pet.rarity.cn, x + 7f, yy + 16f, 9f, rc, true)
-            r.text(c, "Lv." + perm.petLevel(pet.id), x + cell - 7f, yy + 16f, 9f, Palette.CYAN, true, Paint.Align.RIGHT)
+            // 顶部留出 18px 专门放「品质 / 等级」标签，立绘整体下移。
+            // 旧版两行字直接画在 yy+16，正好压在立绘上（截图里「凡庸」糊在鹿角上）。
+            val portTop = 18f
+            val portH = cell + 26f - portTop - 14f
+            drawPortrait(
+                c, pet.avatar, x + cell / 2f, yy + portTop + portH / 2f, portH * 0.78f,
+                if (active) Palette.GOLD else rc
+            )
+            r.text(c, pet.rarity.cn, x + 7f, yy + 13f, 9f, rc, true)
+            r.text(c, "Lv." + perm.petLevel(pet.id), x + cell - 7f, yy + 13f, 9f, Palette.CYAN, true, Paint.Align.RIGHT)
             r.text(
                 c, pet.name, x + cell / 2f, yy + cell + 9f, 11.5f,
                 if (active) Palette.GOLD else Palette.TEXT, true, Paint.Align.CENTER
@@ -118,7 +125,7 @@ internal fun GameView.drawPetScreen(c: Canvas) {
     }
     // 末尾留白：否则滚到底时最后一行正好卡在「返 回」按钮后面，
     // 截图里最下面一排宠物的「未获得」就是这么被切掉的。
-    y += 76f
+    y += 112f
     endScroll(c, y)
     ghostButton(c, "pet_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 46f, Palette.TEXT_DIM)
 }
@@ -249,7 +256,7 @@ internal fun GameView.drawPetDetailOverlay(c: Canvas) {
     y += 22f
     r.text(c, pet.rarity.cn + " · Lv." + lv + " · " + pet.role, w / 2f, y, 12f, rc, true, Paint.Align.CENTER)
     y += 18f
-    r.text(c, "每升 1 级加成 +8%（重复获得可升级）", w / 2f, y, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "每升 1 级加成 +8%，用星尘培养（重复召唤会折算成星尘）", w / 2f, y, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     y += 24f
 
     // 队伍加成
@@ -316,7 +323,7 @@ internal fun GameView.drawPetGachaOverlay(c: Canvas) {
     y += 18f
     r.text(c, "当前进度 " + perm.petPity + " / " + Pets.PITY_LIMIT, 52f, y, 11f, Palette.TEXT_FAINT)
     y += 18f
-    r.text(c, "重复获得：该宠物等级 +1（满级折算星尘）", 52f, y, 11f, Palette.TEXT_FAINT)
+    r.text(c, "重复获得：折算成星尘 —— 也就是宠物培养用的资源", 52f, y, 11f, Palette.TEXT_FAINT)
 
     val btnTop = top + boxH - 224f
     // 宠缘券的唯一来源就是广告，所以把它放第一位并做成主按钮
@@ -346,8 +353,7 @@ internal fun GameView.drawPetResultOverlay(c: Canvas) {
         r.text(c, res.pet.rarity.cn + " · " + res.pet.role, w / 2f, top + boxH * 0.62f + 24f, 12f, rc, true, Paint.Align.CENTER)
         val tag = when {
             res.isNew -> "初次获得！已加入图鉴"
-            res.levelUp -> "重复获得：等级 +1（Lv." + perm.petLevel(res.pet.id) + "）"
-            res.maxed -> "已满级：折算星尘 +" + res.dust
+            res.dust > 0 -> "重复获得：折算星尘 +" + res.dust + "（宠物培养用）"
             else -> ""
         }
         r.text(c, tag, w / 2f, top + boxH * 0.62f + 48f, 12f, Palette.CYAN, false, Paint.Align.CENTER)
@@ -369,8 +375,7 @@ internal fun GameView.drawPetResultOverlay(c: Canvas) {
             r.text(c, res.pet.name, x + cw / 2f, yy + cw + 8f, 9f, Palette.TEXT, false, Paint.Align.CENTER)
             val tag = when {
                 res.isNew -> "NEW"
-                res.levelUp -> "Lv+" + perm.petLevel(res.pet.id)
-                res.maxed -> "星尘" + res.dust
+                res.dust > 0 -> "星尘" + res.dust
                 else -> ""
             }
             r.text(c, tag, x + cw / 2f, yy + cw + 22f, 8.5f, if (res.isNew) Palette.GOLD else Palette.CYAN, false, Paint.Align.CENTER)

@@ -136,8 +136,16 @@ internal fun GameView.drawCodexFullScreen(c: Canvas) {
                     val seen = perm.codexSeen.contains("t:" + t.id)
                     val col = if (seen) rarityColor(t.rarity) else Palette.BORDER_SOFT
                     card(c, UiKit.MARGIN, y, contentW(), r.lh(58f), r.withAlpha(col, 170), UiKit.RADIUS)
-                    r.hexFrame(c, UiKit.MARGIN + 28f, y + 29f, 17f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
-                    r.text(c, t.school.glyph, UiKit.MARGIN + 28f, y + 35f, 14f, col, true, Paint.Align.CENTER)
+                    // 已收录：画这颗天赋自己的图标。未收录保留字符徽记，不提前剧透。
+                    if (seen) {
+                        drawIcon(
+                            c, com.dshx.game.shidai.game.ArtIcon.talent(t),
+                            UiKit.MARGIN + 30f, y + r.lh(29f), r.lh(36f), col
+                        )
+                    } else {
+                        r.hexFrame(c, UiKit.MARGIN + 28f, y + 29f, 17f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
+                        r.text(c, t.school.glyph, UiKit.MARGIN + 28f, y + 35f, 14f, col, true, Paint.Align.CENTER)
+                    }
                     r.text(c, if (seen) t.name else "？？？", UiKit.MARGIN + 54f, y + 24f, 13f,
                         if (seen) Palette.TEXT else Palette.TEXT_FAINT, true)
                     r.text(c, if (seen) t.school.cn else "未觉醒", w - UiKit.MARGIN - 12f, y + 24f, 10.5f, col, false, Paint.Align.RIGHT)

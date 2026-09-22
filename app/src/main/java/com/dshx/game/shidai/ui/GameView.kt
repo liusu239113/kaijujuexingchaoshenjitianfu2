@@ -1483,6 +1483,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
         val p = run ?: return
         RunService.recalcAll(p, perm)
         if (p.floorEvents.isEmpty()) TowerService.generateFloor(p)
+        // 觉醒结束后也要过一遍章节剧情。
+        // 旧版这里直接切进塔里，开局那三次觉醒之后本该出现的章节剧情被吞掉了
+        // （afterFloorAdvance 有这段，afterDraft 漏了）。
+        if (maybeShowChapterStory()) return
         screen = Screen.TOWER
         audio.playBgm("tower")
     }

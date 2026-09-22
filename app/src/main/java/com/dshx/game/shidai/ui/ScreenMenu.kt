@@ -451,11 +451,14 @@ internal fun GameView.drawResonanceStrip(c: Canvas, p: com.dshx.game.shidai.game
 
 internal fun GameView.tapDraft(id: String) {
     val p = run ?: return
-    if (id == "draft_cancel_replace") {
+    // 结束觉醒：神格觉醒完成页的「结束觉醒」按钮走这里。
+    // 上一版这段被插进了 draft_cancel_replace 的 if 体内，永远不可达 ——
+    // 玩家点「结束觉醒」完全没反应，只能被逼着去看广告。
     if (id == "draft_finish") {
         afterDraft()
         return
     }
+    if (id == "draft_cancel_replace") {
         pendingOption = null
         replacePick = false
         return
