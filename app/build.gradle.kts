@@ -26,8 +26,8 @@ android {
         applicationId = "com.dshx.game.shidai"
         minSdk = 24
         targetSdk = 34
-        versionCode = 102
-        versionName = "1.0.0"
+        versionCode = 103
+        versionName = "1.0.2"
     }
 
     signingConfigs {
@@ -110,6 +110,13 @@ dependencies {
 
     // 广告 SDK 的运行时依赖（与参考项目同款）
     implementation("androidx.appcompat:appcompat:1.6.1")
+    // Tosin 的 TosinSDK 类内部用了 viewModelScope，直接引用 androidx.lifecycle.ViewModelKt。
+    // 参考项目 school2-v2 是 Compose 工程，这个类由 Compose/Activity 传递带入；
+    // 本工程是纯 Canvas，没有 Compose，classpath 上就缺了它 ——
+    // TosinSDK 类一加载就抛 NoClassDefFoundError，被 TosinAdInitializer 兜住后显示成
+    // 「广告 SDK 初始化异常：Failed resolution of: Landroidx/lifecycle/ViewModelKt」。
+    // 版本取 2.6.1：与当前 appcompat/material 传递进来的 lifecycle-viewmodel 同版本，不引入升级。
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
