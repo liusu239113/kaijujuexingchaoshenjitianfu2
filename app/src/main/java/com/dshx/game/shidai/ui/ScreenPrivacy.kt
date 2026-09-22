@@ -28,7 +28,7 @@ internal fun GameView.drawPrivacyGateOverlay(c: Canvas) {
 
     // ---- 正文滚动区 ----
     val contentTop = top + 82f
-    val bottomBlock = 214f                    // 底部固定区（开关 + 三个按钮）
+    val bottomBlock = 140f                    // 底部固定区（查看政策 + 两个按钮）
     val contentBottom = top + boxH - bottomBlock
 
     c.save()
@@ -97,22 +97,14 @@ internal fun GameView.drawPrivacyGateOverlay(c: Canvas) {
     }
 
     // ---- 底部固定区 ----
-    // 个性化广告开关（默认关闭：合规更稳，关闭仍会展示广告）
-    val tgY = contentBottom + 10f
-    card(c, 26f, tgY, w - 52f, 42f, r.withAlpha(Palette.BORDER, 190), 12f)
-    r.text(c, "允许个性化广告推荐", 40f, tgY + 26f, 11.5f, Palette.TEXT)
-    val swX = w - 26f - 58f
-    val on = privacyPersonalized
-    r.panel(c, swX, tgY + 10f, 44f, 22f, 11f,
-        if (on) Palette.GREEN else Palette.PANEL_DEEP,
-        if (on) Palette.GREEN else Palette.PANEL_DEEP, null)
-    r.solid(c, if (on) swX + 24f else swX + 2f, tgY + 12f, 18f, 18f, 9f, Palette.TEXT)
-    hit("priv_toggle", 26f, tgY, w - 52f, 42f)
-    r.text(c, "关闭后仍会展示广告，只是不按兴趣推荐", 28f, tgY + 56f, 9.5f, Palette.TEXT_FAINT)
-
-    button(c, "priv_accept", "同 意 并 继 续", 26f, tgY + 66f, w - 52f, 46f, Palette.PINK)
-    ghostButton(c, "priv_policy", "查看完整《隐私政策》", 26f, tgY + 118f, (w - 62f) / 2f, 38f, Palette.CYAN)
-    ghostButton(c, "priv_decline", "不 同 意（退出）", 26f + (w - 62f) / 2f + 10f, tgY + 118f, (w - 62f) / 2f, 38f, Palette.TEXT_FAINT)
+    // 与参考项目 school2-v2 的 PrivacyPolicyDialog 保持一致：
+    // 只有「查看完整政策 / 不同意并退出 / 同意并继续」三个入口，
+    // 没有个性化广告之类的额外开关。
+    val tgY = contentBottom + 12f
+    val halfW = (w - 62f) / 2f
+    ghostButton(c, "priv_policy", "查看完整《隐私政策》", 26f, tgY, w - 52f, 36f, Palette.CYAN)
+    button(c, "priv_decline", "不同意并退出", 26f, tgY + 46f, halfW, 46f, Palette.TEXT_FAINT)
+    button(c, "priv_accept", "同意并继续", 26f + halfW + 10f, tgY + 46f, halfW, 46f, Palette.PINK)
 }
 
 /** 隐私条款的一节：金色小标题 + 逐条正文。返回下一节起始 Y。 */
@@ -154,10 +146,10 @@ internal fun GameView.drawAdLoadingOverlay(c: Canvas) {
 
 internal fun GameView.tapPrivacy(id: String) {
     when (id) {
-        "priv_toggle" -> privacyPersonalized = privacyPersonalized == false
         "priv_policy" -> AdPrivacy.openPolicy(context)
         "priv_accept" -> {
-            AdPrivacy.accept(context, privacyPersonalized)
+            // 与参考项目一致：同意即写入接受状态，不再单独询问个性化广告。
+            AdPrivacy.accept(context, true)
             privacyGate = false
             privacyScroll = 0f
             privacyScrollMax = 0f

@@ -138,8 +138,6 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
     var adLoadingSince = 0f
     /** 首启隐私政策闸门：未同意前不初始化任何广告 SDK。 */
     var privacyGate = false
-    /** 是否允许个性化广告（默认关闭，合规更稳）。 */
-    var privacyPersonalized = false
     /** 宠物详情浮层当前展示的宠物 id。 */
     var petDetailId = ""
     /** 上次召唤的结果（单抽 1 条 / 十连 10 条）。 */
@@ -269,7 +267,6 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
         // 角色名跟着存档走：轮回之后不该再让玩家重打一遍名字
         playerName = perm.playerName
         // 隐私合规：没同意过就把隐私页顶在最前，同意之前不初始化任何广告 SDK
-        privacyPersonalized = com.dshx.game.shidai.ads.AdPrivacy.personalizedEnabled(context)
         privacyGate = !com.dshx.game.shidai.ads.AdPrivacy.isAccepted(context)
         if (!privacyGate) {
             setupAds()
