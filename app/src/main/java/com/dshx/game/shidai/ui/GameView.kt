@@ -31,7 +31,8 @@ import com.dshx.game.shidai.game.Unit
 import kotlin.math.min
 import kotlin.random.Random
 
-class GameView(context: Context) : View(context), Choreographer.FrameCallback {
+class GameView(context: Context) : View(context), Choreographer.FrameCallback,
+    com.dshx.game.shidai.tap.ComplianceManager.Listener {
 
     enum class Screen {
         MENU, HUB, SETUP, DIVINITY, DRAFT, PROMOTION, TOWER, COMBAT,
@@ -117,15 +118,22 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var healAdFloor = -1
     /** 轮回结算是否已用广告翻倍。 */
     var reincAdDoubled = false
+    /** 本次进店是否已看过「领金币」广告。 */
+    var shopGoldClaimed = false
     /** 是否正在等待广告加载（用于显示加载浮层）。 */
     var adLoading = false
     /** 登录闸门：未登录时挡在最前面（TapTap 登录 + 防沉迷）。 */
     var loginGate = false
     var loginBusy = false
     var loginMsg = ""
+    /** 防沉迷校验中（阻断中，中性提示，不是违规）。 */
+    var complianceChecking = false
     /** 防沉迷拦截（未成年人时段 / 时长上限 / 实名未通过）。 */
     var complianceBlocked = false
     var complianceMsg = ""
+    /** 首启隐私页正文的滚动位置（披露条款较长，一屏放不下）。 */
+    var privacyScroll = 0f
+    var privacyScrollMax = 0f
     /** 加载浮层开始时间：超过一定时长给「暂时没有广告」的提示。 */
     var adLoadingSince = 0f
     /** 首启隐私政策闸门：未同意前不初始化任何广告 SDK。 */
@@ -381,6 +389,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 p.x = rand.nextFloat()
             }
         }
+        // 门控期间冻结战斗推进：只盖一层浮盖而让战斗继续跑，
+        // 等于未成年人被拦截时游戏仍在后台推进（合规不允许）。
+        if (gateBlocking) return
         battle?.tickVisuals(dt)
         val b = battle
         if (b != null && screen == Screen.COMBAT && !b.finished && !b.awaitingInput) {
@@ -475,6 +486,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         if (adLoading) drawAdLoadingOverlay(canvas)
         // 登录 / 防沉迷闸门：未通过之前不允许进入游戏
         if (loginGate) drawLoginGateOverlay(canvas)
+        if (complianceChecking) drawComplianceCheckingOverlay(canvas)
         if (complianceBlocked) drawComplianceGateOverlay(canvas)
         drawToast(canvas)
         canvas.restore()
@@ -576,63 +588,135 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                     audio.play("error")
                     showToast("广告未完成，未发放奖励")
                 }
+                // 播完立刻预热下一条，保持「点开即看」（转化率的关键）
+                val act = context as? android.app.Activity
+                if (act != null) com.dshx.game.shidai.ads.AdBridge.preload(act)
             }
         }
     }
 
+    /** 门控是否正在阻断游戏（隐私未同意 / 未登录 / 防沉迷校验中或未通过）。 */
+    val gateBlocking: Boolean
+        get() = privacyGate || loginGate || complianceChecking || complianceBlocked
+
     /**
-     * 初始化 TapTap（登录 + 防沉迷）。同样必须在同意隐私政策之后调用。
-     * 已登录过就直接做防沉迷校验；没登录过则显示登录闸门。
+     * 初始化 TapTap（登录 + 防沉迷）。
+     * 必须在同意隐私政策之后调用 —— 首启路径由隐私页的「同意并继续」触发，
+     * 已同意过的老玩家在 View 构造时触发。
      */
     fun setupTap() {
-        com.dshx.game.shidai.tap.TapHelper.listener = object : com.dshx.game.shidai.tap.TapHelper.Listener {
-            override fun onCompliance(code: Int) {
-                post { applyCompliance(code) }
-            }
-
-            override fun onLoginChanged(openId: String?) {
-                post { loginGate = openId == null }
-            }
-        }
-        com.dshx.game.shidai.tap.TapHelper.init(context)
         val act = context as? android.app.Activity ?: return
+        // 1) 初始化 SDK
+        com.dshx.game.shidai.tap.TapHelper.init(context)
+        // 2) 登录态回调
+        com.dshx.game.shidai.tap.TapHelper.listener =
+            object : com.dshx.game.shidai.tap.TapHelper.Listener {
+                override fun onLoginChanged(openId: String?) {
+                    post {
+                        loginGate = openId == null
+                        if (openId.isNullOrEmpty()) {
+                            complianceChecking = false
+                            complianceBlocked = false
+                        } else {
+                            // 登录成功也不能直接放行，先进校验中状态
+                            complianceChecking = true
+                            complianceBlocked = false
+                            complianceMsg = ""
+                        }
+                    }
+                }
+            }
+        // 3) 防沉迷回调（唯一放行入口是 onLoginSuccess）
+        com.dshx.game.shidai.tap.ComplianceManager.register(this)
+        // 4) 老玩家续校验；新玩家走登录页
         val openId = com.dshx.game.shidai.tap.TapHelper.currentOpenId()
             ?: com.dshx.game.shidai.tap.TapHelper.savedOpenId(context)
         if (openId.isNullOrEmpty()) {
             loginGate = true
         } else {
-            com.dshx.game.shidai.tap.TapHelper.startup(act, openId)
+            startComplianceCheck(act, openId)
         }
     }
 
-    /** 处理防沉迷回调：被限制时挡在拦截页，正常则放行。 */
-    private fun applyCompliance(code: Int) {
-        when (code) {
-            com.taptap.sdk.compliance.constants.ComplianceMessage.LOGIN_SUCCESS -> {
-                complianceBlocked = false
-                complianceMsg = ""
-                loginGate = false
-            }
-            com.taptap.sdk.compliance.constants.ComplianceMessage.EXITED,
-            com.taptap.sdk.compliance.constants.ComplianceMessage.SWITCH_ACCOUNT -> {
-                loginGate = true
-            }
-            com.taptap.sdk.compliance.constants.ComplianceMessage.PERIOD_RESTRICT -> {
-                complianceMsg = "根据国家新闻出版署规定，未成年人仅可在周五、周六、周日及法定节假日的 20:00–21:00 游玩。当前时段无法进入游戏。"
-                complianceBlocked = true
-            }
-            com.taptap.sdk.compliance.constants.ComplianceMessage.DURATION_LIMIT -> {
-                complianceMsg = "今日游戏时长已达上限。未成年人工作日每日限玩 1.5 小时，法定节假日每日 3 小时。"
-                complianceBlocked = true
-            }
-            com.taptap.sdk.compliance.constants.ComplianceMessage.REAL_NAME_STOP -> {
-                complianceMsg = "实名认证未通过，已停止游戏服务。请完成实名认证后再试。"
-                complianceBlocked = true
-            }
-            com.taptap.sdk.compliance.constants.ComplianceMessage.INVALID_CLIENT_OR_NETWORK_ERROR -> {
-                complianceMsg = "防沉迷服务连接失败，请检查网络后重试。"
-                complianceBlocked = true
-            }
+    /**
+     * 发起一次防沉迷校验。
+     * 校验期间保持阻断（complianceChecking=true），
+     * 只有 SDK 回调 onLoginSuccess 才会解除 —— 没有「点一下就地放行」的路径。
+     */
+    fun startComplianceCheck(act: android.app.Activity, openId: String) {
+        complianceChecking = true
+        complianceBlocked = false
+        complianceMsg = ""
+        com.dshx.game.shidai.tap.ComplianceManager.register(this)
+        com.dshx.game.shidai.tap.ComplianceManager.startup(act, openId)
+    }
+
+    // ----- ComplianceManager.Listener：只有 onLoginSuccess 放行 -----
+
+    override fun onLoginSuccess() {
+        post {
+            complianceChecking = false
+            complianceBlocked = false
+            complianceMsg = ""
+            loginGate = false
+        }
+    }
+
+    override fun onExited() {
+        post {
+            complianceChecking = false
+            complianceBlocked = false
+            complianceMsg = ""
+            loginGate = true
+        }
+    }
+
+    override fun onSwitchAccount() {
+        post {
+            complianceChecking = false
+            complianceBlocked = false
+            complianceMsg = ""
+            loginGate = true
+        }
+    }
+
+    override fun onPeriodRestrict() {
+        post {
+            complianceChecking = false
+            complianceMsg = "根据国家新闻出版署规定，未成年人仅可在周五、周六、周日及法定节假日的 20:00-21:00 游玩。当前时段无法进入游戏。"
+            complianceBlocked = true
+        }
+    }
+
+    override fun onDurationLimit() {
+        post {
+            complianceChecking = false
+            complianceMsg = "今日游戏时长已达上限。未成年人工作日每日限玩 1.5 小时，法定节假日每日 3 小时。"
+            complianceBlocked = true
+        }
+    }
+
+    override fun onAgeLimit() {
+        post {
+            complianceChecking = false
+            complianceMsg = "根据国家相关规定，该账号年龄暂不符合进入本游戏的条件。"
+            complianceBlocked = true
+        }
+    }
+
+    override fun onRealNameStop() {
+        post {
+            complianceChecking = false
+            complianceMsg = "需要完成实名认证才能进入游戏，请重新校验并完成实名流程。"
+            complianceBlocked = true
+        }
+    }
+
+    override fun onError(message: String) {
+        post {
+            complianceChecking = false
+            complianceMsg = message
+            complianceBlocked = true
         }
     }
 
@@ -979,7 +1063,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                 val dy = vy - dragLastY
                 dragLastY = vy
                 dragMoved += kotlin.math.abs(dy)
-                if (panel.isNotEmpty() && panelScrollMax > 0f) {
+                if (privacyGate) {
+                    privacyScroll = (privacyScroll - dy).coerceIn(0f, privacyScrollMax)
+                } else if (panel.isNotEmpty() && panelScrollMax > 0f) {
                     panelScroll = (panelScroll - dy).coerceIn(0f, panelScrollMax)
                 } else if (overlay.isEmpty() && detailTitle.isEmpty() && exportText.isEmpty() && screenScrollMax > 0f) {
                     screenScroll = (screenScroll - dy).coerceIn(0f, screenScrollMax)
@@ -1237,6 +1323,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         petDetailId = ""
         petPullResults = emptyList()
         adLoading = false
+        complianceChecking = false
         complianceBlocked = false
         complianceMsg = ""
         exportText = ""
@@ -1588,6 +1675,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             "boss" -> startBattle("boss")
             "shop" -> {
                 shopStock = TowerService.shopItems()
+                shopGoldClaimed = false
                 shopAdRefreshed = false
                 overlay = "shop"
             }

@@ -2,9 +2,7 @@ package com.dshx.game.shidai.tap
 
 import android.app.Activity
 import android.content.Context
-import com.taptap.sdk.compliance.TapTapCompliance
-import com.taptap.sdk.compliance.TapTapComplianceCallback
-import com.taptap.sdk.compliance.constants.ComplianceMessage
+import android.util.Log
 import com.taptap.sdk.compliance.option.TapTapComplianceOptions
 import com.taptap.sdk.core.TapTapRegion
 import com.taptap.sdk.core.TapTapSdk
@@ -16,26 +14,25 @@ import com.taptap.sdk.login.TapTapAccount
 import com.taptap.sdk.login.TapTapLogin
 
 /**
- * TapTap 登录 + 防沉迷（合规认证）。
+ * TapTap 登录（账号部分）。防沉迷认证见 [ComplianceManager]。
  *
- * 时序（与参考项目一致）：
- *   隐私同意 → TapTapSdk.init → 登录 → TapTapCompliance.startup(userId)
- * 防沉迷回调里的结果决定玩家能不能继续玩（未成年人时段/时长限制会拦在门外）。
+ * 时序（与参考项目 school2-v2 一致）：
+ *   隐私同意 -> TapHelper.init（TapTapSdk.init）
+ *            -> TapHelper.login（拉起登录）
+ *            -> 登录成功 -> ComplianceManager.startup(openId)
+ *            -> 收到 LOGIN_SUCCESS(500) 才放行
  *
- * 必须在**用户同意隐私政策之后**再调用 [init]。
+ * 必须在**用户同意隐私政策之后**再调用 [init]，否则 SDK 会在同意前读取设备标识。
  */
 object TapHelper {
 
-    /** 防沉迷/登录状态回调（可能在非主线程触发，调用方自己切主线程）。 */
-    interface Listener {
-        /** 防沉迷结果，code 见 ComplianceMessage。 */
-        fun onCompliance(code: Int)
+    private const val TAG = "TapHelper"
+    private const val PREF = "shidai_tap"
 
-        /** 登录态变化（登录成功/退出/切换账号）。 */
+    /** 登录态变化回调（openId 为 null 表示已退出/切换账号）。 */
+    interface Listener {
         fun onLoginChanged(openId: String?)
     }
-
-    private const val PREF = "shidai_tap"
 
     @Volatile
     var listener: Listener? = null
@@ -52,7 +49,12 @@ object TapHelper {
         else prefs(ctx).edit().putString("open_id", openId).apply()
     }
 
-    /** 初始化 SDK（幂等；隐私同意后才可调用）。 */
+    /** 清掉本地登录记录（切换账号 / 退出登录时用）。 */
+    fun clearOpenId(ctx: Context) {
+        saveOpenId(ctx, null)
+    }
+
+    /** 初始化 TapTap SDK（幂等；隐私同意后才可调用）。 */
     @Synchronized
     fun init(context: Context) {
         if (initialized) return
@@ -72,21 +74,11 @@ object TapHelper {
                     )
                 )
             )
-            TapTapCompliance.registerComplianceCallback(
-                callback = object : TapTapComplianceCallback {
-                    override fun onComplianceResult(code: Int, extra: Map<String, Any>?) {
-                        when (code) {
-                            ComplianceMessage.SWITCH_ACCOUNT -> listener?.onLoginChanged(null)
-                            ComplianceMessage.EXITED -> listener?.onLoginChanged(null)
-                            ComplianceMessage.LOGIN_SUCCESS -> listener?.onLoginChanged(currentOpenId())
-                        }
-                        listener?.onCompliance(code)
-                    }
-                }
-            )
             initialized = true
+            Log.i(TAG, "TapTap SDK initialized")
         } catch (t: Throwable) {
             initialized = false
+            Log.e(TAG, "TapTap SDK init failed", t)
         }
     }
 
@@ -101,6 +93,7 @@ object TapHelper {
 
     /**
      * 拉起 TapTap 登录。[onDone] 参数：(是否成功, 提示语)。
+     * 登录成功会自动启动防沉迷认证；放行与否由 [ComplianceManager] 的回调决定。
      * 回调在主线程。
      */
     fun login(activity: Activity, onDone: (Boolean, String) -> Unit) {
@@ -111,11 +104,12 @@ object TapHelper {
                 object : TapTapCallback<TapTapAccount> {
                     override fun onSuccess(result: TapTapAccount) {
                         val openId = result.openId
+                        Log.i(TAG, "login success openId=$openId")
                         saveOpenId(activity, openId)
                         listener?.onLoginChanged(openId)
-                        // 登录成功后立刻做防沉迷校验
-                        startup(activity, openId ?: "")
-                        onDone(true, "登录成功")
+                        // 登录成功后立刻做防沉迷校验（回调里才会放行）
+                        ComplianceManager.startup(activity, openId ?: "")
+                        onDone(true, "登录成功，正在校验防沉迷…")
                     }
 
                     override fun onCancel() {
@@ -123,22 +117,22 @@ object TapHelper {
                     }
 
                     override fun onFail(exception: TapTapException) {
+                        Log.e(TAG, "login failed: ${exception.message}")
                         onDone(false, "登录失败：" + (exception.message ?: "未知错误"))
                     }
                 }
             )
         } catch (t: Throwable) {
             // 设备未安装 TapTap 客户端等情况，SDK 内部可能直接抛异常
+            Log.e(TAG, "loginWithScopes crashed", t)
             onDone(false, "无法拉起 TapTap 登录（是否未安装客户端？）")
         }
     }
 
-    /** 启动防沉迷（合规认证）。未登录时用本地存档的 openId，仍为空则跳过。 */
-    fun startup(activity: Activity, userId: String) {
-        if (userId.isBlank()) return
-        try {
-            TapTapCompliance.startup(activity, userId)
-        } catch (t: Throwable) {
-        }
+    /** 退出登录：清本地记录 + 重置防沉迷状态。 */
+    fun logout(context: Context) {
+        clearOpenId(context)
+        ComplianceManager.exit()
+        listener?.onLoginChanged(null)
     }
 }

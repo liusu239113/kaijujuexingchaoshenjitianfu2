@@ -47,6 +47,10 @@ object RewardAds {
     const val PLACEMENT_REVIVE = "revive"
     const val PLACEMENT_DOUBLE_REWARD = "double_reward"
     const val PLACEMENT_SHOP_REFRESH = "shop_refresh"
+    /** 商店里看广告领一笔金币（每次进店一次）。 */
+    const val PLACEMENT_GOLD = "gold_drop"
+    /** 主厅每日赠礼：每天限领若干次，位置最显眼、转化最好的一类。 */
+    const val PLACEMENT_DAILY_GIFT = "daily_gift"
     const val PLACEMENT_TAVERN_REFRESH = "tavern_refresh"
     const val PLACEMENT_HEAL = "heal"
     const val PLACEMENT_REINC_DOUBLE = "reinc_double"

@@ -177,16 +177,10 @@ internal fun GameView.requestPetTicketAd() {
         showToast("广告接入中：接进来后这里每次发放 1 张宠缘券")
         return
     }
-    // 注意：View.post 返回 Boolean，不能让它当 lambda 的末尾表达式（类型不符），
-    // 这里用 if/else 语句收尾并把发奖抽成独立函数。
-    val onResult: (Boolean) -> Unit = { ok ->
-        if (ok) {
-            post { grantPetTicketReward() }
-        } else {
-            showToast("广告未完成，未发放奖励")
-        }
-    }
-    RewardAds.request(RewardAds.PLACEMENT_PET_TICKET, onResult)
+    // 统一走 requestAd：加载浮层、主线程回调、失败提示都在里面。
+    // 旧实现直接调 RewardAds.request，点下去屏幕上没有任何反馈，
+    // 而且回调不在主线程 —— 玩家会以为按钮坏了。
+    requestAd(RewardAds.PLACEMENT_PET_TICKET) { grantPetTicketReward() }
 }
 
 /** 看完广告后的发奖：把实现换成真实 SDK 时这里不用改。 */

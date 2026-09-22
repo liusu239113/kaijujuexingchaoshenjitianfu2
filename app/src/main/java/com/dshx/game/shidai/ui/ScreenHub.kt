@@ -2,8 +2,10 @@ package com.dshx.game.shidai.ui
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.dshx.game.shidai.ads.AdDaily
 import com.dshx.game.shidai.game.Data
 import com.dshx.game.shidai.game.RunService
+import com.dshx.game.shidai.game.Save
 
 /** 主城（回廊前厅）：远征前后的中枢页面。 */
 internal fun GameView.drawHubScreen(c: Canvas) {
@@ -62,6 +64,10 @@ internal fun GameView.drawHubScreen(c: Canvas) {
         r.text(c, cols[i].second, cx + 10f, y + 27f, 14f, Palette.GOLD, true, Paint.Align.CENTER)
     }
     y += 56f
+
+    // 每日赠礼（看广告）：紧贴货币条下方 —— 玩家看资源时顺手就能点到，
+    // 是完播率与留存都最好的一类位置。每天限领，避免过度打扰。
+    y = drawDailyGiftBanner(c, y)
 
     if (p == null) {
         r.text(c, "行囊 / 装备 / 战技 / 星语环 要先开始一次远征才会开放", 24f, y, 10.5f, Palette.TEXT_FAINT)
@@ -141,6 +147,7 @@ internal fun GameView.tapHub(id: String) {
                 showToast("尚未深入，无需结算")
             }
         }
+        "hub_ad_gift" -> requestDailyGiftAd()
         "hub_bag" -> { panel = "bag"; panelScroll = 0f }
         "hub_equip" -> { panel = "equip"; panelScroll = 0f }
         "hub_skills" -> { panel = "skills"; panelScroll = 0f }
@@ -158,5 +165,60 @@ internal fun GameView.tapHub(id: String) {
         "hub_ach" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.ACHIEVEMENTS }
         "hub_shop" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.SHOP }
         "hub_slots" -> { metaReturn = GameView.Screen.HUB; screen = GameView.Screen.SAVE_SLOTS }
+    }
+}
+
+// ------------------------------------------------------------ 每日赠礼（广告）
+
+/** 每日赠礼每天可领次数。 */
+private const val DAILY_GIFT_LIMIT = 3
+
+private const val DAILY_GIFT_KEY = "daily_gift"
+
+/** 一次赠送的星尘数量（跟着最高层数走，老玩家不会觉得是废纸）。 */
+private fun GameView.dailyGiftDust(): Int = 40 + perm.bestFloor * 2
+
+/**
+ * 每日赠礼横幅：看广告领星尘。
+ * 整条可点（不是一个 96px 的小按钮），点击区域越大转化越高。
+ * 返回下一行 Y。
+ */
+internal fun GameView.drawDailyGiftBanner(c: Canvas, yIn: Float): Float {
+    val used = AdDaily.used(context, DAILY_GIFT_KEY)
+    val left = (DAILY_GIFT_LIMIT - used).coerceAtLeast(0)
+    val ready = com.dshx.game.shidai.game.RewardAds.isReady()
+    val hh = 64f
+    val accent = if (left > 0 && ready) Palette.GOLD else Palette.BORDER_SOFT
+    card(c, 20f, yIn, w - 40f, hh, r.withAlpha(accent, 210), 14f)
+
+    r.text(c, "每 日 赠 礼", 34f, yIn + 25f, 13f, if (left > 0) Palette.GOLD else Palette.TEXT_FAINT, true)
+    val line = when {
+        left <= 0 -> "今日已领完，明天再来"
+        !ready -> "广告接入中，稍后再来"
+        else -> "看广告领 " + dailyGiftDust() + " 星尘 · 今日还剩 " + left + " 次"
+    }
+    r.text(c, line, 34f, yIn + 45f, 10.5f, if (left > 0 && ready) Palette.TEXT_DIM else Palette.TEXT_FAINT)
+
+    if (left > 0 && ready) {
+        r.text(c, "领取 ›", w - 34f, yIn + 40f, 14f, Palette.GOLD, true, Paint.Align.RIGHT)
+        hit("hub_ad_gift", 20f, yIn, w - 40f, hh)
+    }
+    return yIn + hh + 10f
+}
+
+/** 点击每日赠礼：看完广告才发星尘，每天限 DAILY_GIFT_LIMIT 次。 */
+internal fun GameView.requestDailyGiftAd() {
+    if (AdDaily.used(context, DAILY_GIFT_KEY) >= DAILY_GIFT_LIMIT) {
+        showToast("今日赠礼已领完，明天再来")
+        return
+    }
+    val gain = dailyGiftDust()
+    requestAd(com.dshx.game.shidai.game.RewardAds.PLACEMENT_DAILY_GIFT) {
+        perm.dust += gain
+        Save.savePerm(context, perm)
+        audio.play("coins")
+        val n = AdDaily.markUsed(context, DAILY_GIFT_KEY)
+        val left = (DAILY_GIFT_LIMIT - n).coerceAtLeast(0)
+        showToast("每日赠礼 +" + gain + " 星尘（今日还剩 " + left + " 次）")
     }
 }

@@ -297,6 +297,12 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
         hit("shop_buy_$i", 40f, y, w - 80f, 76f).enabled = afford
         y += 84f
     }
+    val goldGain = 80 + (run?.floor ?: 1) * 20
+    ghostButton(
+        c, "shop_ad_gold",
+        if (shopGoldClaimed) "已领取（本次已用）" else "看广告 · 领 $goldGain 金币",
+        40f, h - 210f, w - 80f, 44f, if (shopGoldClaimed) Palette.TEXT_FAINT else Palette.GOLD
+    )
     ghostButton(
         c, "shop_ad_refresh",
         if (shopAdRefreshed) "已刷新（本次已用）" else "看广告 · 免费刷新商品",
@@ -308,6 +314,19 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
 internal fun GameView.tapShop(id: String) {
     val p = run ?: return
     when {
+        id == "shop_ad_gold" -> {
+            if (shopGoldClaimed) {
+                showToast("本次进店已领取过")
+                return
+            }
+            val gain = 80 + p.floor * 20
+            requestAd(com.dshx.game.shidai.game.RewardAds.PLACEMENT_GOLD) {
+                p.gold += gain
+                shopGoldClaimed = true
+                audio.play("coins")
+                showToast("获得 $gain 金币")
+            }
+        }
         id == "shop_ad_refresh" -> {
             if (shopAdRefreshed) {
                 showToast("本次进店已刷新过")

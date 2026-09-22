@@ -3,57 +3,128 @@ package com.dshx.game.shidai.ui
 import android.graphics.Canvas
 import android.graphics.Paint
 import com.dshx.game.shidai.ads.AdPrivacy
+import com.dshx.game.shidai.ads.AdSdkConfig
 
 /**
  * 首启隐私政策同意页。
  *
- * 合规红线：**用户点「同意」之前不初始化任何广告 SDK**，也不读取设备标识。
- * 视觉沿用本游戏自己的面板风格（玻璃卡片 + 霓虹描边 + PixelForge 按钮）。
+ * 合规红线：**用户点「同意」之前不初始化任何 SDK**（TapTap 登录/防沉迷、广告），
+ * 也不读取任何设备标识。「同意」之后才依次启动广告 SDK 与 TapTap SDK。
+ *
+ * 文案与参考项目 school2-v2 的 PrivacyPolicyDialog 对齐：逐条列出收集的信息、
+ * 使用目的、第三方 SDK 及其获取的字段；视觉沿用本游戏的玻璃卡片 + 霓虹描边。
  */
 internal fun GameView.drawPrivacyGateOverlay(c: Canvas) {
-    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 248))
+    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 252))
     hit("modal_block", 0f, 0f, w, h)
 
-    val top = h * 0.09f
-    val boxH = h * 0.82f
-    card(c, 22f, top, w - 44f, boxH, r.withAlpha(Palette.CYAN, 220), 20f)
+    val top = h * 0.045f
+    val boxH = h * 0.91f
+    card(c, 14f, top, w - 28f, boxH, r.withAlpha(Palette.CYAN, 220), 20f)
 
-    r.text(c, "隐 私 政 策", w / 2f, top + 42f, 22f, Palette.CYAN, true, Paint.Align.CENTER)
-    r.text(c, "《穿越星塔：全民登临时代》", w / 2f, top + 66f, 11.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
-    r.solid(c, 44f, top + 78f, w - 88f, 1.5f, 1f, r.withAlpha(Palette.BORDER_SOFT, 200))
+    r.text(c, "隐 私 政 策 与 用 户 协 议", w / 2f, top + 38f, 18.5f, Palette.CYAN, true, Paint.Align.CENTER)
+    r.text(c, "《穿越星塔：全民登临时代》", w / 2f, top + 59f, 10.5f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    r.solid(c, 32f, top + 70f, w - 64f, 1.5f, 1f, r.withAlpha(Palette.BORDER_SOFT, 200))
 
-    val sections = listOf(
-        "一、数据存储" to "游戏存档、成就与设置只保存在本机，不上传服务器。",
-        "二、广告与设备标识" to "为展示激励视频广告，广告 SDK 会读取设备标识（OAID / AndroidID）与网络状态，用于广告投放与统计。",
-        "三、我们关掉的采集" to "已关闭 IMEI、MAC 地址、定位、已安装应用列表、录音等敏感信息采集。",
-        "四、第三方广告平台" to "Tosin / TopOn 聚合广告及其合作平台（穿山甲、优量汇、快手、百度、Sigmob 等）。",
-        "五、您的选择" to "不同意不会初始化广告 SDK，也不会读取任何设备标识；可随时在「关于与隐私」中查看完整政策。"
-    )
-    var y = top + 100f
-    val limit = top + boxH - 232f
-    for ((title, body) in sections) {
-        if (y > limit) break
-        r.text(c, title, 42f, y, 12.5f, Palette.GOLD, true)
-        y += 17f
-        y = r.wrap(c, body, 42f, y, w - 84f, 11.5f, Palette.TEXT_DIM, 16f) + 9f
+    // ---- 正文滚动区 ----
+    val contentTop = top + 82f
+    val bottomBlock = 214f                    // 底部固定区（开关 + 三个按钮）
+    val contentBottom = top + boxH - bottomBlock
+
+    c.save()
+    c.clipRect(0f, contentTop, w, contentBottom)
+    setHitClip(contentTop, contentBottom)
+
+    var y = contentTop - privacyScroll
+    r.text(c, "欢迎使用《穿越星塔：全民登临时代》！", 28f, y + 12f, 11.5f, Palette.TEXT, true)
+    y += 22f
+    y = r.wrap(
+        c,
+        "为保障您的权益，在使用本应用前，请您仔细阅读并同意以下条款：",
+        28f, y, w - 56f, 11f, Palette.TEXT_DIM, 16f
+    ) + 10f
+
+    y = privacySection(c, "一、我们收集的信息", listOf(
+        "设备型号、操作系统版本（用于适配和优化）",
+        "设备标识符（用于广告展示和数据统计）",
+        "广告标识符 OAID（本游戏为展示广告与统计广告效果而获取）",
+        "网络类型（WiFi/移动数据，用于广告加载）",
+        "游戏存档数据（仅存储在本地设备，不上传服务器）",
+        "应用崩溃日志（用于定位与修复问题）"
+    ), y)
+
+    y = privacySection(c, "二、信息使用目的", listOf(
+        "提供游戏服务、保存游戏进度",
+        "展示广告以支持游戏免费运营",
+        "优化应用性能、修复线上问题"
+    ), y)
+
+    y = privacySection(c, "三、第三方 SDK 及其收集的信息", listOf(
+        "TapTap 登录 SDK：获取 AndroidID，用于账号登录与身份鉴权",
+        "TapTap 防沉迷 SDK：获取实名认证信息，用于未成年人保护（法定要求）",
+        "Tosin / TopOn 聚合广告 SDK：获取 OAID、AndroidID、WiFi 状态，用于广告展示与投放、反作弊与安全风控",
+        "穿山甲 / 优量汇 / 快手 / 百度 / Sigmob 等广告平台（经聚合 SDK 调用）：获取 OAID、设备 IP，用于广告展示、效果归因与数据统计"
+    ), y)
+
+    y = privacySection(c, "四、我们已关闭的采集", listOf(
+        "本游戏已关闭 IMEI、MAC 地址、定位、已安装应用列表、录音等敏感信息的采集；",
+        "不申请「读取手机状态」「读写外部存储」「定位」「读取应用列表」等敏感权限。"
+    ), y)
+
+    y = privacySection(c, "五、您的权利", listOf(
+        "您可以随时在「关于与隐私」中查看完整政策；",
+        "不同意不会初始化任何 SDK，也不会读取任何设备标识；",
+        "点击下方「不同意并退出」将直接退出游戏。"
+    ), y)
+
+    val contentEndY = y
+    c.restore()
+    clearHitClip()
+
+    // 滚动位置与滚动条（与 UiKit.endScroll 同一套观感）
+    privacyScrollMax = (contentEndY + privacyScroll - contentBottom).coerceAtLeast(0f)
+    privacyScroll = privacyScroll.coerceIn(0f, privacyScrollMax)
+    if (privacyScrollMax > 2f) {
+        val viewH = contentBottom - contentTop
+        val frac = viewH / (viewH + privacyScrollMax)
+        val barH = (viewH * frac).coerceAtLeast(28f)
+        val barY = contentTop + (viewH - barH) * (privacyScroll / privacyScrollMax)
+        r.solid(c, w - 20f, contentTop + 4f, 3.5f, viewH - 8f, 1.75f, r.withAlpha(Palette.BORDER_SOFT, 140))
+        r.solid(c, w - 20f, barY, 3.5f, barH, 1.75f, Palette.CYAN)
+    }
+    if (privacyScrollMax > 2f && privacyScroll < 8f) {
+        r.text(c, "▾ 上滑查看完整条款", w / 2f, contentBottom - 6f, 9.5f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     }
 
+    // ---- 底部固定区 ----
     // 个性化广告开关（默认关闭：合规更稳，关闭仍会展示广告）
-    val tgY = top + boxH - 216f
-    card(c, 40f, tgY, w - 80f, 46f, r.withAlpha(Palette.BORDER, 190), 12f)
-    r.text(c, "允许个性化广告推荐", 54f, tgY + 28f, 12f, Palette.TEXT)
-    val swX = w - 40f - 62f
+    val tgY = contentBottom + 10f
+    card(c, 26f, tgY, w - 52f, 42f, r.withAlpha(Palette.BORDER, 190), 12f)
+    r.text(c, "允许个性化广告推荐", 40f, tgY + 26f, 11.5f, Palette.TEXT)
+    val swX = w - 26f - 58f
     val on = privacyPersonalized
-    r.panel(c, swX, tgY + 12f, 46f, 22f, 11f,
+    r.panel(c, swX, tgY + 10f, 44f, 22f, 11f,
         if (on) Palette.GREEN else Palette.PANEL_DEEP,
         if (on) Palette.GREEN else Palette.PANEL_DEEP, null)
-    r.solid(c, if (on) swX + 26f else swX + 2f, tgY + 14f, 18f, 18f, 9f, Palette.TEXT)
-    hit("priv_toggle", 40f, tgY, w - 80f, 46f)
-    r.text(c, "关闭后仍会展示广告，只是不按兴趣推荐", 42f, tgY + 64f, 10f, Palette.TEXT_FAINT)
+    r.solid(c, if (on) swX + 24f else swX + 2f, tgY + 12f, 18f, 18f, 9f, Palette.TEXT)
+    hit("priv_toggle", 26f, tgY, w - 52f, 42f)
+    r.text(c, "关闭后仍会展示广告，只是不按兴趣推荐", 28f, tgY + 56f, 9.5f, Palette.TEXT_FAINT)
 
-    button(c, "priv_accept", "同 意 并 继 续", 40f, top + boxH - 142f, w - 80f, 50f, Palette.PINK)
-    ghostButton(c, "priv_policy", "查看完整《隐私政策》", 40f, top + boxH - 88f, w - 80f, 42f, Palette.CYAN)
-    ghostButton(c, "priv_decline", "不 同 意（退出游戏）", 40f, top + boxH - 40f, w - 80f, 32f, Palette.TEXT_FAINT)
+    button(c, "priv_accept", "同 意 并 继 续", 26f, tgY + 66f, w - 52f, 46f, Palette.PINK)
+    ghostButton(c, "priv_policy", "查看完整《隐私政策》", 26f, tgY + 118f, (w - 62f) / 2f, 38f, Palette.CYAN)
+    ghostButton(c, "priv_decline", "不 同 意（退出）", 26f + (w - 62f) / 2f + 10f, tgY + 118f, (w - 62f) / 2f, 38f, Palette.TEXT_FAINT)
+}
+
+/** 隐私条款的一节：金色小标题 + 逐条正文。返回下一节起始 Y。 */
+private fun GameView.privacySection(c: Canvas, title: String, items: List<String>, yIn: Float): Float {
+    var y = yIn
+    r.text(c, title, 28f, y + 12f, 12.5f, Palette.GOLD, true)
+    y += 20f
+    for (item in items) {
+        r.text(c, "·", 30f, y + 11f, 11f, Palette.CYAN)
+        y = r.wrap(c, item, 42f, y + 11f, w - 72f, 11f, Palette.TEXT_DIM, 16f) + 5f
+    }
+    return y + 8f
 }
 
 /**
@@ -83,16 +154,21 @@ internal fun GameView.drawAdLoadingOverlay(c: Canvas) {
 
 internal fun GameView.tapPrivacy(id: String) {
     when (id) {
-        "priv_toggle" -> privacyPersonalized = !privacyPersonalized
+        "priv_toggle" -> privacyPersonalized = privacyPersonalized == false
         "priv_policy" -> AdPrivacy.openPolicy(context)
         "priv_accept" -> {
             AdPrivacy.accept(context, privacyPersonalized)
             privacyGate = false
-            // 同意之后才初始化广告 SDK
+            privacyScroll = 0f
+            privacyScrollMax = 0f
+            // 同意之后才初始化 SDK：先广告，再 TapTap 登录 + 防沉迷。
+            // 这里必须同时调 setupTap() —— 漏掉它会让首启玩家永远进不了
+            // 登录页、防沉迷也永远不跑（登录/合规形同虚设）。
             setupAds()
+            setupTap()
             audio.play("unlock")
-            showToast("已同意隐私政策，广告将在需要时展示")
+            showToast("已同意隐私政策")
         }
-        "priv_decline" -> (context as? android.app.Activity)?.finish()
+        "priv_decline" -> (context as? android.app.Activity)?.finishAffinity()
     }
 }
