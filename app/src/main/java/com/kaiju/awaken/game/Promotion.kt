@@ -200,8 +200,7 @@ object Promotions {
     val artLocked = setOf(
         "warlord", "lightjudge",                          // 战士线（男声）：立绘为女性
         "shadowblade",                                    // 夜刃线（女声）：立绘为男性
-        "crimsonpriest", "trueancestor", "crimsonhigh",   // 绯血裔线（男声）：立绘为女性
-        "beastking"                                       // 岚射手线：立绘素材损坏（只有碎片）
+        "crimsonpriest", "trueancestor", "crimsonhigh"    // 绯血裔线（男声）：立绘为女性
     )
 
     fun tier1For(classId: String): List<PromotionDef> =
