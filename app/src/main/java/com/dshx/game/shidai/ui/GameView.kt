@@ -267,6 +267,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
         }
         Save.init(context)
         perm = Save.loadPerm(context)
+        // 恢复进行中的远征。旧版存档只写不读：run 永远是 null，
+        // 于是「继续游戏」把玩家送回前厅后只剩「出发远征」，等于从开局觉醒重打。
+        run = Save.loadRun(context, perm)
+        if (run != null) runStartMs = System.currentTimeMillis()
         // 角色名跟着存档走：轮回之后不该再让玩家重打一遍名字
         playerName = perm.playerName
         // 隐私合规：没同意过就把隐私页顶在最前，同意之前不初始化任何广告 SDK
@@ -1481,6 +1485,9 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
         run = p
         if (playerName.isNotBlank()) p.hero().name = playerName
         RunService.recalcAll(p, perm)
+        // 立刻落盘一次：从这一刻起本轮就可恢复，
+        // 哪怕玩家是在「曜神觉醒 / 开局觉醒」中途退出也不会丢。
+        Save.saveRun(context, p, perm)
         divinityOptions = com.dshx.game.shidai.game.DraftService.rollDivinityChoices()
         for (t in divinityOptions) perm.codexSeen.add("t:" + t.id)
         // 序章只在「创建角色」时播一次；从城镇出发直接进神格觉醒
@@ -1493,6 +1500,7 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
         draftAdUsed = false
         picksTotal = picks
         picksLeft = picks
+        p.draftPicksLeft = picks
         draftOptions = com.dshx.game.shidai.game.DraftService.roll(p, perm, com.dshx.game.shidai.game.DraftService.optionCount(p, perm))
         for (o in draftOptions) perm.codexSeen.add("t:" + o.talent.id)
         replacePick = false
@@ -1507,6 +1515,7 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
 
     fun afterDraft() {
         val p = run ?: return
+        p.draftPicksLeft = 0
         RunService.recalcAll(p, perm)
         if (p.floorEvents.isEmpty()) TowerService.generateFloor(p)
         // 觉醒结束后也要过一遍章节剧情。
@@ -1637,6 +1646,34 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
         if (maybeShowChapterStory()) return
         screen = Screen.TOWER
         audio.playBgm("tower")
+    }
+
+    /**
+     * 从「回廊前厅」继续上一局：按存档里的待办事项决定回到哪一屏。
+     * 旧版根本没有这条路径 —— 本轮进度一直写在盘上却没人读回内存，
+     * 退出游戏再进来就只剩「出发远征」，只能从开局觉醒重打。
+     */
+    fun resumeRun() {
+        val p = run ?: return
+        if (p.floorEvents.isEmpty()) TowerService.generateFloor(p)
+        // 开局觉醒还没选（在「曜神觉醒」三选一那一步退出过）：重新摆一组供玩家选
+        if (p.grid.divinity == null) {
+            val opts = DraftService.rollDivinityChoices()
+            if (opts.isNotEmpty()) {
+                divinityOptions = opts
+                for (t in opts) perm.codexSeen.add("t:" + t.id)
+                screen = Screen.DIVINITY
+                audio.playBgm("city")
+                return
+            }
+        }
+        // 觉醒选中途退出：把没选完的次数补回来
+        if (p.draftPicksLeft > 0) {
+            beginDraft(p.draftPicksLeft)
+            return
+        }
+        // 其余情况（含待转职 / 待层间觉醒 / 待章节剧情）交给统一的推进结算
+        afterFloorAdvance()
     }
 
     fun beginPromotion(tier: Int) {

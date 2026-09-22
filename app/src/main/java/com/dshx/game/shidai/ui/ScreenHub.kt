@@ -134,11 +134,8 @@ internal fun GameView.tapHub(id: String) {
             screen = GameView.Screen.SETUP
         }
         "hub_resume" -> {
-            if (p != null) {
-                if (p.floorEvents.isEmpty()) com.dshx.game.shidai.game.TowerService.generateFloor(p)
-                screen = GameView.Screen.TOWER
-                audio.playBgm("tower")
-            }
+            // 交给 resumeRun：它会按存档里的待办（开局曜神 / 觉醒 / 转职）决定回哪一屏
+            if (p != null) resumeRun()
         }
         "hub_abandon" -> {
             if (p != null && p.floor > 1) {

@@ -214,7 +214,10 @@ object Save {
     }
 
     fun saveRun(ctx: Context, run: RunState?, perm: PermState) {
-        if (run == null || run.runOver) {
+        // run == null 只代表「这一刻内存里没有本轮」（例如刚启动还没读档），
+        // 不能据此清档：旧实现在这种时机切后台会把玩家的远征进度直接抹掉。
+        if (run == null) return
+        if (run.runOver) {
             clearRun(ctx)
             return
         }
@@ -296,6 +299,7 @@ object Save {
                 evs.put(je)
             }
             o.put("floorEvents", evs)
+            o.put("draftPicksLeft", run.draftPicksLeft)
             o.put("permTalentPoints", perm.talentPoints)
 
             prefs(ctx).edit().putString(KEY_RUN, o.toString()).apply()
@@ -331,6 +335,7 @@ object Save {
             val t2 = o.optString("tier2Id", "")
             if (t2.isNotEmpty()) run.tier2Id = t2
             run.climbLevel = o.optInt("climbLevel", 1)
+            run.draftPicksLeft = o.optInt("draftPicksLeft", 0)
 
             o.optJSONObject("items")?.let { it ->
                 for (k in it.keys()) run.items[k] = it.optInt(k, 0)
@@ -413,6 +418,14 @@ object Save {
                 }
             }
             RunService.rebuildSkills(hero, run.classId, run.promotionId, run.tier2Id)
+            // 一转 / 二转欠账：转职界面上一按退出，pendingPromotion 已经被结算函数消费掉了，
+            // 存档里只剩「到了 3 层却没转职」。读档时按层数把这份待选状态补回来，
+            // 否则玩家读档后会永远错过整条进阶路线。
+            if (run.promotionId == null) {
+                if (run.floor >= 3) run.pendingPromotion = 1
+            } else if (run.tier2Id == null && run.floor >= 30) {
+                run.pendingPromotion = 2
+            }
             if (run.floorEvents.isEmpty()) TowerService.generateFloor(run)
             RunService.recalcAll(run, perm)
             if (hero.hp <= 0.0) hero.hp = hero.stats.maxHp * 0.5

@@ -482,6 +482,7 @@ internal fun GameView.tapDraft(id: String) {
             draftAdUsed = true
             picksLeft++
             picksTotal++
+            run?.draftPicksLeft = picksLeft
             // 从「觉醒完成」页点广告回来时得补一组新选项，否则屏幕上无牌可选
             if (draftOptions.isEmpty()) {
                 val pp = run
@@ -507,6 +508,7 @@ internal fun GameView.tapDraft(id: String) {
 private fun GameView.finishDraftStep() {
     audio.play("levelup")
     picksLeft--
+    run?.draftPicksLeft = picksLeft
     if (picksLeft > 0) {
         val p = run ?: return
         draftOptions = com.dshx.game.shidai.game.DraftService.roll(p, perm, com.dshx.game.shidai.game.DraftService.optionCount(p, perm))

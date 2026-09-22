@@ -134,6 +134,11 @@ class RunState {
     var floorEvents = ArrayList<FloorEvent>()
     var eventIdx = 0
     var waitingFloorTalent = false
+    /**
+     * 还没选完的觉醒次数。开局觉醒 / 层间觉醒选中途退出时，
+     * 读档后凭它把剩下的抉择次数补回来（见 GameView.resumeRun）。
+     */
+    var draftPicksLeft = 0
     var runOver = false
 
     fun hero(): Unit = party.first()
