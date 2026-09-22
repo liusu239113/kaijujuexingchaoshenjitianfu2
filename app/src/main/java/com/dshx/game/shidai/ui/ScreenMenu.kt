@@ -325,10 +325,13 @@ internal fun GameView.drawTalentCard(c: Canvas, t: Talent, x: Float, y: Float, w
     // 系别徽记
     val hexCx = x + 40f
     val hexCy = y + 40f
-    // 系别徽记：优先画流派图标（缺图才回退原来的字符徽记）
+    // 徽记优先级：这颗天赋自己的图标 -> 流派图标 -> 原来的字符徽记。
+    // 全部 119 颗天赋都配了独立图标，缺图才会往下回退。
+    val ownKey = ArtIcon.talent(t)
     val schKey = ArtIcon.school(t.school)
-    if (bitmap(schKey) != null) {
-        drawIcon(c, schKey, hexCx, hexCy, 46f, col)
+    val iconKey = if (bitmap(ownKey) != null) ownKey else if (bitmap(schKey) != null) schKey else ""
+    if (iconKey.isNotEmpty()) {
+        drawIcon(c, iconKey, hexCx, hexCy, 52f, col)
     } else {
         r.hexFrame(c, hexCx, hexCy, 24f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
         r.text(c, t.school.glyph, hexCx, hexCy + 8f, 20f, col, true, Paint.Align.CENTER)
@@ -398,8 +401,7 @@ private fun GameView.drawReplacePicker(c: Canvas) {
         } else {
             val col = rarityColor(t.rarity)
             card(c, x, y, cw, 104f, col)
-            r.hexFrame(c, x + 34f, y + 34f, 20f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
-            r.text(c, t.school.glyph, x + 34f, y + 41f, 17f, col, true, Paint.Align.CENTER)
+            drawIcon(c, ArtIcon.talent(t), x + 34f, y + 36f, 44f, col)
             r.text(c, t.name, x + 62f, y + 28f, 14f, Palette.TEXT, true)
             val rs = t.rarity.cn + " · "
             r.text(c, rs, x + 62f, y + 46f, 11f, col)
@@ -428,8 +430,7 @@ internal fun GameView.drawResonanceStrip(c: Canvas, p: com.dshx.game.shidai.game
             r.hexFrame(c, cx, cy, slotR, Palette.BORDER_SOFT, r.withAlpha(Palette.PANEL_DEEP, 255))
         } else {
             val col = rarityColor(t.rarity)
-            r.hexFrame(c, cx, cy, slotR, if (linked) Palette.CYAN else col, r.withAlpha(Palette.PANEL_SOFT, 255))
-            r.text(c, t.school.glyph, cx, cy + 5.5f, 14f, col, true, Paint.Align.CENTER)
+                drawIcon(c, ArtIcon.talent(t), cx, cy, slotR * 1.85f, if (linked) Palette.CYAN else col)
         }
         if (i < 5) {
             val lx = cx + slotR

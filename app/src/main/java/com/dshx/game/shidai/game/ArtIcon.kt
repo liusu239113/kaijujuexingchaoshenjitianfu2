@@ -132,6 +132,12 @@ object ArtIcon {
     /** 天赋流派图标：School.EDGE -> ic_school_edge。 */
     fun school(s: School): String = "ic_school_" + s.name.lowercase()
 
+    /**
+     * 天赋专属图标：t_executioner -> ic_tal_executioner，
+     * 曜神级的 ht_ 前缀保留（ic_tal_ht_divine_hand）。
+     */
+    fun talent(t: Talent): String = "ic_tal_" + t.id.removePrefix("t_")
+
 
     /** 技能音效名（对应 res/raw/sfx_xxx.mp3）。 */
     fun skillSfx(s: Skill): String = when {

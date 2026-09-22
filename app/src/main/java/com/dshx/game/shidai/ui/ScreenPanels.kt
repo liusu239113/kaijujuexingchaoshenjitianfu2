@@ -164,8 +164,9 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
             val dv = p.grid.divinity
             if (dv != null) {
                 card(c, 36f, y, w - 72f, r.lh(60f), Palette.GOLD, 12f)
-                r.text(c, "神格位 · ${dv.name}", 48f, y + 26f, 14f, Palette.GOLD, true)
-                val dx = starLevel(c, p.grid.divinityStar, 48f, y + 46f, 11.5f, Palette.GOLD)
+            drawIcon(c, com.dshx.game.shidai.game.ArtIcon.talent(dv), 62f, y + r.lh(30f), r.lh(38f), Palette.GOLD)
+                r.text(c, "神格位 · ${dv.name}", 90f, y + 26f, 14f, Palette.GOLD, true)
+                val dx = starLevel(c, p.grid.divinityStar, 90f, y + 46f, 11.5f, Palette.GOLD)
                 r.text(c, " · 不可被覆盖", dx + 2f, y + 46f, 11f, Palette.TEXT_DIM)
                 y += r.lh(68f)
             }
@@ -173,9 +174,10 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 val t = p.grid.slots[i] ?: continue
                 val col = rarityColor(t.rarity)
                 card(c, 36f, y, w - 72f, r.lh(66f), col, 12f)
-                r.text(c, t.name, 48f, y + 24f, 13.5f, Palette.TEXT, true)
-                starLevel(c, p.grid.stars[i], 48f + r.measure(t.name + "  ", 13.5f, true), y + 24f, 13.5f, Palette.GOLD)
-                r.text(c, t.rarity.cn + " · " + t.school.cn + " · 槽位 ${i + 1}", 48f, y + 42f, 10.5f, col)
+            drawIcon(c, com.dshx.game.shidai.game.ArtIcon.talent(t), 62f, y + r.lh(33f), r.lh(40f), col)
+                r.text(c, t.name, 90f, y + 24f, 13.5f, Palette.TEXT, true)
+                starLevel(c, p.grid.stars[i], 90f + r.measure(t.name + "  ", 13.5f, true), y + 24f, 13.5f, Palette.GOLD)
+                r.text(c, t.rarity.cn + " · " + t.school.cn + " · 槽位 ${i + 1}", 90f, y + 42f, 10.5f, col)
                 val cost = t.enhanceCost(p.grid.stars[i] - 1)
                 if (p.grid.stars[i] < 3) {
                     ghostButton(c, "panel_star_$i", "升星 $cost", w - 118f, y + 16f, 76f, 34f, Palette.GOLD)
