@@ -46,4 +46,8 @@ object RewardAds {
     const val PLACEMENT_EXTRA_TALENT = "extra_talent"
     const val PLACEMENT_REVIVE = "revive"
     const val PLACEMENT_DOUBLE_REWARD = "double_reward"
+    const val PLACEMENT_SHOP_REFRESH = "shop_refresh"
+    const val PLACEMENT_TAVERN_REFRESH = "tavern_refresh"
+    const val PLACEMENT_HEAL = "heal"
+    const val PLACEMENT_REINC_DOUBLE = "reinc_double"
 }

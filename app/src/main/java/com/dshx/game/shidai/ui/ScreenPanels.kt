@@ -835,6 +835,12 @@ internal fun GameView.drawReincarnationScreen(c: Canvas) {
     }
     endScroll(c, iy + 8f)
 
+    // 看广告把本轮神格点翻倍（结算页专属，已翻倍则不再显示）
+    if (!reincAdDoubled) {
+        ghostButton(c, "reinc_ad_double", "看广告 · 本轮神格点翻倍", 48f, h - 282f, w - 96f, 46f, Palette.GREEN)
+    } else {
+        r.text(c, "神格点已翻倍", w / 2f, h - 254f, 11.5f, Palette.GREEN, true, Paint.Align.CENTER)
+    }
     button(c, "reinc_claim", "领 取 神 格 点", 48f, h - 220f, w - 96f, 58f, Palette.PINK)
     ghostButton(c, "reinc_growth", "前往轮回淬炼", 48f, h - 148f, w - 96f, 48f, Palette.CYAN)
     ghostButton(c, "reinc_menu", "回到标题", 48f, h - 90f, w - 96f, 44f, Palette.TEXT_DIM)
@@ -844,8 +850,15 @@ internal fun GameView.drawReincarnationScreen(c: Canvas) {
 internal fun GameView.tapReincarnation(id: String) {
     val p = run ?: return
     when (id) {
+        "reinc_ad_double" -> {
+            if (reincAdDoubled) return
+            requestAd(com.dshx.game.shidai.game.RewardAds.PLACEMENT_REINC_DOUBLE) {
+                reincAdDoubled = true
+                showToast("本轮神格点翻倍")
+            }
+        }
         "reinc_claim" -> {
-            val pts = p.talentPointValue()
+            val pts = if (reincAdDoubled) p.talentPointValue() * 2 else p.talentPointValue()
             perm.talentPoints += pts
             perm.pity = p.pityCounter
             run = null

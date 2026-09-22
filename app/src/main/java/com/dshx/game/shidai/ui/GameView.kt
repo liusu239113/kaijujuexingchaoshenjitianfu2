@@ -109,6 +109,25 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
     var draftAdUsed = false
     /** 本场战斗是否用过「看广告战果翻倍」。 */
     var rewardDoubleUsed = false
+    /** 商店本次是否已用广告刷新过。 */
+    var shopAdRefreshed = false
+    /** 酒肆本次是否已用广告刷新过。 */
+    var tavernAdRefreshed = false
+    /** 已用广告回满血的层号（换层后可再用）。 */
+    var healAdFloor = -1
+    /** 轮回结算是否已用广告翻倍。 */
+    var reincAdDoubled = false
+    /** 是否正在等待广告加载（用于显示加载浮层）。 */
+    var adLoading = false
+    /** 登录闸门：未登录时挡在最前面（TapTap 登录 + 防沉迷）。 */
+    var loginGate = false
+    var loginBusy = false
+    var loginMsg = ""
+    /** 防沉迷拦截（未成年人时段 / 时长上限 / 实名未通过）。 */
+    var complianceBlocked = false
+    var complianceMsg = ""
+    /** 加载浮层开始时间：超过一定时长给「暂时没有广告」的提示。 */
+    var adLoadingSince = 0f
     /** 首启隐私政策闸门：未同意前不初始化任何广告 SDK。 */
     var privacyGate = false
     /** 是否允许个性化广告（默认关闭，合规更稳）。 */
@@ -244,7 +263,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         // 隐私合规：没同意过就把隐私页顶在最前，同意之前不初始化任何广告 SDK
         privacyPersonalized = com.dshx.game.shidai.ads.AdPrivacy.personalizedEnabled(context)
         privacyGate = !com.dshx.game.shidai.ads.AdPrivacy.isAccepted(context)
-        if (!privacyGate) setupAds()
+        if (!privacyGate) {
+            setupAds()
+            setupTap()
+        }
         applyDisplaySettings()
         audio.init()
         audio.musicOn = perm.musicOn
@@ -450,6 +472,10 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         if (overlay.isNotEmpty()) drawOverlay(canvas)
         // 隐私同意页永远在最上层：没同意之前其它交互都不该生效
         if (privacyGate) drawPrivacyGateOverlay(canvas)
+        if (adLoading) drawAdLoadingOverlay(canvas)
+        // 登录 / 防沉迷闸门：未通过之前不允许进入游戏
+        if (loginGate) drawLoginGateOverlay(canvas)
+        if (complianceBlocked) drawComplianceGateOverlay(canvas)
         drawToast(canvas)
         canvas.restore()
     }
@@ -538,9 +564,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             return
         }
         audio.play("click")
-        showToast("正在拉取广告…")
+        adLoading = true
+        adLoadingSince = time
         com.dshx.game.shidai.game.RewardAds.request(placement) { ok ->
             post {
+                adLoading = false
                 if (ok) {
                     audio.play("unlock")
                     onReward()
@@ -548,6 +576,62 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
                     audio.play("error")
                     showToast("广告未完成，未发放奖励")
                 }
+            }
+        }
+    }
+
+    /**
+     * 初始化 TapTap（登录 + 防沉迷）。同样必须在同意隐私政策之后调用。
+     * 已登录过就直接做防沉迷校验；没登录过则显示登录闸门。
+     */
+    fun setupTap() {
+        com.dshx.game.shidai.tap.TapHelper.listener = object : com.dshx.game.shidai.tap.TapHelper.Listener {
+            override fun onCompliance(code: Int) {
+                post { applyCompliance(code) }
+            }
+
+            override fun onLoginChanged(openId: String?) {
+                post { loginGate = openId == null }
+            }
+        }
+        com.dshx.game.shidai.tap.TapHelper.init(context)
+        val act = context as? android.app.Activity ?: return
+        val openId = com.dshx.game.shidai.tap.TapHelper.currentOpenId()
+            ?: com.dshx.game.shidai.tap.TapHelper.savedOpenId(context)
+        if (openId.isNullOrEmpty()) {
+            loginGate = true
+        } else {
+            com.dshx.game.shidai.tap.TapHelper.startup(act, openId)
+        }
+    }
+
+    /** 处理防沉迷回调：被限制时挡在拦截页，正常则放行。 */
+    private fun applyCompliance(code: Int) {
+        when (code) {
+            com.taptap.sdk.compliance.constants.ComplianceMessage.LOGIN_SUCCESS -> {
+                complianceBlocked = false
+                complianceMsg = ""
+                loginGate = false
+            }
+            com.taptap.sdk.compliance.constants.ComplianceMessage.EXITED,
+            com.taptap.sdk.compliance.constants.ComplianceMessage.SWITCH_ACCOUNT -> {
+                loginGate = true
+            }
+            com.taptap.sdk.compliance.constants.ComplianceMessage.PERIOD_RESTRICT -> {
+                complianceMsg = "根据国家新闻出版署规定，未成年人仅可在周五、周六、周日及法定节假日的 20:00–21:00 游玩。当前时段无法进入游戏。"
+                complianceBlocked = true
+            }
+            com.taptap.sdk.compliance.constants.ComplianceMessage.DURATION_LIMIT -> {
+                complianceMsg = "今日游戏时长已达上限。未成年人工作日每日限玩 1.5 小时，法定节假日每日 3 小时。"
+                complianceBlocked = true
+            }
+            com.taptap.sdk.compliance.constants.ComplianceMessage.REAL_NAME_STOP -> {
+                complianceMsg = "实名认证未通过，已停止游戏服务。请完成实名认证后再试。"
+                complianceBlocked = true
+            }
+            com.taptap.sdk.compliance.constants.ComplianceMessage.INVALID_CLIENT_OR_NETWORK_ERROR -> {
+                complianceMsg = "防沉迷服务连接失败，请检查网络后重试。"
+                complianceBlocked = true
             }
         }
     }
@@ -1152,6 +1236,9 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         detailIcon = ""
         petDetailId = ""
         petPullResults = emptyList()
+        adLoading = false
+        complianceBlocked = false
+        complianceMsg = ""
         exportText = ""
         confirmMsg = ""
         confirmAction = ""
@@ -1223,6 +1310,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             id.startsWith("confirm_") -> tapConfirm(id)
             id.startsWith("sc_") -> tapStoryScene(id)
             id.startsWith("priv_") -> tapPrivacy(id)
+            id.startsWith("tap_") -> tapLoginGate(id)
             id == "detail_close" -> tapConfirm(id)
         }
     }
@@ -1484,6 +1572,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
         p.runOver = true
         val clearedRun = p.mode.endFloor > 0 && p.floor > p.mode.endFloor
         endingStart = time
+        reincAdDoubled = false
         screen = if (clearedRun) Screen.ENDING else Screen.REINCARNATION
         audio.play("levelup")
         Save.savePerm(context, perm)
@@ -1499,10 +1588,12 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback {
             "boss" -> startBattle("boss")
             "shop" -> {
                 shopStock = TowerService.shopItems()
+                shopAdRefreshed = false
                 overlay = "shop"
             }
             "tavern" -> {
                 tavernList = ArrayList(TowerService.tavernCandidates(p.floor))
+                tavernAdRefreshed = false
                 overlay = "tavern"
             }
             "story" -> {

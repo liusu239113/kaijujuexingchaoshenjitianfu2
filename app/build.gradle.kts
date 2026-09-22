@@ -95,6 +95,11 @@ dependencies {
     implementation(files("libs/topon/tosin-anythink_rewardvideo-adapter.aar"))
     implementation(files("libs/topon/tosin-anythink_splash-adapter.aar"))
 
+    // TapTap 登录 + 防沉迷（compliance = 合规认证）
+    implementation("com.taptap.sdk:tap-core:4.10.3")
+    implementation("com.taptap.sdk:tap-login:4.10.3")
+    implementation("com.taptap.sdk:tap-compliance:4.10.3")
+
     // 广告 SDK 的运行时依赖（与参考项目同款）
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")

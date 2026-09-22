@@ -56,6 +56,31 @@ internal fun GameView.drawPrivacyGateOverlay(c: Canvas) {
     ghostButton(c, "priv_decline", "不 同 意（退出游戏）", 40f, top + boxH - 40f, w - 80f, 32f, Palette.TEXT_FAINT)
 }
 
+/**
+ * 激励视频加载浮层。
+ * 广告 SDK 从 load 到真正播放有一段时间（弱网下更久），
+ * 没有反馈玩家会以为「点了没反应」而反复点。
+ */
+internal fun GameView.drawAdLoadingOverlay(c: Canvas) {
+    r.solid(c, 0f, 0f, w, h, 0f, r.withAlpha(0xFF06030F.toInt(), 150))
+    hit("modal_block", 0f, 0f, w, h)
+    val boxW = w - 160f
+    val x = 80f
+    val y = h / 2f - 56f
+    card(c, x, y, boxW, 112f, r.withAlpha(Palette.CYAN, 220), 16f)
+    r.text(c, "广 告 加 载 中", w / 2f, y + 44f, 16f, Palette.CYAN, true, Paint.Align.CENTER)
+    // 三个呼吸点，和主界面的呼吸提示同一套观感
+    val t = r.pctPulse
+    for (i in 0 until 3) {
+        val a = (0.35f + 0.65f * kotlin.math.abs(kotlin.math.sin((t + i * 0.22f) * 3.14f)))
+        r.solid(c, w / 2f - 18f + i * 18f, y + 68f, 10f, 10f, 5f, r.withAlpha(Palette.CYAN, (a * 255).toInt()))
+    }
+    // 超过 8 秒仍未回调：明确告知没有填充，别让玩家干等
+    if (time - adLoadingSince > 8f) {
+        r.text(c, "暂时没有广告填充，稍后再试", w / 2f, y + 100f, 11f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    }
+}
+
 internal fun GameView.tapPrivacy(id: String) {
     when (id) {
         "priv_toggle" -> privacyPersonalized = !privacyPersonalized

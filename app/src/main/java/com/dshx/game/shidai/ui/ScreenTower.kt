@@ -27,6 +27,12 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
     ghostButton(c, "tower_menu", "回廊", w - bw * 3f - 30f, navY, bw, 34f, Palette.TEXT_DIM)
     ghostButton(c, "tower_panel_talents", "天赋", w - bw * 2f - 22f, navY, bw, 34f, Palette.CYAN)
     ghostButton(c, "tower_panel_attrs", "面板", w - bw - 14f, navY, bw, 34f, Palette.PINK)
+    val healUsed = healAdFloor == p.floor
+    ghostButton(
+        c, "tower_ad_heal",
+        if (healUsed) "已回血" else "看广告 · 回满血",
+        20f, 62f, 118f, 30f, if (healUsed) Palette.TEXT_FAINT else Palette.GREEN
+    )
 
     // 路径（只画一次）
     drawFloorPath(c, 118f)
@@ -224,6 +230,22 @@ internal fun GameView.tapTower(id: String) {
             perm.seenIntro = true
             Save.savePerm(context, perm)
         }
+        id == "tower_ad_heal" -> {
+            val p = run ?: return
+            if (healAdFloor == p.floor) {
+                showToast("本层已用过广告回血")
+                return
+            }
+            requestAd(com.dshx.game.shidai.game.RewardAds.PLACEMENT_HEAL) {
+                for (u in p.party) {
+                    u.hp = u.stats.maxHp
+                    u.energy = 0.0
+                }
+                healAdFloor = p.floor
+                audio.play("heal")
+                showToast("全队生命已回满")
+            }
+        }
         id == "tower_continue" -> continueAfterEvent()
         id == "tower_next_floor" -> {
             val p = run ?: return
@@ -275,12 +297,28 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
         hit("shop_buy_$i", 40f, y, w - 80f, 76f).enabled = afford
         y += 84f
     }
+    ghostButton(
+        c, "shop_ad_refresh",
+        if (shopAdRefreshed) "已刷新（本次已用）" else "看广告 · 免费刷新商品",
+        40f, h - 154f, w - 80f, 44f, if (shopAdRefreshed) Palette.TEXT_FAINT else Palette.GREEN
+    )
     ghostButton(c, "shop_close", "离开商铺", 40f, h - 96f, w - 80f, 52f, Palette.TEXT_DIM)
 }
 
 internal fun GameView.tapShop(id: String) {
     val p = run ?: return
     when {
+        id == "shop_ad_refresh" -> {
+            if (shopAdRefreshed) {
+                showToast("本次进店已刷新过")
+                return
+            }
+            requestAd(com.dshx.game.shidai.game.RewardAds.PLACEMENT_SHOP_REFRESH) {
+                shopStock = TowerService.shopItems()
+                shopAdRefreshed = true
+                showToast("商品已刷新")
+            }
+        }
         id == "shop_close" -> {
             overlay = ""
             val fe = TowerService.currentEvent(p)
@@ -327,12 +365,28 @@ internal fun GameView.drawTavernOverlay(c: Canvas) {
         hit("tavern_hire_$i", 40f, y, w - 80f, 96f).enabled = !full && p.gold >= cost
         y += 104f
     }
+    ghostButton(
+        c, "tavern_ad_refresh",
+        if (tavernAdRefreshed) "已刷新（本次已用）" else "看广告 · 免费刷新候选人",
+        40f, h - 154f, w - 80f, 44f, if (tavernAdRefreshed) Palette.TEXT_FAINT else Palette.GREEN
+    )
     ghostButton(c, "tavern_close", "离开酒肆", 40f, h - 96f, w - 80f, 52f, Palette.TEXT_DIM)
 }
 
 internal fun GameView.tapTavern(id: String) {
     val p = run ?: return
     when {
+        id == "tavern_ad_refresh" -> {
+            if (tavernAdRefreshed) {
+                showToast("本次进店已刷新过")
+                return
+            }
+            requestAd(com.dshx.game.shidai.game.RewardAds.PLACEMENT_TAVERN_REFRESH) {
+                tavernList = ArrayList(TowerService.tavernCandidates(p.floor))
+                tavernAdRefreshed = true
+                showToast("候选人已刷新")
+            }
+        }
         id == "tavern_close" -> {
             overlay = ""
             val fe = TowerService.currentEvent(p)
