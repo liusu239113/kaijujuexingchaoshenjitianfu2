@@ -22,8 +22,9 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     val ts = if (h < 620f) 0.76f else 1f
     val titleY = y + 42f * ts
     // 主标题
-    r.text(c, "觉醒", w / 2f, titleY, 46f, Palette.TEXT, true, Paint.Align.CENTER)
-    r.text(c, "曜神天赋", w / 2f, titleY + 54f, 42f, Palette.PINK, true, Paint.Align.CENTER)
+    // 新名字「穿越星塔：全民登临时代」正好按冒号拆成主标题 + 副标题
+    r.text(c, "穿越星塔", w / 2f, titleY, 46f, Palette.TEXT, true, Paint.Align.CENTER)
+    r.text(c, "全 民 登 临 时 代", w / 2f, titleY + 42f, 24f, Palette.PINK, true, Paint.Align.CENTER)
     r.sparkle(c, w * 0.16f, titleY - 18f, 16f, Palette.CYAN)
     r.sparkle(c, w * 0.85f, titleY + 30f, 12f, Palette.PINK)
 
@@ -96,7 +97,7 @@ internal fun GameView.drawMenuScreen(c: Canvas) {
     ghostButton(c, "menu_about", "关 于", 48f, by, bw, 48f, Palette.TEXT_DIM)
     by += 48f + bGap
 
-    r.text(c, "v1.3.3 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
+    r.text(c, "v1.3.4 · PixelForge", w / 2f, by, 11f, Palette.TEXT_FAINT, false, Paint.Align.CENTER)
     by += 14f
     endScroll(c, by)
 }
