@@ -11,16 +11,16 @@ package com.kaiju.awaken.game
 object RewardAds {
 
     /** 由广告 SDK 侧注入：参数是广告位用途，回调可能在非主线程触发。 */
-    private var handler: ((String, (Boolean) -> Unit) -> Unit)? = null
+    private var handler: ((String, (Boolean) -> kotlin.Unit) -> kotlin.Unit)? = null
 
     fun isReady(): Boolean = handler != null
 
-    fun install(impl: (String, (Boolean) -> Unit) -> Unit) {
+    fun install(impl: (String, (Boolean) -> kotlin.Unit) -> kotlin.Unit) {
         handler = impl
     }
 
     /** 请求播放一条激励视频；[onResult] 参数为「是否发奖」。未接入时立即回调 false。 */
-    fun request(placement: String, onResult: (Boolean) -> Unit) {
+    fun request(placement: String, onResult: (Boolean) -> kotlin.Unit) {
         val h = handler
         if (h == null) {
             onResult(false)
