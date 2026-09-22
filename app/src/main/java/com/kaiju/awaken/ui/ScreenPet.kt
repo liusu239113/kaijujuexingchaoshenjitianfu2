@@ -177,18 +177,24 @@ internal fun GameView.requestPetTicketAd() {
         showToast("广告接入中：先可用星尘兑换宠缘券")
         return
     }
-    RewardAds.request(RewardAds.PLACEMENT_PET_TICKET) { ok ->
-        post {
-            if (ok) {
-                perm.petTickets += 1
-                Save.savePerm(context, perm)
-                audio.play("unlock")
-                showToast("获得宠缘券 ×1（当前 " + perm.petTickets + "）")
-            } else {
-                showToast("广告未完成，未发放奖励")
-            }
+    // 注意：View.post 返回 Boolean，不能让它当 lambda 的末尾表达式（类型不符），
+    // 这里用 if/else 语句收尾并把发奖抽成独立函数。
+    val onResult: (Boolean) -> Unit = { ok ->
+        if (ok) {
+            post { grantPetTicketReward() }
+        } else {
+            showToast("广告未完成，未发放奖励")
         }
     }
+    RewardAds.request(RewardAds.PLACEMENT_PET_TICKET, onResult)
+}
+
+/** 看完广告后的发奖：把实现换成真实 SDK 时这里不用改。 */
+private fun GameView.grantPetTicketReward() {
+    perm.petTickets += 1
+    Save.savePerm(context, perm)
+    audio.play("unlock")
+    showToast("获得宠缘券 ×1（当前 " + perm.petTickets + "）")
 }
 
 /** 宠物详情预览：立绘 + 稀有度 + 等级 + 队伍加成 + 助战效果。 */
