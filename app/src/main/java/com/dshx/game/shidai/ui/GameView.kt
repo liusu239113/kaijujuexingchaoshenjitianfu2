@@ -1193,11 +1193,23 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
                     // 机制型词条的 label 本身已含数值（「生命窃取 8%」），再拼一次就成了「8% +0」
                     if (a.isMechanic) sb.appendLine(a.label) else sb.appendLine(a.label + " +" + a.value.toInt())
                 }
-                if (e.setId != null) sb.appendLine("套装：" + e.setId)
+                // 套装：显示已穿件数与 2/4 件是否达标（旧版只打印一个内部 id）
+                val sid = e.setId
+                if (sid != null) {
+                    val sd = com.dshx.game.shidai.game.Content.sets.firstOrNull { it.id == sid }
+                    if (sd == null) {
+                        sb.appendLine("套装：" + sid)
+                    } else {
+                        val worn = run?.let { com.dshx.game.shidai.game.RunService.setCount(it, sid) } ?: 0
+                        sb.appendLine("套装 · " + sd.cn + "（已穿 " + worn + " 件）")
+                        sb.appendLine((if (worn >= 2) "  ✔ " else "  · ") + sd.desc)
+                        if (sd.desc2.isNotEmpty()) sb.appendLine((if (worn >= 4) "  ✔ " else "  · ") + sd.desc2)
+                    }
+                }
                 sb.appendLine()
                 sb.appendLine("锻铸等级 +" + e.enhance + "（每级 +10% 主属性）")
                 sb.appendLine("变卖价值 " + e.sellValue + " 金币")
-                showDetail(e.name, sb.toString(), com.dshx.game.shidai.game.ArtIcon.equip(e.slot))
+                showDetail(e.name, sb.toString(), com.dshx.game.shidai.game.ArtIcon.equip(e.slot, e.rarity))
             }
             id.startsWith("panel_merc_detail_") -> {
                 val idx = id.removePrefix("panel_merc_detail_").toIntOrNull() ?: return
@@ -1220,7 +1232,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
                 if (e.setId != null) sb.appendLine("套装：" + e.setId)
                 sb.appendLine()
                 sb.appendLine("锻铸等级 +" + e.enhance + "    变卖 " + e.sellValue + " 金币")
-                showDetail(e.name, sb.toString(), com.dshx.game.shidai.game.ArtIcon.equip(e.slot))
+                showDetail(e.name, sb.toString(), com.dshx.game.shidai.game.ArtIcon.equip(e.slot, e.rarity))
             }
             id.startsWith("panel_merc_") || id == "tower_panel_merc" -> {
                 val p = run ?: return

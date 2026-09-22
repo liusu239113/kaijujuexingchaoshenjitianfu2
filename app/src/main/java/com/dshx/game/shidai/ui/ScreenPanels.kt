@@ -78,7 +78,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                     val col2 = rarityColor(e.rarity)
                     card(c, x, yy, cell, cell, if (sel) Palette.GOLD else col2, 10f)
                     if (sel) r.glowPanel(c, x, yy, cell, cell, 10f, Palette.GOLD, 70)
-                    drawIcon(c, com.dshx.game.shidai.game.ArtIcon.equip(e.slot), x + cell / 2f, yy + cell * 0.44f, cell * 0.62f, col2)
+                    drawIcon(c, com.dshx.game.shidai.game.ArtIcon.equip(e.slot, e.rarity), x + cell / 2f, yy + cell * 0.44f, cell * 0.62f, col2)
                     r.text(c, e.name.take(4), x + cell / 2f, yy + cell * 0.72f, 9f, Palette.TEXT, false, Paint.Align.CENTER)
                     if (e.enhance > 0) r.text(c, "+" + e.enhance, x + cell / 2f, yy + cell * 0.9f, 9.5f, Palette.GOLD, true, Paint.Align.CENTER)
                     hit("panel_bagsel_" + i, x, yy, cell, cell)
@@ -106,7 +106,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 val e = p.equipped[slot.id]
                 val rowH = if (e == null) 46f else 92f
                 card(c, 22f, y, w - 44f, rowH, r.withAlpha(Palette.BORDER_SOFT, 170), 12f)
-                drawIcon(c, com.dshx.game.shidai.game.ArtIcon.equip(slot.id), 46f, y + 23f, 30f, Palette.CYAN)
+                drawIcon(c, com.dshx.game.shidai.game.ArtIcon.equip(slot.id, e?.rarity ?: Rarity.COMMON), 46f, y + 23f, 30f, Palette.CYAN)
                 r.text(c, slot.cn, 68f, y + 28f, 13.5f, Palette.TEXT, true)
                 if (e == null) {
                     r.text(c, "未装备", w - 36f, y + 28f, 12f, Palette.TEXT_FAINT, false, Paint.Align.RIGHT)

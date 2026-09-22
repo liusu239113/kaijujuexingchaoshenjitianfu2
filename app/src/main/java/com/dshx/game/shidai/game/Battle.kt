@@ -121,6 +121,16 @@ class Battle(
             if (u.id == "player" && run.grid.slots.any { it?.passive == "shield_open" }) {
                 u.addShield(u.stats.maxHp * 0.2)
             }
+
+            // 装备机制词条的开场效果（旧版这些词条只显示、不生效）
+            if (u.id == "player") {
+                val mShield = RunService.mechanic(run, "m_shield")
+                if (mShield > 0.0) u.addShield(u.stats.maxHp * mShield)
+                val mGuard = RunService.mechanic(run, "m_guard")
+                if (mGuard > 0.0) u.addBuff(Buff("iron", "壁垒", 3, 1, mGuard, false))
+                val mHaste = RunService.mechanic(run, "m_haste")
+                if (mHaste > 0.0) u.energy = min(u.stats.energyMax, u.energy + mHaste)
+            }
         }
         for (e in enemies) {
             if (e.hasBuff("affix_shielded")) {
@@ -488,6 +498,15 @@ class Battle(
             else -> actor
         }
         resolveAction(actor, skill, t)
+        // 装备机制「双重施法」：按概率把同一招再放一次
+        if (!finished) {
+            val dbl = RunService.mechanic(run, "m_double")
+            if (dbl > 0.0 && Random.nextDouble() < dbl) {
+                addLog("装备机制 · 双重施法！")
+                addFloat("双重施法", 0xFFFFD166.toInt(), actor)
+                resolveAction(actor, skill, t)
+            }
+        }
         awaitingInput = false
         queueIdx++
         postAction(actor)
@@ -828,6 +847,11 @@ class Battle(
             isCrit = true
             raw *= 1.0 + attacker.stats.critDmg / 100.0
         }
+        // 装备机制「暴击爆裂」：暴击时按目标最大生命再额外结算一段
+        if (isCrit && attacker.id == "player") {
+            val burst = RunService.mechanic(run, "m_burst")
+            if (burst > 0.0) raw += target.stats.maxHp * burst
+        }
         // 天赋额外真伤
         if (attacker.id == "player" && dv?.passive == "divine_hand" && (skill?.isBasic == true)) {
             raw += attacker.stats.maxHp * 0.08
@@ -899,7 +923,12 @@ class Battle(
         u.shield = 0.0
         addLog("${u.name} 倒下了。")
         if (u.isEnemy) {
-            for (a in allies) if (a.alive) a.kills++
+            val mKill = RunService.mechanic(run, "m_kill")
+            for (a in allies) {
+                if (!a.alive) continue
+                a.kills++
+                if (mKill > 0.0) a.energy = min(a.stats.energyMax, a.energy + mKill)
+            }
             // 巫妖形态
             if (run.grid.slots.any { it?.passive == "kill_heal" }) {
                 val hero = allies.firstOrNull { it.id == "player" }

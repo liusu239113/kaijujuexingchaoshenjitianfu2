@@ -388,7 +388,8 @@ object TowerService {
         if (slots > 0 && Random.nextDouble() < 0.42) {
             e.affixes.add(Content.mechanicAffixes.random())
         }
-        if (rarity.rank >= 3 && Random.nextDouble() < 0.5) {
+        // 掉率 0.5 -> 0.62：套装改成真要凑 2 件才生效，得让玩家更容易凑齐
+        if (rarity.rank >= 3 && Random.nextDouble() < 0.62) {
             e.setId = Content.sets.random().id
         }
         return e
@@ -419,6 +420,10 @@ object TowerService {
             "hpRegen" -> (4.0 + Random.nextDouble() * 10.0) * mul * (1 + f * 0.1)
             "maxHp" -> (14.0 + Random.nextDouble() * 22.0) * mul * (1 + f * 0.16)
             "def" -> (2.0 + Random.nextDouble() * 4.0) * mul * (1 + f * 0.12)
+            // v1.2.0 新词条：百分比类，给 2~6（addStat 里会 /100）
+            "armorPen", "shieldPower", "healPower", "dmgBonus", "dmgReduction" ->
+                (2.0 + Random.nextDouble() * 4.0) * mul
+            "statusRes" -> (4.0 + Random.nextDouble() * 8.0) * mul
             else -> (4.0 + Random.nextDouble() * 7.0) * mul * (1 + f * 0.14)
         }
         return Affix(base.key, base.label, v)

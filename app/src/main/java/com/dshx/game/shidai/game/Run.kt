@@ -374,12 +374,17 @@ object RunService {
                 val e = run.equipped[slot.id] ?: continue
                 applyEquip(s, e)
             }
+
+            applySetBonuses(s, run.equipped.values)
         } else if (u.isPlayer) {
             // 佣兵：装备简化处理
+            val worn = ArrayList<Equip>()
             for (slot in Content.slots) {
                 val e = run.equipped[slot.id + "_" + u.id] ?: continue
                 applyEquip(s, e)
+                worn.add(e)
             }
+            applySetBonuses(s, worn)
         }
 
         // 事件永久加成
@@ -430,19 +435,62 @@ object RunService {
         val mul = e.enhanceMul
         addStat(s, e.mainKey, e.mainValue * mul, true)
         for (a in e.affixes) {
-            if (a.isMechanic) continue
+            if (a.isMechanic) {
+                // 机制词条：只有「生命窃取」能直接折算进面板；
+                // 其余（双重施法 / 开场护盾 / 暴击爆裂 / 击杀回能…）在 Battle 里按需读取，
+                // 见 RunService.mechanic()。
+                if (a.key == "m_leech") s.lifesteal += a.value
+                continue
+            }
             addStat(s, a.key, a.value * mul, true)
         }
-        if (e.setId != null) {
-            when (e.setId) {
+        // 套装不在单件里结算，改由 applySetBonuses 按件数统一算
+    }
+
+    /**
+     * 套装结算：按同一套装的件数触发 2 件 / 4 件效果。
+     * 旧实现是「每件带套装的装备各给一次加成」，1 件就能拿满，
+     * 和界面上写的「2 件：」对不上，也谈不上 4 件套的追求。
+     */
+    private fun applySetBonuses(s: Stats, worn: Collection<Equip>) {
+        val n = HashMap<String, Int>()
+        for (e in worn) e.setId?.let { n[it] = (n[it] ?: 0) + 1 }
+        for ((id, c) in n) {
+            if (c < 2) continue
+            when (id) {
                 "s_blade" -> { s.atk *= 1.12; s.crit += 8.0 }
                 "s_guard" -> { s.def *= 1.18; s.dmgReduction += 0.08 }
                 "s_arcane" -> { s.matk *= 1.14; s.energyRegen += 5.0 }
                 "s_life" -> { s.maxHp *= 1.16; s.hpRegen += s.maxHp * 0.02 }
                 "s_fate" -> { s.dodge += 10.0; s.critDmg += 30.0 }
+                "s_hunt" -> { s.atk *= 1.10; s.armorPen += 0.08 }
+                "s_blood" -> { s.lifesteal += 0.10; s.atk *= 1.08 }
+                "s_frost" -> { s.def *= 1.14; s.statusRes += 20.0 }
+                "s_storm" -> { s.energyRegen += 7.0; s.dodge += 8.0 }
+            }
+            if (c >= 4) when (id) {
+                "s_blade" -> s.critDmg += 45.0
+                "s_guard" -> s.maxHp *= 1.20
+                "s_arcane" -> s.dmgBonus += 0.20
+                "s_life" -> s.healPower += 0.35
+                "s_fate" -> { s.dodge += 10.0; s.critDmg += 30.0 }
+                "s_hunt" -> s.armorPen += 0.10
+                "s_blood" -> { s.lifesteal += 0.08; s.maxHp *= 1.12 }
+                "s_frost" -> s.dmgReduction += 0.10
+                "s_storm" -> s.atk *= 1.15
             }
         }
     }
+
+    /** 已穿戴装备上某个机制词条的数值合计（没穿就是 0）。 */
+    fun mechanic(run: RunState, key: String): Double {
+        var v = 0.0
+        for (e in run.equipped.values) for (a in e.affixes) if (a.key == key) v += a.value
+        return v
+    }
+
+    /** 身上同套装的件数（详情页用来展示 2/4 件进度）。 */
+    fun setCount(run: RunState, setId: String): Int = run.equipped.values.count { it.setId == setId }
 
     private fun addStat(s: Stats, key: String, value: Double, _flat: Boolean) {
         when (key) {
@@ -454,6 +502,13 @@ object RunService {
             "critDmg" -> s.critDmg += value
             "dodge" -> s.dodge += value
             "lifesteal" -> s.lifesteal += value / 100.0
+            // 下面这些都是 0~1 小数：装备词条给的是「8」这种整数百分比，必须 /100，
+            // 否则会算出 800% 破甲这种离谱值（被后面的 min 截断成上限，等于白给）。
+            "armorPen" -> s.armorPen += value / 100.0
+            "shieldPower" -> s.shieldPower += value / 100.0
+            "healPower" -> s.healPower += value / 100.0
+            "dmgBonus" -> s.dmgBonus += value / 100.0
+            "dmgReduction" -> s.dmgReduction += value / 100.0
             "energyRegen" -> s.energyRegen += value
             "hpRegen" -> s.hpRegen += value
             "statusRes" -> s.statusRes += value

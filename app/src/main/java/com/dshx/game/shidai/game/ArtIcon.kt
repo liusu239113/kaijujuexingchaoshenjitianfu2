@@ -36,6 +36,15 @@ object ArtIcon {
         else -> "ic_eq_ring"
     }
 
+    /**
+     * 装备图标（带品质）：传说及以上换成高阶外观，
+     * 让「换到一件好装备」在背包格子里就能一眼看出来。
+     */
+    fun equip(slot: String, rarity: Rarity): String {
+        val base = equip(slot)
+        return if (rarity.rank >= 4) base + "_hi" else base
+    }
+
     private val itemMap = mapOf(
         "heal_potion" to "ic_it_heal",
         "energy_potion" to "ic_it_energy",

@@ -4,7 +4,7 @@ class SlotDef(val id: String, val cn: String, val glyph: String, val mainKey: St
 
 class EnemyAffix(val id: String, val cn: String, val desc: String, val kind: String, val value: Double)
 
-class SetDef(val id: String, val cn: String, val desc: String)
+class SetDef(val id: String, val cn: String, val desc: String, val desc2: String = "")
 
 object Content {
 
@@ -68,39 +68,56 @@ object Content {
         Rarity.LEGENDARY to 3, Rarity.MYTHIC to 4, Rarity.HIDDEN to 5
     )
 
-    val namePrefix = listOf("曜辉", "晨曦", "虚渊", "绯月", "苍雷", "霜寂", "幽兰", "琥珀", "绯樱", "银霜", "曜日", "碧落")
+    val namePrefix = listOf(
+        "曜辉", "晨曦", "虚渊", "绯月", "苍雷", "霜寂", "幽兰", "琥珀", "绯樱", "银霜",
+        "曜日", "碧落", "烬火", "寒星", "暮影", "鸣泉", "岚羽", "陨铁", "流光", "星陨",
+        "赤曜", "青冥", "白露", "玄冰", "紫电", "灼华", "寂夜", "破晓", "长歌", "无相"
+    )
+
+    // v1.2.0 扩充：每部位后缀 4~5 -> 8，名字组合从约 60 种涨到 240 种
     val nameSuffix = mapOf(
-        "weapon" to listOf("长刃", "太刃", "星杖", "战镰", "双刃"),
-        "helmet" to listOf("冠冕", "面铠", "兜帽", "覆面"),
-        "chest" to listOf("战铠", "星袍", "轻铠", "胸铠"),
-        "amulet" to listOf("坠饰", "坠饰", "魂珠", "星牌"),
-        "ring" to listOf("指环", "戒印", "魂环", "誓约戒")
+        "weapon" to listOf("长刃", "太刃", "星杖", "战镰", "双刃", "裂空刃", "断岳刀", "逐星枪"),
+        "helmet" to listOf("冠冕", "面铠", "兜帽", "覆面", "龙盔", "星冠", "霜旌", "玄冕"),
+        "chest" to listOf("战铠", "星袍", "轻铠", "胸铠", "龙鳞铠", "曜金甲", "冥铁衣", "云纹袍"),
+        "amulet" to listOf("坠饰", "魂珠", "星牌", "命绳", "龙牙坠", "星辰链", "血玉牌", "幽兰佩"),
+        "ring" to listOf("指环", "戒印", "魂环", "誓约戒", "龙纹戒", "星辉环", "血契戒", "幽影环")
     )
 
     val affixPool = listOf(
         Affix("atk", "攻击", 0.0), Affix("matk", "法强", 0.0), Affix("maxHp", "生命", 0.0),
         Affix("def", "防御", 0.0), Affix("crit", "暴击", 0.0), Affix("critDmg", "暴伤", 0.0),
         Affix("dodge", "闪避", 0.0), Affix("lifesteal", "吸血", 0.0), Affix("energyRegen", "回能", 0.0),
-        Affix("hpRegen", "回血", 0.0)
+        Affix("hpRegen", "回血", 0.0),
+        // v1.2.0 新增：这 6 条以前只能靠天赋/套装拿，现在装备也能堆
+        Affix("statusRes", "状态抗性", 0.0), Affix("armorPen", "破甲", 0.0),
+        Affix("shieldPower", "护盾强度", 0.0), Affix("healPower", "治疗强度", 0.0),
+        Affix("dmgBonus", "增伤", 0.0), Affix("dmgReduction", "减伤", 0.0)
     )
 
+    // 重要：下面每一条都在战斗里有真实实现（见 Battle.kt 的 m_* 与 Run.kt 的 applyEquip）。
+    // 旧版这 8 条只显示不生效 —— 玩家看到「双重施法 15%」却什么也没发生。
     val mechanicAffixes = listOf(
         Affix("m_double", "双重施法 15%", 0.15, true),
-        Affix("m_combo", "连击叠层", 1.0, true),
         Affix("m_shield", "被动护盾 20%", 0.20, true),
         Affix("m_leech", "生命窃取 8%", 0.08, true),
         Affix("m_burst", "暴击爆裂 3%", 0.03, true),
-        Affix("m_spread", "灼烧蔓延 20%", 0.20, true),
         Affix("m_kill", "击杀回能 +15", 15.0, true),
-        Affix("m_riposte", "闪避反击 80%", 0.80, true)
+        Affix("m_guard", "开场壁垒 15%", 0.15, true),
+        Affix("m_haste", "开场回能 +25", 25.0, true)
     )
 
+    // v1.2.0：5 套 -> 9 套，并补上 4 件套效果。
+    // desc 是 2 件套 —— 要真的凑满 2 件才生效（见 RunService.applySetBonuses）。
     val sets = listOf(
-        SetDef("s_blade", "裂星之仪", "2 件：攻击 +12%，暴击 +8%"),
-        SetDef("s_guard", "磐壁誓约", "2 件：防御 +18%，受到伤害 -8%"),
-        SetDef("s_arcane", "星轨回廊", "2 件：法强 +14%，能量回复 +5"),
-        SetDef("s_life", "生机摇篮", "2 件：最大生命 +16%，每回合回复 2%"),
-        SetDef("s_fate", "命途纺线", "2 件：闪避 +10%，暴击增伤 +30%")
+        SetDef("s_blade", "裂星之仪", "2 件：攻击 +12%，暴击 +8%", "4 件：暴击伤害 +45%"),
+        SetDef("s_guard", "磐壁誓约", "2 件：防御 +18%，受到伤害 -8%", "4 件：最大生命 +20%"),
+        SetDef("s_arcane", "星轨回廊", "2 件：法强 +14%，能量回复 +5", "4 件：增伤 +20%"),
+        SetDef("s_life", "生机摇篮", "2 件：最大生命 +16%，每回合回复 2%", "4 件：治疗强度 +35%"),
+        SetDef("s_fate", "命途纺线", "2 件：闪避 +10%，暴击增伤 +30%", "4 件：闪避 +10%，暴伤 +30%"),
+        SetDef("s_hunt", "逐星猎约", "2 件：攻击 +10%，破甲 +8%", "4 件：破甲 +10%"),
+        SetDef("s_blood", "绯色血契", "2 件：吸血 +10%，攻击 +8%", "4 件：吸血 +8%，生命 +12%"),
+        SetDef("s_frost", "霜寂守望", "2 件：防御 +14%，状态抗性 +20", "4 件：受到伤害 -10%"),
+        SetDef("s_storm", "苍雷疾行", "2 件：能量回复 +7，闪避 +8%", "4 件：攻击 +15%")
     )
 
     // ---------------------------------------------------------------- 道具
