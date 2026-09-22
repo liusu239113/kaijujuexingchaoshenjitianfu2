@@ -3,8 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -12,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Assemble APK
+    name: Assemble Release APK
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -31,19 +29,34 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build debug + release APK
-        run: ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
+      # 正式签名：keystore 不进仓库，由 Secrets 里的 base64 在构建机上还原
+      - name: Decode release keystore
+        run: |
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "::error::缺少 KEYSTORE_BASE64 Secret，无法签名正式包"
+            exit 1
+          fi
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+          ls -la "$RUNNER_TEMP/release.jks"
 
-      - name: Collect APKs
+      - name: Build release APK
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Collect APK
         run: |
           mkdir -p out
-          find app/build/outputs/apk -name '*.apk' -exec cp {} out/ \;
+          find app/build/outputs/apk/release -name '*.apk' -exec cp {} out/ \;
           ls -la out
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kaiju-apk
+          name: shidai-apk
           path: out/*.apk
           if-no-files-found: error
           retention-days: 90
@@ -55,7 +68,7 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: APK build ${{ github.run_number }}
           body: |
-            Automated APK build from commit ${{ github.sha }}.
+            Automated release build from commit ${{ github.sha }}.
           files: out/*.apk
           draft: false
           prerelease: false
