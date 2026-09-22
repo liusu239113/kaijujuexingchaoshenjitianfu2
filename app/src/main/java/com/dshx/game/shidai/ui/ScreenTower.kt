@@ -22,9 +22,10 @@ internal fun GameView.drawTowerScreen(c: Canvas) {
     hx = statChip(c, AI.GOLD, "💰", "${p.gold}", hx, 86f, 13f, Palette.GOLD)
     statChip(c, AI.SKILL_POINT, "✨", "${p.skillPoints}", hx, 86f, 13f, Palette.GOLD)
 
+    // 回廊入口已移到底部导航栏：右上角那个按钮又小又贴着边，玩家普遍找不到。
+    // 这里只剩「天赋 / 面板」两个面板快捷键，右侧对齐。
     val navY = 22f
     val bw = 62f
-    ghostButton(c, "tower_menu", "回廊", w - bw * 3f - 30f, navY, bw, 34f, Palette.TEXT_DIM)
     ghostButton(c, "tower_panel_talents", "天赋", w - bw * 2f - 22f, navY, bw, 34f, Palette.CYAN)
     ghostButton(c, "tower_panel_attrs", "面板", w - bw - 14f, navY, bw, 34f, Palette.PINK)
     val healUsed = healAdFloor == p.floor
@@ -197,7 +198,9 @@ private fun GameView.drawBottomNav(c: Canvas) {
         Triple("tower_panel_equip", "装备", p.equipped.size.toString()),
         Triple("tower_panel_skills", "战技", p.skillPoints.toString()),
         Triple("tower_panel_items", "道具", p.items.values.sum().toString()),
-        Triple("tower_panel_merc", "佣兵", (p.party.size - 1).toString()),
+        // 「佣兵」格子换成「回廊」：回廊前厅是本作的中枢，藏进右上角没人找得到，
+        // 放在底栏才是符合习惯的位置。伙伴管理仍可从回廊前厅的「伙伴」进入。
+        Triple("tower_hub", "回廊", ""),
         Triple("tower_panel_settings", "设定", "")
     )
     val cw = (w - 24f) / items.size
@@ -205,7 +208,9 @@ private fun GameView.drawBottomNav(c: Canvas) {
         val x = 12f + cw * i
         val label = items[i].second
         val badge = items[i].third
-        r.text(c, label, x + cw / 2f, y + 44f, 13f, Palette.TEXT_DIM, true, Paint.Align.CENTER)
+        // 回廊是「离开当前界面」，和另外几个「打开浮层」不是一类操作，用暖色点出来
+        val labelCol = if (items[i].first == "tower_hub") Palette.PINK else Palette.TEXT_DIM
+        r.text(c, label, x + cw / 2f, y + 44f, 13f, labelCol, true, Paint.Align.CENTER)
         if (badge.isNotEmpty() && badge != "0") {
             // 徽章要贴住文字右侧、又不能越出自己这一格。
             // 旧实现固定在 x + cw/2 + 12，格子只有 62.7 宽时会溢到隔壁格子上。
@@ -222,7 +227,7 @@ private fun GameView.drawBottomNav(c: Canvas) {
 
 internal fun GameView.tapTower(id: String) {
     when {
-        id == "tower_menu" -> {
+        id == "tower_hub" -> {
             screen = GameView.Screen.HUB
             Save.saveRun(context, run, perm)
         }
@@ -283,30 +288,31 @@ internal fun GameView.drawShopOverlay(c: Canvas) {
     r.text(c, "道具商店", w / 2f, 140f, 22f, Palette.CYAN, true, Paint.Align.CENTER)
     r.text(c, "金币 ${run?.gold ?: 0}", w / 2f, 164f, 13f, Palette.GOLD, false, Paint.Align.CENTER)
     val p = run ?: return
-    var y = 186f
+    var y = 178f
     for (i in shopStock.indices) {
         val it = shopStock[i]
         val afford = p.gold >= it.price
-        card(c, 40f, y, w - 80f, 76f, if (afford) r.withAlpha(Palette.BORDER, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 14f)
-        drawIcon(c, com.dshx.game.shidai.game.ArtIcon.item(it.id), 62f, y + 38f, 42f, Palette.CYAN)
-        r.text(c, it.name, 96f, y + 30f, 15f, Palette.TEXT, true)
-        // 描述必须避开右侧价格（价格右对齐于 w-60），否则长描述会铺到价格底下
-        r.wrapClamp(c, it.desc, 96f, y + 52f, w - 200f, 11f, Palette.TEXT_DIM, 14f, 1)
-        priceRight(c, "${it.price}", AI.GOLD, "💰", w - 60f, y + 44f, 14f,
+        card(c, 40f, y, w - 80f, 72f, if (afford) r.withAlpha(Palette.BORDER, 190) else r.withAlpha(Palette.BORDER_SOFT, 120), 14f)
+        drawIcon(c, com.dshx.game.shidai.game.ArtIcon.item(it.id), 62f, y + 36f, 40f, Palette.CYAN)
+        r.text(c, it.name, 94f, y + 26f, 14.5f, Palette.TEXT, true)
+        r.wrapClamp(c, it.desc, 94f, y + 46f, w - 244f, 10.5f, Palette.TEXT_DIM, 13f, 1)
+        priceRight(c, "${it.price}", AI.GOLD, "💰", w - 142f, y + 30f, 12.5f,
             if (afford) Palette.GOLD else Palette.RED)
-        hit("shop_buy_$i", 40f, y, w - 80f, 76f).enabled = afford
-        y += 84f
+        // 旧版整行挂了个隐形热区，界面上只有一行价格，
+        // 玩家看不出「这里能买」——反馈就是「只能看不能买」。补一颗真按钮。
+        button(c, "shop_buy_$i", "购买", w - 118f, y + 20f, 62f, 32f, Palette.GOLD, afford)
+        y += 78f
     }
     val goldGain = 80 + (run?.floor ?: 1) * 20
     ghostButton(
         c, "shop_ad_gold",
         if (shopGoldClaimed) "已领取（本次已用）" else "看广告 · 领 $goldGain 金币",
-        40f, h - 210f, w - 80f, 44f, if (shopGoldClaimed) Palette.TEXT_FAINT else Palette.GOLD
+        40f, h - 206f, w - 80f, 42f, if (shopGoldClaimed) Palette.TEXT_FAINT else Palette.GOLD
     )
     ghostButton(
         c, "shop_ad_refresh",
         if (shopAdRefreshed) "已刷新（本次已用）" else "看广告 · 免费刷新商品",
-        40f, h - 154f, w - 80f, 44f, if (shopAdRefreshed) Palette.TEXT_FAINT else Palette.GREEN
+        40f, h - 158f, w - 80f, 42f, if (shopAdRefreshed) Palette.TEXT_FAINT else Palette.GREEN
     )
     ghostButton(c, "shop_close", "离开商铺", 40f, h - 96f, w - 80f, 52f, Palette.TEXT_DIM)
 }

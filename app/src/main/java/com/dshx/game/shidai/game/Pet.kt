@@ -98,6 +98,43 @@ object Pets {
     /** 等级加成倍率：Lv.1 为 1.0，每级 +8%。 */
     fun levelMul(lv: Int): Double = 1.0 + (maxOf(1, lv) - 1) * 0.08
 
+    // ------------------------------------------------------------ 参战与培养
+
+    /** 培养等级上限。 */
+    const val TRAIN_MAX = 30
+
+    /** 从 [lv] 升到 lv+1 所需星尘：越往后越贵，并按稀有度加权。 */
+    fun trainCost(p: PetDef, lv: Int): Int = (40 + lv * 26) * p.rarity.rank
+
+    /**
+     * 参战基础攻击。每只宠物都带这一招 —— 队列里的单位必须有技能，
+     * 否则 chooseSkill() 取不到任何可用技能会直接抛异常。
+     */
+    val basicSkill: Skill = Skill(
+        "pet_rend", "撕咬", "pet", 0, 0, 1, "atk", 1.15, TargetKind.ENEMY_ONE,
+        "撕咬一名敌人，造成 115% 宠物攻击伤害。", listOf(Tag.DAMAGE), 1, false,
+        0, 1, 0, 0.0, "energy20"
+    )
+
+    /** 本命技：按助战定位给第二招，让不同宠物打起来手感不同。 */
+    fun signature(p: PetDef): Skill = when (p.passive) {
+        "open_shield", "regen" -> Skill(
+            "pet_guard", "兽灵庇护", "pet", 26, 3, 1, "matk", 1.25, TargetKind.ALLY_ALL,
+            "为全队回复 125% 宠物法强生命，并附加 60% 法强护盾。",
+            listOf(Tag.HEAL, Tag.SHIELD), 1, false, 0, 1, 0, 0.0, null
+        )
+        "dot", "open_dmg", "elite_hunter" -> Skill(
+            "pet_pounce", "扑杀", "pet", 28, 2, 1, "atk", 2.15, TargetKind.ENEMY_ONE,
+            "扑倒一名敌人，造成 215% 宠物攻击伤害。", listOf(Tag.DAMAGE), 1, false,
+            0, 1, 0, 0.0, null
+        )
+        else -> Skill(
+            "pet_bolt", "灵能冲击", "pet", 30, 3, 1, "matk", 1.35, TargetKind.ENEMY_ALL,
+            "对全体敌人造成 135% 宠物法强伤害。", listOf(Tag.DAMAGE), 1, false,
+            0, 1, 0, 0.0, null
+        )
+    }
+
     // ------------------------------------------------------------ 召唤（卡池）
 
     /** 常驻池各星级权重。 */

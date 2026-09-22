@@ -38,10 +38,10 @@ object Promotions {
         sk("el_ice_prison", "凝霜", "elementalist", 24, 3, 1, "matk", 1.3, TargetKind.ENEMY_ONE, "造成 130% 法强伤害并眩晕 1 回合。", listOf(Tag.DAMAGE, Tag.STUN), buffDur = 1),
 
         // ================= 一转 · 岚射手 =================
-        sk("mk_aimed_shot", "瞄准岚射", "marksman", 26, 2, 1, "atk", 2.1, TargetKind.ENEMY_ONE, "造成 210% 攻击伤害，无视 40% 防御。", listOf(Tag.DAMAGE), extra = "pen40"),
+        sk("mk_aimed_shot", "瞄准岚射", "marksman", 26, 2, 1, "atk", 1.85, TargetKind.ENEMY_ONE, "造成 185% 攻击伤害，并附加 3 层破甲（防御 -30%）。", listOf(Tag.DAMAGE, Tag.ARMOR_BREAK), buffDur = 3, buffStacks = 3),
         sk("mk_rapid_fire", "岚矢连射", "marksman", 28, 3, 1, "atk", 0.85, TargetKind.ENEMY_ONE, "连射 4 次，每次 85% 攻击伤害。", listOf(Tag.DAMAGE), hits = 4),
         sk("bm_feral_strike", "兽灵突袭", "beastmaster", 24, 2, 1, "atk", 1.7, TargetKind.ENEMY_ONE, "造成 170% 攻击伤害并附加 3 层破甲。", listOf(Tag.DAMAGE, Tag.ARMOR_BREAK), buffDur = 3, buffStacks = 3),
-        sk("bm_natures_blessing", "森灵祝福", "beastmaster", 26, 4, 1, "atk", 0.25, TargetKind.ALLY_ALL, "全体队友攻击与法强 +25%，持续 3 回合。", listOf(Tag.BUFF_ATK), buffDur = 3),
+        sk("bm_natures_blessing", "森灵祝福", "beastmaster", 26, 4, 1, "atk", 0.18, TargetKind.ALLY_ALL, "全体攻击 +18%，且每回合回复 6% 生命，持续 4 回合。", listOf(Tag.BUFF_ATK, Tag.BUFF_REGEN), buffDur = 4),
 
         // ================= 一转 · 圣歌使 =================
         sk("bp_greater_heal", "至臻疗愈", "bishop", 28, 2, 1, "matk", 2.2, TargetKind.ALLY_ONE, "为生命最低队友恢复 220% 法强生命。", listOf(Tag.HEAL)),

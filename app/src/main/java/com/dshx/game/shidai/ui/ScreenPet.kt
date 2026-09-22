@@ -36,15 +36,15 @@ internal fun GameView.drawPetScreen(c: Canvas) {
     var y = beginScroll(c, 112f)
 
     // ---- 召唤入口 ----
-    card(c, 18f, y, w - 36f, 92f, r.withAlpha(Palette.GOLD, 200), 16f)
-    r.text(c, "宠 物 召 唤", 34f, y + 30f, 16f, Palette.GOLD, true)
-    r.text(c, "宠缘券只能看广告获得 · 单抽 " + Pets.COST_SINGLE + " 券 · 十连 " + Pets.COST_TEN + " 券", 34f, y + 52f, 11f, Palette.TEXT_DIM)
-    r.text(
-        c, "保底 " + perm.petPity + "/" + Pets.PITY_LIMIT + "（满则必出灿烂以上）",
-        34f, y + 72f, 10f, Palette.TEXT_FAINT
-    )
-    button(c, "pet_gacha_open", "前 往 召 唤", w - 146f, y + 24f, 114f, 44f, Palette.GOLD)
-    y += 104f
+    card(c, 18f, y, w - 36f, 108f, r.withAlpha(Palette.GOLD, 200), 16f)
+    r.text(c, "宠 物 召 唤", 34f, y + 28f, 16f, Palette.GOLD, true)
+    // 三行短文案，全部收在按钮左沿（w-146）之外：
+    // 旧版是一整行长句铺到屏幕右边，被「前往召唤」按钮压掉一半。
+    r.text(c, "宠缘券只能看广告获得", 34f, y + 50f, 10.5f, Palette.TEXT_DIM)
+    r.text(c, "单抽 " + Pets.COST_SINGLE + " 券 · 十连 " + Pets.COST_TEN + " 券", 34f, y + 68f, 10.5f, Palette.TEXT_DIM)
+    r.text(c, "保底 " + perm.petPity + "/" + Pets.PITY_LIMIT + " · 满则必出灿烂以上", 34f, y + 88f, 10f, Palette.TEXT_FAINT)
+    button(c, "pet_gacha_open", "前 往 召 唤", w - 146f, y + 30f, 114f, 44f, Palette.GOLD)
+    y += 120f
 
     // ---- 图鉴网格 ----
     val cols = 3
@@ -93,15 +93,32 @@ internal fun GameView.drawPetScreen(c: Canvas) {
         y += 74f
     } else {
         val rc = rarityColor(cur.rarity)
-        card(c, 18f, y, w - 36f, 108f, Palette.GOLD, 12f)
+        val lvNow = perm.petLevel(cur.id)
+        card(c, 18f, y, w - 36f, 176f, Palette.GOLD, 12f)
         drawPortrait(c, cur.avatar, 66f, y + 54f, 74f, Palette.GOLD)
-        r.text(c, cur.name + "   Lv." + perm.petLevel(cur.id), 112f, y + 32f, 15f, Palette.TEXT, true)
-        r.text(c, cur.rarity.cn + " · " + cur.role, 112f, y + 52f, 11f, rc)
+        r.text(c, cur.name + "   Lv." + lvNow, 112f, y + 32f, 15f, Palette.TEXT, true)
+        r.text(c, cur.rarity.cn + " · " + cur.role + " · 会随队出战", 112f, y + 52f, 11f, rc)
         r.wrapClamp(c, cur.desc, 112f, y + 72f, w - 152f, 11f, Palette.TEXT_DIM, 15f, 2)
-        y += 120f
+        // 参战说明：玩家反馈「明明看见出击了，战斗里却找不到它」
+        r.text(c, "出战后作为独立单位上场 · 能攻击敌人 · 一次只能带一只", 34f, y + 112f, 10.5f, Palette.CYAN)
+        r.text(c, "培养：每级全队加成 +8%，参战属性同步提升", 34f, y + 130f, 10.5f, Palette.TEXT_DIM)
+        if (lvNow < Pets.TRAIN_MAX) {
+            val tcost = Pets.trainCost(cur, lvNow)
+            r.text(
+                c, "需要 " + tcost + " 星尘（持有 " + perm.dust + "）", 34f, y + 150f, 10.5f,
+                if (perm.dust >= tcost) Palette.GOLD else Palette.RED
+            )
+            ghostButton(c, "pet_train", "升 到 Lv." + (lvNow + 1), w - 172f, y + 132f, 136f, 34f, Palette.GOLD)
+        } else {
+            r.text(c, "已满级 Lv." + Pets.TRAIN_MAX, 34f, y + 150f, 10.5f, Palette.GOLD)
+        }
+        y += 188f
         ghostButton(c, "pet_off", "取 消 出 击", UiKit.MARGIN, y, contentW(), 42f, Palette.TEXT_DIM)
         y += 52f
     }
+    // 末尾留白：否则滚到底时最后一行正好卡在「返 回」按钮后面，
+    // 截图里最下面一排宠物的「未获得」就是这么被切掉的。
+    y += 76f
     endScroll(c, y)
     ghostButton(c, "pet_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 46f, Palette.TEXT_DIM)
 }
@@ -113,6 +130,27 @@ internal fun GameView.tapPet(id: String) {
             perm.petId = null
             Save.savePerm(context, perm)
             showToast("已取消出击宠物")
+        }
+        // 培养：花星尘升级，直接抬全队加成与参战属性（RunService 里按 levelMul 生效）
+        id == "pet_train" -> {
+            val cur = Pets.of(perm.petId) ?: return
+            val lv = perm.petLevel(cur.id)
+            if (lv >= Pets.TRAIN_MAX) {
+                showToast("已经满级了")
+                return
+            }
+            val cost = Pets.trainCost(cur, lv)
+            if (perm.dust < cost) {
+                audio.play("error")
+                showToast("星尘不足（需要 " + cost + "，持有 " + perm.dust + "）")
+                return
+            }
+            perm.dust -= cost
+            perm.petLevels[cur.id] = lv + 1
+            Save.savePerm(context, perm)
+            run?.let { com.dshx.game.shidai.game.RunService.recalcAll(it, perm) }
+            audio.play("starup")
+            showToast(cur.name + " 升到 Lv." + (lv + 1))
         }
         id == "pet_gacha_open" -> {
             petPullResults = emptyList()

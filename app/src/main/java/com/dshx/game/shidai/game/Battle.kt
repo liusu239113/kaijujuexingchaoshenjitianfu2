@@ -58,6 +58,49 @@ class Battle(
             u.energy = min(u.energy, u.stats.energyMax)
             if (u.hp <= 0.0) u.hp = u.stats.maxHp * 0.5
         }
+        // 宠物参战：出击宠物是一个真正的友方单位 —— 进队列、有技能、会挨打。
+        // 旧版它只是开场给个 buff 的挂件（外加我方行右上角一行 15px 小字），
+        // 玩家看到「出击」却从没在战场里见过它。
+        perm.petId?.let { pid ->
+            val petDef = Pets.of(pid)
+            if (petDef != null) {
+                val host = run.party.firstOrNull()
+                val pl = perm.petLevel(petDef.id)
+                val lm = Pets.levelMul(pl)
+                val rm = 0.85 + (petDef.rarity.rank - 1) * 0.09
+                val pu = Unit(
+                    id = "pet",
+                    name = petDef.name,
+                    isPlayer = true,
+                    clsId = "pet",
+                    level = pl,
+                    rarity = petDef.rarity,
+                    avatarKey = petDef.avatar
+                )
+                if (host != null) {
+                    pu.base.maxHp = max(120.0, host.stats.maxHp * 0.40 * rm * lm)
+                    pu.base.atk = max(12.0, max(host.stats.atk, host.stats.matk) * 0.52 * rm * lm)
+                    pu.base.matk = pu.base.atk * 1.05
+                    pu.base.def = max(2.0, host.stats.def * 0.45 * rm)
+                }
+                pu.base.crit = 8.0 + petDef.rarity.rank * 2.0
+                pu.base.critDmg = 55.0
+                pu.base.energyRegen = 22.0
+                pu.stats.maxHp = pu.base.maxHp
+                pu.stats.atk = pu.base.atk
+                pu.stats.matk = pu.base.matk
+                pu.stats.def = pu.base.def
+                pu.stats.crit = pu.base.crit
+                pu.stats.critDmg = pu.base.critDmg
+                pu.stats.energyRegen = pu.base.energyRegen
+                pu.hp = pu.stats.maxHp
+                pu.energy = 0.0
+                pu.skills.add(Pets.basicSkill)
+                pu.skills.add(Pets.signature(petDef))
+                allies.add(pu)
+                addLog("宠物【" + petDef.name + "】加入战场。")
+            }
+        }
         buildEnemies()
         // 开场护盾类被动
         // 宠物开场效果
@@ -490,7 +533,28 @@ class Battle(
                 applyDamage(e, e.stats.maxHp * 0.18, null, 0xFFB9A6FF.toInt())
                 e.addBuff(Buff("weaken", "虚弱", 3, 1, 0.20, true))
             }
+            "war_brew" -> allies.forEach { if (it.alive) it.addBuff(Buff("atk_up", "破军", 3, 1, 0.45, false)) }
+            "thorn_scroll" -> allies.forEach {
+                if (it.alive) {
+                    it.heal(it.stats.maxHp * 0.15)
+                    it.addBuff(Buff("leech", "荆棘", 3, 1, 0.25, false))
+                }
+            }
+            "gale_potion" -> allies.forEach {
+                if (it.alive) {
+                    it.energy = min(it.stats.energyMax, it.energy + 45)
+                    it.addBuff(Buff("evasion", "疾风", 3, 1, 0.18, false))
+                }
+            }
+            "mithril_bandage" -> allies.forEach { if (it.alive) it.addBuff(Buff("regen_pct", "秘银", 4, 1, 0.07, false)) }
+            "star_brew" -> allies.forEach {
+                if (it.alive) {
+                    it.energy = it.stats.energyMax
+                    it.addShield(it.stats.maxHp * 0.25)
+                }
+            }
             "star_fragment" -> {
+            // star_fragment 的分支在下面（需要觉醒逻辑），这里只做前插，顺序不影响 when
                 val opt = DraftService.roll(run, perm, 1).firstOrNull()
                 if (opt != null) {
                     DraftService.place(run, opt, -1)

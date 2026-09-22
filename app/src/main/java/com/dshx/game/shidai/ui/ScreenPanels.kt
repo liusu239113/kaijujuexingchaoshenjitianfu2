@@ -189,30 +189,79 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
         "attrs" -> {
             if (p == null) { c.restore(); clearHitClip(); return }
             val hero = p.hero()
-            val rows = listOf(
-                "生命" to "${hero.stats.maxHp.toInt()}",
-                "攻击" to "${hero.stats.atk.toInt()}",
-                "法强" to "${hero.stats.matk.toInt()}",
-                "防御" to "${hero.stats.def.toInt()}",
-                "暴击" to "${hero.stats.crit.toInt()}%",
-                "暴伤" to "${hero.stats.critDmg.toInt()}%",
-                "闪避" to "${hero.stats.dodge.toInt()}%",
-                "回能" to "${hero.stats.energyRegen.toInt()}",
-                "吸血" to "${(hero.stats.lifesteal * 100).toInt()}%",
-                "减伤" to "${(hero.stats.dmgReduction * 100).toInt()}%",
-                "增伤" to "${(hero.stats.dmgBonus * 100).toInt()}%",
-                "破甲" to "${(hero.stats.armorPen * 100).toInt()}%",
-                "状态抗性" to "${hero.stats.statusRes.toInt()}"
+            val col = classColor(p.classId)
+
+            // ---- 身份卡：立绘 + 名字 / 职阶 / 转职链 ----
+            // 旧版这一屏只有一列光秃秃的数字，玩家认不出「这是谁」。
+            // 立绘是这一屏最该有的东西：同一套 drawPortrait，跟前厅/编成页一致。
+            val headH = r.lh(152f)
+            card(c, 24f, y, w - 48f, headH, col, 16f)
+            drawPortrait(c, hero.avatarKey.ifEmpty { p.classId }, 24f + headH * 0.42f, y + headH / 2f, headH * 0.74f, col)
+            val tx = 24f + headH * 0.86f
+            r.text(c, hero.name, tx, y + 38f, 19f, Palette.TEXT, true)
+            r.text(c, "Lv." + p.level + "   " + (Data.classById[p.classId]?.name ?: ""), tx, y + 60f, 12f, Palette.CYAN)
+            val promos = RunService.promotionOf(p)
+            val chain = if (promos.isEmpty()) "尚未转职" else promos.joinToString(" → ") { it.name }
+            r.wrapClamp(c, chain, tx, y + 80f, w - 48f - (tx - 24f) - 14f, 11f, Palette.GOLD, 15f, 2)
+            r.text(
+                c, "最高 " + perm.bestFloor + " 层 · 轮回 " + perm.totalRuns + " 次 · 神格环 " + p.grid.resonanceBonus().label(),
+                tx, y + headH - 16f, 10f, Palette.TEXT_FAINT
             )
-            val colW = (w - 72f) / 2f
-            for (i in rows.indices) {
-                val cx = 36f + (i % 2) * colW
-                val cy = y + (i / 2) * 34f
-                r.text(c, rows[i].first, cx, cy + 20f, 12f, Palette.TEXT_DIM)
-                r.text(c, rows[i].second, cx + colW - 14f, cy + 20f, 13.5f, Palette.TEXT, true, Paint.Align.RIGHT)
+            y += headH + 10f
+
+            // ---- 核心三围：一眼能看完的三个大数 ----
+            val coreLabels = listOf("生命", "攻击", "防御")
+            val coreVals = listOf("" + hero.stats.maxHp.toInt(), "" + hero.stats.atk.toInt(), "" + hero.stats.def.toInt())
+            val coreCols = listOf(Palette.GREEN, Palette.RED, Palette.CYAN)
+            val cw3 = (w - 48f - 16f) / 3f
+            for (i in coreLabels.indices) {
+                val cx = 24f + i * (cw3 + 8f)
+                card(c, cx, y, cw3, r.lh(64f), r.withAlpha(coreCols[i], 170), 12f)
+                r.text(c, coreLabels[i], cx + cw3 / 2f, y + r.lh(24f), 11f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+                r.text(c, coreVals[i], cx + cw3 / 2f, y + r.lh(50f), 18f, coreCols[i], true, Paint.Align.CENTER)
             }
-            y += ((rows.size + 1) / 2) * 34f + 8f
-            r.text(c, "共鸣：" + p.grid.resonanceBonus().label() + " · " + (Data.classById[p.classId]?.name ?: ""), 36f, y + 16f, 12f, Palette.CYAN, true)
+            y += r.lh(64f) + 12f
+
+            // ---- 分组明细：输出 / 生存 / 资源 ----
+            // 13 条属性平铺成两列时没有任何层次，找一条要在两列之间来回扫。
+            // 按用途分三组，每组一张卡 + 一个图标，扫读成本低很多。
+            val gTitles = listOf("输出", "生存", "资源")
+            val gIcons = listOf("ic_sk_slash", "ic_sk_shield", "ic_sk_magic")
+            val gCols = listOf(Palette.RED, Palette.GREEN, Palette.CYAN)
+            val gRows = listOf(
+                listOf(
+                    "攻击" to "" + hero.stats.atk.toInt(), "法强" to "" + hero.stats.matk.toInt(),
+                    "暴击" to "" + hero.stats.crit.toInt() + "%", "暴伤" to "" + hero.stats.critDmg.toInt() + "%",
+                    "增伤" to "" + (hero.stats.dmgBonus * 100).toInt() + "%", "破甲" to "" + (hero.stats.armorPen * 100).toInt() + "%"
+                ),
+                listOf(
+                    "生命" to "" + hero.stats.maxHp.toInt(), "防御" to "" + hero.stats.def.toInt(),
+                    "闪避" to "" + hero.stats.dodge.toInt() + "%", "减伤" to "" + (hero.stats.dmgReduction * 100).toInt() + "%",
+                    "状态抗性" to "" + hero.stats.statusRes.toInt(), "吸血" to "" + (hero.stats.lifesteal * 100).toInt() + "%"
+                ),
+                listOf(
+                    "回能" to "" + hero.stats.energyRegen.toInt(),
+                    "神格增伤" to "+" + (p.grid.resonanceBonus().damage * 100).toInt() + "%",
+                    "神格生命" to "+" + (p.grid.resonanceBonus().hp * 100).toInt() + "%"
+                )
+            )
+            for (gi in gTitles.indices) {
+                val list = gRows[gi]
+                val rowsN = (list.size + 1) / 2
+                val gh = r.lh(52f + 34f * rowsN)
+                card(c, 24f, y, w - 48f, gh, r.withAlpha(gCols[gi], 170), 12f)
+                drawIcon(c, gIcons[gi], 48f, y + 26f, 26f, gCols[gi])
+                r.text(c, gTitles[gi], 70f, y + 31f, 14f, gCols[gi], true)
+                val cw2 = (w - 48f - 30f) / 2f
+                for (i in list.indices) {
+                    val cx = 40f + (i % 2) * cw2
+                    val cy = y + r.lh(72f + 34f * (i / 2))
+                    r.text(c, list[i].first, cx, cy, 11.5f, Palette.TEXT_DIM)
+                    r.text(c, list[i].second, cx + cw2 - 16f, cy, 13f, Palette.TEXT, true, Paint.Align.RIGHT)
+                }
+                y += gh + 10f
+            }
+            y += 4f
         }
         "items" -> {
             if (p == null) { c.restore(); clearHitClip(); return }
@@ -225,6 +274,7 @@ internal fun GameView.drawPanelOverlay(c: Canvas) {
                 hit("panel_item_" + it.id, 36f, y, w - 72f, r.lh(62f))
                 y += r.lh(70f)
             }
+            y += 64f
         }
         "merc" -> {
             if (p == null) { c.restore(); clearHitClip(); return }
@@ -397,16 +447,10 @@ internal fun GameView.tapPanel(id: String) {
             TowerService.autoEquipUpgrades(p, perm)
             showToast("已自动装备更强的装备")
         }
-        id.startsWith("panel_equip_") -> {
-            val idx = id.removePrefix("panel_equip_").toIntOrNull() ?: return
-            val e = p.bag.getOrNull(idx) ?: return
-            val cur = p.equipped[e.slot]
-            p.bag.removeAt(idx)
-            p.equipped[e.slot] = e
-            if (cur != null) p.bag.add(cur)
-            RunService.recalcAll(p, perm)
-            showToast("已装备 ${e.name}")
-        }
+            // 旧实现在这里截了 panel_equip_<槽位>，却按数组下标去 toIntOrNull()，
+            // 槽位是 weapon/helmet 这类字符串 -> 永远解析失败直接 return，
+            // 于是「装备页点装备」永远没反应（下面那条 handleLongPress 分支根本轮不到）。
+            // 从行囊换装走的是 panel_bag_equip，这里只负责看详情。
         id.startsWith("panel_enhance_") -> {
             val slot = id.removePrefix("panel_enhance_")
             val e = p.equipped[slot] ?: return

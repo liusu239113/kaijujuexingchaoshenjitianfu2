@@ -220,7 +220,9 @@ class Audio(private val ctx: Context) {
             val rid = rawId(name)
             if (rid == 0) return
             val s = try { vp.load(ctx, rid, 1) } catch (t: Throwable) { 0 }
-            voiceIds[name] = s
+            // 只在加载成功时进缓存：旧实现把 0 也缓存下来，
+            // 某次 load 失败（SoundPool 打满/解码失败）会让这条语音永久哑掉。
+            if (s != 0) voiceIds[name] = s
             s
         } else {
             cached

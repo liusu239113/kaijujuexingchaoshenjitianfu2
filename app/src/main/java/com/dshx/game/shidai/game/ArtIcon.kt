@@ -52,7 +52,13 @@ object ArtIcon {
         "vampire_elixir" to "ic_it_vampire",
         "purge_scroll" to "ic_it_purge",
         "stasis_orb" to "ic_it_stasis",
-        "star_fragment" to "ic_it_star"
+        "star_fragment" to "ic_it_star",
+        // v1.6.0 扩充道具
+        "war_brew" to "ic_it_warbrew",
+        "thorn_scroll" to "ic_it_thorn",
+        "gale_potion" to "ic_it_gale",
+        "mithril_bandage" to "ic_it_bandage",
+        "star_brew" to "ic_it_starbrew"
     )
 
     fun item(id: String): String = itemMap[id] ?: "ic_it_heal"
@@ -123,6 +129,9 @@ object ArtIcon {
     /** 转职徽记：berserker → em_berserker。 */
     fun emblem(promoId: String): String = "em_" + promoId
 
+    /** 天赋流派图标：School.EDGE -> ic_school_edge。 */
+    fun school(s: School): String = "ic_school_" + s.name.lowercase()
+
 
     /** 技能音效名（对应 res/raw/sfx_xxx.mp3）。 */
     fun skillSfx(s: Skill): String = when {
@@ -150,6 +159,9 @@ object ArtIcon {
         "revive_scroll" -> "revive"
         "iron_elixir", "swift_elixir", "vampire_elixir" -> "shield"
         "star_fragment" -> "unlock"
+        "war_brew" -> "starup"
+        "thorn_scroll", "mithril_bandage" -> "heal"
+        "gale_potion", "star_brew" -> "shield"
         else -> "skill"
     }
 

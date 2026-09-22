@@ -192,6 +192,20 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
     r.text(c, "职阶", 24f, y, 15f, Palette.CYAN, true)
     y += 12f
     val cw = (w - 48f - 3 * 8f) / 4f
+    if (!firstTime) {
+        // 角色一旦创建，职阶就跟着这个角色一辈子。
+        // 旧版每次「出发远征」都把这张 8 宫格重新摆一遍，玩家会以为自己被退回了创角流程。
+        val lk = Data.classById[setupClass] ?: Data.classes[0]
+        val lc = classColor(lk.id)
+        val lhh = r.lh(96f)
+        card(c, 24f, y, w - 48f, lhh, r.withAlpha(lc, 200), 16f)
+        drawPortrait(c, lk.id, 24f + lhh * 0.5f, y + lhh / 2f, lhh * 0.78f, lc)
+        val lx = 24f + lhh * 0.98f
+        r.text(c, lk.name + " · " + lk.title, lx, y + r.lh(34f), 17f, Palette.TEXT, true)
+        r.text(c, "职阶已锁定 · 与角色绑定，不可更改", lx, y + r.lh(56f), 11.5f, Palette.GOLD)
+        r.text(c, "主面板：" + primaryLabel(lk.primary) + "   战技 " + lk.skills.size + " 个", lx, y + r.lh(78f), 11f, Palette.TEXT_DIM)
+        y += lhh + 10f
+    } else {
     for (i in Data.classes.indices) {
         val cls = Data.classes[i]
         val col = i % 4
@@ -222,6 +236,7 @@ internal fun GameView.drawSetupScreen(c: Canvas) {
         hit("setup_class_" + cls.id, x, yy, cw, cw + 18f)
     }
     y += (cw + 26f) * 2f + 6f
+    }
 
     // 职阶说明
     val cls = Data.classById[setupClass] ?: Data.classes[0]
@@ -310,7 +325,14 @@ internal fun GameView.drawTalentCard(c: Canvas, t: Talent, x: Float, y: Float, w
     // 系别徽记
     val hexCx = x + 40f
     val hexCy = y + 40f
-    r.hexFrame(c, hexCx, hexCy, 24f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
+    // 系别徽记：优先画流派图标（缺图才回退原来的字符徽记）
+    val schKey = ArtIcon.school(t.school)
+    if (bitmap(schKey) != null) {
+        drawIcon(c, schKey, hexCx, hexCy, 46f, col)
+    } else {
+        r.hexFrame(c, hexCx, hexCy, 24f, col, r.withAlpha(Palette.PANEL_SOFT, 255))
+        r.text(c, t.school.glyph, hexCx, hexCy + 8f, 20f, col, true, Paint.Align.CENTER)
+    }
     r.text(c, t.school.glyph, hexCx, hexCy + 8f, 20f, col, true, Paint.Align.CENTER)
 
     r.text(c, t.name, x + 74f, y + 32f, 18f, Palette.TEXT, true)
@@ -324,6 +346,11 @@ internal fun GameView.drawTalentCard(c: Canvas, t: Talent, x: Float, y: Float, w
 internal fun GameView.drawDraftScreen(c: Canvas) {
     if (replacePick && pendingOption != null) {
         drawReplacePicker(c)
+        return
+    }
+    // 次数用尽且广告加选还没用：停在完成页，别把玩家直接送走
+    if (picksLeft <= 0 && draftOptions.isEmpty()) {
+        drawDraftDone(c)
         return
     }
     r.text(c, "神格觉醒", w / 2f, 88f, 28f, Palette.PINK, true, Paint.Align.CENTER)
@@ -424,6 +451,10 @@ internal fun GameView.drawResonanceStrip(c: Canvas, p: com.dshx.game.shidai.game
 internal fun GameView.tapDraft(id: String) {
     val p = run ?: return
     if (id == "draft_cancel_replace") {
+    if (id == "draft_finish") {
+        afterDraft()
+        return
+    }
         pendingOption = null
         replacePick = false
         return
@@ -447,6 +478,11 @@ internal fun GameView.tapDraft(id: String) {
             draftAdUsed = true
             picksLeft++
             picksTotal++
+            // 从「觉醒完成」页点广告回来时得补一组新选项，否则屏幕上无牌可选
+            if (draftOptions.isEmpty()) {
+                val pp = run
+                if (pp != null) draftOptions = com.dshx.game.shidai.game.DraftService.roll(pp, perm, com.dshx.game.shidai.game.DraftService.optionCount(pp, perm))
+            }
             showToast("获得 1 次额外觉醒")
         }
         return
@@ -470,7 +506,31 @@ private fun GameView.finishDraftStep() {
     if (picksLeft > 0) {
         val p = run ?: return
         draftOptions = com.dshx.game.shidai.game.DraftService.roll(p, perm, com.dshx.game.shidai.game.DraftService.optionCount(p, perm))
+    } else if (!draftAdUsed && com.dshx.game.shidai.game.RewardAds.isReady()) {
+        // 次数用完了，但这次的「看广告 +1 次」还没用掉 —— 不要立刻 afterDraft() 离屏。
+        // 旧版就是这样：玩家刚看见按钮，最后一次抉择一选完整屏就跳走了，
+        // 反馈是「没生效就跳过去了」。这里停在「觉醒完成」，把要不要用广告交给玩家。
+        draftOptions = emptyList()
     } else {
         afterDraft()
     }
+}
+
+/** 觉醒完成：次数用尽但广告加选还没用时的停留页。 */
+private fun GameView.drawDraftDone(c: Canvas) {
+    r.text(c, "神格觉醒完成", w / 2f, 118f, 26f, Palette.PINK, true, Paint.Align.CENTER)
+    r.text(c, "本轮的星语已全部落位", w / 2f, 144f, 12f, Palette.TEXT_DIM, false, Paint.Align.CENTER)
+    run?.let { drawResonanceStrip(c, it, 166f) }
+
+    val top = 286f
+    val boxH = r.lh(104f)
+    card(c, 24f, top, w - 48f, boxH, r.withAlpha(Palette.GOLD, 200), 16f)
+    r.text(c, "还想要一次吗？", 42f, top + 32f, 16f, Palette.GOLD, true)
+    r.wrapClamp(
+        c, "本次觉醒还能看一次广告，额外多拿 1 次星语抉择 —— 每个角色每轮限一次。",
+        42f, top + 54f, w - 84f, 11.5f, Palette.TEXT_DIM, 16f, 2
+    )
+
+    button(c, "draft_ad_pick", "看 广 告 · 再 +1 次", 40f, top + boxH + 18f, w - 80f, 54f, Palette.GOLD)
+    ghostButton(c, "draft_finish", "结 束 觉 醒", 40f, top + boxH + 84f, w - 80f, 48f, Palette.TEXT_DIM)
 }

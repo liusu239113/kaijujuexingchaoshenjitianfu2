@@ -58,7 +58,7 @@ internal fun GameView.drawCombatScreen(c: Canvas) {
     val maxLines = (((logBottom - logTop - r.lh(22f)) / logStep).toInt()).coerceAtLeast(1)
     for (s in b.log.takeLast(maxLines)) {
         if (ly > logBottom - 6f) break
-        r.text(c, s, 22f, ly, 11f, Palette.TEXT_DIM)
+        r.text(c, s, 22f, ly, 11f, logColor(s))
         ly += logStep
     }
 
@@ -90,17 +90,8 @@ private fun GameView.rowGeom(count: Int, rowH: Float): Triple<Float, Float, Floa
 
 private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: Float, isEnemy: Boolean, b: Battle, accent: Int) {
     r.text(c, if (isEnemy) "敌方 · 点击锁定目标" else "我方", 14f, top + 11f, 11.5f, accent, true)
-    // 宠物同行：不占上场位，但它的加成与开场效果要在战斗界面里看得见
-    if (!isEnemy) {
-        val pet = com.dshx.game.shidai.game.Pets.of(perm.petId)
-        if (pet != null) {
-            val lbl = "宠物 " + pet.name + " Lv." + perm.petLevel(pet.id)
-            val tw = r.measure(lbl, 10.5f, true)
-            r.text(c, lbl, w - 16f, top + 11f, 10.5f, Palette.GOLD, true, Paint.Align.RIGHT)
-            // 小图必须收在「我方」这一行标题的高度里（top..top+16），否则会压到上一行卡片
-            drawPortrait(c, pet.avatar, w - 16f - tw - 11f, top + 8f, 15f, Palette.GOLD)
-        }
-    }
+    // 宠物现在是我方队列里的一个真实单位（见 Battle.start），
+    // 不再需要右上角那行 15px 小字 —— 它在截图里几乎看不见。
     val gridTop = top + 16f
     val ch = rowH - 18f
     val (startX, cw, _) = rowGeom(list.size, rowH)
@@ -295,7 +286,7 @@ internal fun GameView.tapCombat(id: String) {
             audio.play(com.dshx.game.shidai.game.ArtIcon.skillSfx(s))
             if (s.isUltimate) {
                 (run)?.let { audio.playSkillVoice(it.classId, s.id, "ult") }
-            } else if (System.currentTimeMillis() - lastVoiceMs > 900L) {
+            } else if (System.currentTimeMillis() - lastVoiceMs > 300L) {
                 // 节流放宽到 0.9s：playVoice 是覆盖式播放，同一时刻只会响一条，
                 // 旧值 4.5s 会让大部分技能根本轮不到自己的专属语音。
                 lastVoiceMs = System.currentTimeMillis()
@@ -304,4 +295,25 @@ internal fun GameView.tapCombat(id: String) {
             combatDelay = 0.32f
         }
     }
+}
+
+
+/**
+ * 战斗日志按类型上色。
+ * 旧版整块日志是同一种灰，伤害、控制、倒地、回合分隔全糊在一起，
+ * 打完一回合根本看不出发生了什么。日志文案全部由 Battle.addLog 产生，
+ * 所以按关键字分类足够稳，也不用改日志的数据结构。
+ */
+private fun logColor(s: String): Int = when {
+    s.startsWith("——") -> Palette.CYAN
+    s.contains("倒下") || s.contains("阵亡") -> Palette.RED
+    s.contains("眩晕") || s.contains("沉默") || s.contains("冻结") -> Palette.PURPLE
+    s.contains("闪避") -> Palette.CYAN
+    s.contains("复活") || s.contains("涅槃") -> Palette.GOLD
+    s.startsWith("宠物") -> Palette.GOLD
+    s.contains("广告") || s.contains("曜辉") -> Palette.GOLD
+    s.startsWith("遭遇") || s.contains("机制 ·") -> Palette.CYAN
+    s.contains("使用【") -> Palette.TEXT
+    s.startsWith("使用了") -> Palette.GREEN
+    else -> Palette.TEXT_DIM
 }

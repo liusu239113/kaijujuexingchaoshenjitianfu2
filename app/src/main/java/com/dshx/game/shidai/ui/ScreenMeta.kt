@@ -30,28 +30,72 @@ internal fun GameView.drawAchievementsScreen(c: Canvas) {
 }
 
 internal fun GameView.drawShopScreen(c: Canvas) {
-    drawTopBar(c, "星尘兑换", "星尘 ${perm.dust} · 长线解锁内容", "meta_back", null, null)
+    // 旧版这一屏只丢出三个「星语扩展 · 一/二/三」和一行「长线解锁内容」，
+    // 玩家完全不知道星尘是什么、打哪来、买了会发生什么 —— 反馈就是「看不懂」。
+    drawTopBar(c, "星尘兑换", "用星尘永久扩充神格卡池", "meta_back", null, null)
     var y = beginScroll(c, 112f)
-    y = sectionHeader(c, "解锁内容", y)
+
+    // ---- 这是什么 ----
+    card(c, UiKit.MARGIN, y, contentW(), 100f, r.withAlpha(Palette.CYAN, 190), UiKit.RADIUS)
+    r.text(c, "星尘能做什么", UiKit.MARGIN + 14f, y + 26f, 13.5f, Palette.CYAN, true)
+    r.wrapClamp(
+        c,
+        "在下面解锁「星语扩展」，把新的星语（天赋）永久加进每局开始时的神格觉醒卡池。" +
+            "解锁是账号级的，之后每一局都能抽到这些新星语。",
+        UiKit.MARGIN + 14f, y + 46f, contentW() - 28f, 11f, Palette.TEXT_DIM, 15f, 3
+    )
+    y += 112f
+
+    // ---- 从哪来 ----
+    y = sectionHeader(c, "星尘从哪来", y)
+    val src = listOf(
+        "回廊成就" to "每达成一个成就立即发放",
+        "章节奖励" to "推进主线章节时结算",
+        "通关模式" to "打穿一个试炼强度即发放",
+        "宠物召唤" to "抽到已满级宠物时折算"
+    )
+    for (s in src) {
+        r.text(c, "· " + s.first, UiKit.MARGIN + 6f, y + 12f, 11.5f, Palette.GOLD)
+        r.text(c, s.second, w - UiKit.MARGIN - 6f, y + 12f, 11f, Palette.TEXT_DIM, false, Paint.Align.RIGHT)
+        y += 20f
+    }
+    y += 6f
+
+    // ---- 可兑换内容 ----
+    val poolN = Meta.unlocks.count { perm.unlocked.contains(it.kind + ":" + it.key) }
+    y = sectionHeader(c, "星语扩展（已解锁 " + poolN + " / " + Meta.unlocks.size + " 批）", y)
     for (u in Meta.unlocks) {
         val owned = perm.unlocked.contains(u.kind + ":" + u.key)
         val afford = perm.dust >= u.cost
-        card(c, UiKit.MARGIN, y, contentW(), UiKit.ROW_MED + 10f,
-            if (owned) Palette.GREEN else if (afford) Palette.PINK else Palette.BORDER_SOFT, UiKit.RADIUS)
-        r.text(c, u.name, UiKit.MARGIN + 14f, y + 26f, 13.5f, if (owned) Palette.GREEN else Palette.TEXT, true)
-        r.text(c, u.desc, UiKit.MARGIN + 14f, y + 46f, 10.5f, Palette.TEXT_DIM)
+        card(
+            c, UiKit.MARGIN, y, contentW(), UiKit.ROW_MED + 22f,
+            if (owned) Palette.GREEN else if (afford) Palette.PINK else Palette.BORDER_SOFT, UiKit.RADIUS
+        )
+        r.text(c, u.name, UiKit.MARGIN + 14f, y + 24f, 13.5f, if (owned) Palette.GREEN else Palette.TEXT, true)
+        r.text(c, u.desc, UiKit.MARGIN + 14f, y + 44f, 10.5f, Palette.TEXT_DIM)
+        r.text(
+            c, if (owned) "已加入卡池 · 每局都能抽到" else "解锁后本局卡池 +12 颗星语",
+            UiKit.MARGIN + 14f, y + 64f, 10f, if (owned) Palette.GREEN else Palette.CYAN
+        )
         if (owned) {
-            r.text(c, "已解锁", w - UiKit.MARGIN - 14f, y + 40f, 13f, Palette.GREEN, true, Paint.Align.RIGHT)
+            r.text(c, "已解锁", w - UiKit.MARGIN - 14f, y + 44f, 13f, Palette.GREEN, true, Paint.Align.RIGHT)
         } else {
-            ghostButton(c, "dust_buy_" + u.id, u.cost.toString() + " 尘", w - UiKit.MARGIN - 104f, y + 14f, 90f, 40f,
-                if (afford) Palette.PINK else Palette.TEXT_FAINT)
+            ghostButton(
+                c, "dust_buy_" + u.id, u.cost.toString() + " 尘",
+                w - UiKit.MARGIN - 104f, y + 20f, 90f, 40f,
+                if (afford) Palette.PINK else Palette.TEXT_FAINT
+            )
         }
-        y += UiKit.ROW_MED + 18f
+        y += UiKit.ROW_MED + 30f
     }
+
+    // ---- 累计 ----
     y = sectionHeader(c, "累计", y + 4f)
-    r.text(c, "累计获得星尘：" + perm.dustTotal + "　　星尘来自：通关模式 / 成就 / 章节奖励", UiKit.MARGIN, y + 12f, 11.5f, Palette.TEXT_FAINT)
-    endScroll(c, y + 30f)
+    r.text(c, "累计获得星尘：" + perm.dustTotal, UiKit.MARGIN, y + 12f, 11.5f, Palette.GOLD)
+    r.text(c, "当前持有：" + perm.dust, UiKit.MARGIN, y + 30f, 11.5f, Palette.CYAN)
+    endScroll(c, y + 40f)
     ghostButton(c, "meta_back", "返 回", UiKit.MARGIN, h - 74f, contentW(), 48f, Palette.TEXT_DIM)
+
 }
 
 internal fun GameView.drawAboutScreen(c: Canvas) {
