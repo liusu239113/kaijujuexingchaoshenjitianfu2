@@ -353,6 +353,110 @@ object TowerService {
                 addEquip(run, e)
                 msg = "获得 90 金币与紫装【${e.name}】"
             }
+            // ===== v1.2.7：补齐 Content2 扩展事件里只写了配置、没有处理的效果 =====
+            "star_crit" -> {
+                run.nextBattleBonus["crit"] = (run.nextBattleBonus["crit"] ?: 0.0) + 8.0
+                msg = "本场景全队暴击 +8%。"
+            }
+            "star_energy" -> {
+                run.permBonus["energyRegen"] = (run.permBonus["energyRegen"] ?: 0.0) + 6.0
+                RunService.recalcAll(run, perm)
+                msg = "全队能量回复永久 +6。"
+            }
+            "blood_altar" -> {
+                run.permBonus["atkPct"] = (run.permBonus["atkPct"] ?: 0.0) + 0.18
+                run.permBonus["matkPct"] = (run.permBonus["matkPct"] ?: 0.0) + 0.18
+                run.permBonus["maxHpPct"] = (run.permBonus["maxHpPct"] ?: 0.0) - 0.15
+                RunService.recalcAll(run, perm)
+                msg = "攻击与法强 +18%，最大生命 -15%。"
+            }
+            "moon_well" -> {
+                run.nextBattleBonus["maxHpPct"] = (run.nextBattleBonus["maxHpPct"] ?: 0.0) + 0.15
+                for (u in run.party) u.hp = max(1.0, u.hp * 0.9)
+                msg = "本场景最大生命 +15%，当前生命 -10%。"
+            }
+            "void_gaze" -> {
+                for (k in listOf("atkPct", "matkPct", "maxHpPct", "defPct")) {
+                    run.nextBattleBonus[k] = (run.nextBattleBonus[k] ?: 0.0) + 0.15
+                }
+                run.nextBattleBonus["dmgTaken"] = (run.nextBattleBonus["dmgTaken"] ?: 0.0) + 0.10
+                msg = "本场景全面板 +15%，但受到的伤害 +10%。"
+            }
+            "hall_dodge" -> {
+                run.nextBattleBonus["dodge"] = (run.nextBattleBonus["dodge"] ?: 0.0) + 20.0
+                msg = "本场景闪避 +20%。"
+            }
+            "arena_dodge" -> {
+                run.nextBattleBonus["dodge"] = (run.nextBattleBonus["dodge"] ?: 0.0) + 15.0
+                msg = "下一场遭遇战闪避 +15%。"
+            }
+            "oracle_pen" -> {
+                run.nextBattleBonus["pen"] = (run.nextBattleBonus["pen"] ?: 0.0) + 0.25
+                msg = "下一场遭遇战无视 25% 防御。"
+            }
+            "arena_bet" -> {
+                if (!canPay(choice.gold)) return "金币不足，庄家把你请了出去。"
+                gold(choice.gold)
+                if (Random.nextDouble() < 0.65) {
+                    run.gold += 200
+                    msg = "押注命中！赢得 200 金币。"
+                } else {
+                    msg = "押注落空，${choice.gold} 金币打了水漂。"
+                }
+            }
+            "loot_epic_paid" -> {
+                if (!canPay(choice.gold)) return "金币不足。"
+                gold(choice.gold)
+                val e = generateEquip(f, Rarity.EPIC)
+                addEquip(run, e)
+                msg = "获得紫装【${e.name}】"
+            }
+            "soul_forge_atk" -> {
+                run.permBonus["atk"] = (run.permBonus["atk"] ?: 0.0) + 20.0
+                run.permBonus["maxHp"] = (run.permBonus["maxHp"] ?: 0.0) - 40.0
+                RunService.recalcAll(run, perm)
+                msg = "攻击 +20，最大生命 -40。"
+            }
+            "soul_forge_hp" -> {
+                run.permBonus["maxHp"] = (run.permBonus["maxHp"] ?: 0.0) + 120.0
+                RunService.recalcAll(run, perm)
+                for (u in run.party) u.hp = max(1.0, u.hp * 0.75)
+                msg = "最大生命 +120，当前生命 -25%。"
+            }
+            "story_sacrifice" -> {
+                run.permBonus["maxHp"] = (run.permBonus["maxHp"] ?: 0.0) + 200.0
+                RunService.recalcAll(run, perm)
+                for (u in run.party) u.hp = max(1.0, u.hp * 0.7)
+                msg = "最大生命永久 +200，当前生命 -30%。"
+            }
+            "story_rest" -> {
+                for (u in run.party) {
+                    u.alive = true
+                    u.hp = u.stats.maxHp
+                    u.energy = u.stats.energyMax
+                }
+                run.gold += 200
+                msg = "全队满血满能量，并获得 200 金币。"
+            }
+            "trap_break" -> {
+                for (u in run.party) u.hp = max(1.0, u.hp * 0.85)
+                run.gold += 100
+                msg = "损失 15% 当前生命，获得 100 金币。"
+            }
+            "alchemy_gamble" -> {
+                if (Random.nextDouble() < 0.5) {
+                    run.permBonus["atkPct"] = (run.permBonus["atkPct"] ?: 0.0) + 0.15
+                    run.permBonus["matkPct"] = (run.permBonus["matkPct"] ?: 0.0) + 0.15
+                    RunService.recalcAll(run, perm)
+                    msg = "药力充沛：攻击与法强 +15%。"
+                } else {
+                    for (u in run.party) u.hp = max(1.0, u.hp * 0.75)
+                    msg = "药性暴烈：全队损失 25% 当前生命。"
+                }
+            }
+            "open_tavern" -> {
+                msg = "你翻开佣兵名册。"
+            }
             else -> msg = "什么也没有发生。"
         }
         return msg

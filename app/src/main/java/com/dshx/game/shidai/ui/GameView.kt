@@ -1602,6 +1602,12 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
             fe.result = msg
         }
         eventResult = msg
+        // 岚射手营地「雇佣一名」：直接把佣兵招募界面打开
+        if (choice.kind == "open_tavern") {
+            tavernList = ArrayList(TowerService.tavernCandidates(p.floor))
+            tavernAdRefreshed = false
+            overlay = "tavern"
+        }
         Tracker.bump(perm, "events")
         if (TowerService.currentEvent(p)?.kind == "story") Tracker.bump(perm, "story")
         Tracker.sampleRun(perm, p)

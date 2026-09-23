@@ -401,6 +401,7 @@ object RunService {
         s.atk *= 1.0 + (run.permBonus["atkPct"] ?: 0.0)
         s.matk *= 1.0 + (run.permBonus["matkPct"] ?: 0.0)
         s.def *= 1.0 + (run.permBonus["defPct"] ?: 0.0)
+        s.energyRegen += run.permBonus["energyRegen"] ?: 0.0
 
         // 轮回执掌：每层全面板 +3%
         if (run.grid.divinity?.passive == "reincarnation_admin") {

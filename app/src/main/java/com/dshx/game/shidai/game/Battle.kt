@@ -101,6 +101,28 @@ class Battle(
                 addLog("宠物【" + petDef.name + "】加入战场。")
             }
         }
+        // 事件「本场景」类加成：只作用于这一场遭遇战（nextBattleBonus 在战斗结算后清空）
+        val sceneBonus = run.nextBattleBonus
+        if (sceneBonus.isNotEmpty()) {
+            for (u in allies) {
+                if (u.alive) {
+                    sceneBonus["dodge"]?.let { v -> u.stats.dodge += v }
+                    sceneBonus["crit"]?.let { v -> u.stats.crit += v }
+                    sceneBonus["pen"]?.let { v -> u.stats.armorPen += v }
+                    sceneBonus["dmgTaken"]?.let { v -> u.stats.dmgReduction -= v }
+                    sceneBonus["atkPct"]?.let { v ->
+                        u.stats.atk *= 1.0 + v
+                        u.stats.matk *= 1.0 + v
+                    }
+                    sceneBonus["defPct"]?.let { v -> u.stats.def *= 1.0 + v }
+                    sceneBonus["maxHpPct"]?.let { v ->
+                        val grow = u.stats.maxHp * v
+                        u.stats.maxHp += grow
+                        u.hp += grow
+                    }
+                }
+            }
+        }
         buildEnemies()
         // 开场护盾类被动
         // 宠物开场效果
