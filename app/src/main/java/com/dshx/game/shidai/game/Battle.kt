@@ -5,6 +5,11 @@ import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.random.Random
 
+// 曜罚之手（曜神级，唯一）：中度削弱后的数值
+private const val DIVINE_HAND_TRUE = 0.05   // 普攻额外真伤：5% 最大生命
+private const val DIVINE_HAND_GROW = 0.008  // 每次普攻永久 +0.8% 最大生命
+private const val DIVINE_HAND_CAP = 0.80    // 本天赋自身最多累计 +80%
+
 class FloatText(
     var text: String,
     var color: Int,
@@ -886,13 +891,19 @@ class Battle(
         }
         // 天赋额外真伤
         if (attacker.id == "player" && dv?.passive == "divine_hand" && (skill?.isBasic == true)) {
-            raw += attacker.stats.maxHp * 0.08
-            // 每次普攻永久 +1.5% 最大生命：本轮累积（随存档保留），当次战斗即时生效
-            val grow = attacker.stats.maxHp * 0.015
-            run.permBonus["maxHpPct"] = (run.permBonus["maxHpPct"] ?: 0.0) + 0.015
-            attacker.stats.maxHp += grow
-            attacker.hp = min(attacker.stats.maxHp, attacker.hp + grow)
-            addFloat("生命 +1.5%", 0xFF66E28A.toInt(), attacker)
+            raw += attacker.stats.maxHp * DIVINE_HAND_TRUE
+            // 每次普攻永久 +0.8% 最大生命：本轮累积（随存档保留），当次战斗即时生效。
+            // 本天赋自身最多叠到 +80%，单独记账，不挤占祭坛/事件给的生命加成
+            val grown = run.permBonus["divineHandHp"] ?: 0.0
+            if (grown < DIVINE_HAND_CAP) {
+                val step = min(DIVINE_HAND_GROW, DIVINE_HAND_CAP - grown)
+                run.permBonus["divineHandHp"] = grown + step
+                run.permBonus["maxHpPct"] = (run.permBonus["maxHpPct"] ?: 0.0) + step
+                val grow = attacker.stats.maxHp * step
+                attacker.stats.maxHp += grow
+                attacker.hp = min(attacker.stats.maxHp, attacker.hp + grow)
+                addFloat(String.format("生命 +%.1f%%", step * 100), 0xFF66E28A.toInt(), attacker)
+            }
         }
 
         val finalDmg = max(1.0, raw)

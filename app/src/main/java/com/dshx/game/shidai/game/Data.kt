@@ -144,7 +144,7 @@ object Data {
     val talents: List<Talent> = listOf(
         // ===== 曜神级（开局必得，占神格位，唯一） =====
         tl("ht_divine_hand", "曜罚之手", Rarity.HIDDEN, School.EDGE,
-            "普攻额外造成 8% 最大生命真实伤害；每次普攻永久 +1.5% 最大生命。", passive = "divine_hand"),
+            "普攻额外造成 5% 最大生命真实伤害；每次普攻永久 +0.8% 最大生命（最多 +80%）。", passive = "divine_hand"),
         tl("ht_arcane_echo", "星轨回响", Rarity.HIDDEN, School.ARC,
             "战技增伤 +30%；造成战技伤害时 25% 概率立刻刷新该战技冷却。", passive = "arcane_echo"),
         tl("ht_iron_heart", "磐心", Rarity.HIDDEN, School.WARD,
