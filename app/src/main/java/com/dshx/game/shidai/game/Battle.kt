@@ -375,7 +375,10 @@ class Battle(
         var dotBoost = if (u.isEnemy && run.grid.slots.any { it?.passive == "dot_boost" }) 1.8 else 1.0
         if (u.isEnemy && Pets.of(perm.petId)?.passive == "dot") dotBoost += 0.4
         for (d in dots) {
-            val real = max(1.0, d.value * dotBoost)
+            // 炎爆精通：灼烧增伤 +50%
+            var mul = dotBoost
+            if (d.id == "burn" && u.isEnemy && run.grid.slots.any { it?.passive == "burn_boost" }) mul += 0.5
+            val real = max(1.0, d.value * mul)
             u.hp -= real
             u.damageTaken += real
             addFloat("-${real.toInt()}", 0xFFFF7043.toInt(), u)
@@ -686,7 +689,9 @@ class Battle(
             for (t in targets) {
                 if (!t.alive) continue
                 var sum = 0.0
-                val hitCount = max(1, skillHits(skill.hits, lvOf(skill)))
+                var hitCount = max(1, skillHits(skill.hits, lvOf(skill)))
+                // 双生獠牙：凡庸攻击额外攻击 1 次
+                if (actor.id == "player" && skill.isBasic && run.grid.slots.any { it?.passive == "double_attack" }) hitCount += 1
                 for (h in 0 until hitCount) {
                     if (!t.alive) break
                     val d = dealDamage(actor, t, skill, critExtra, penExtra)
@@ -791,6 +796,11 @@ class Battle(
             target.removeBuff("dodge_next")
             addFloat("闪避", 0xFFAAB6CC.toInt(), target)
             addLog("${target.name} 闪避了攻击。")
+            // 幻夜行步：闪避成功后回复 8 能量
+            if (target.id == "player" && run.grid.slots.any { it?.passive == "dodge_energy" }) {
+                target.energy = min(target.stats.energyMax, target.energy + 8.0)
+                addFloat("+8 能量", 0xFF7FD3FF.toInt(), target)
+            }
             return 0.0
         }
 
@@ -855,6 +865,12 @@ class Battle(
         // 天赋额外真伤
         if (attacker.id == "player" && dv?.passive == "divine_hand" && (skill?.isBasic == true)) {
             raw += attacker.stats.maxHp * 0.08
+            // 每次普攻永久 +1.5% 最大生命：本轮累积（随存档保留），当次战斗即时生效
+            val grow = attacker.stats.maxHp * 0.015
+            run.permBonus["maxHpPct"] = (run.permBonus["maxHpPct"] ?: 0.0) + 0.015
+            attacker.stats.maxHp += grow
+            attacker.hp = min(attacker.stats.maxHp, attacker.hp + grow)
+            addFloat("生命 +1.5%", 0xFF66E28A.toInt(), attacker)
         }
 
         val finalDmg = max(1.0, raw)

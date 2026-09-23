@@ -402,6 +402,15 @@ object RunService {
         s.matk *= 1.0 + (run.permBonus["matkPct"] ?: 0.0)
         s.def *= 1.0 + (run.permBonus["defPct"] ?: 0.0)
 
+        // 轮回执掌：每层全面板 +3%
+        if (run.grid.divinity?.passive == "reincarnation_admin") {
+            val k = 1.0 + run.floor * 0.03
+            s.maxHp *= k
+            s.atk *= k
+            s.matk *= k
+            s.def *= k
+        }
+
         s.crit = min(s.crit, 80.0)
         s.dodge = min(s.dodge, 60.0)
         s.statusRes = min(s.statusRes, 75.0)
