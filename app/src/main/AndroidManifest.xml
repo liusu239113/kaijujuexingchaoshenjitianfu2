@@ -43,6 +43,30 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          隐私合规（TapTap 检测点：同意前不得读取设备标识）：
+          下面这些第三方 SDK 的 ContentProvider 会在**进程启动时自动初始化**，
+          早于隐私政策弹窗，因此会在用户同意前读取 AndroidID / OAID 等标识。
+          全部移除 —— 各 SDK 改为在用户点「同意」之后由我们的代码显式初始化：
+            · TapTap 登录 / 防沉迷 -> GameView.setupTap()（TapTapSdk.init 内部会跑
+              TapTapSdkInitializer，与 TapTapKitInitProvider 做的事完全一致）
+            · 广告聚合 Tosin -> GameView.setupAds()（TosinSDK.instance.init）
+          只移除「初始化 / 常驻服务」类 provider；各家的 FileProvider 保留不动。
+        -->
+        <provider android:name="com.taptap.sdk.kit.internal.TapTapKitInitProvider" tools:node="remove" />
+        <provider android:name="com.taptap.sdk.themis.lite.ThemisProvider" tools:node="remove" />
+        <provider android:name="com.anythink.core.api.ATInitializationProvider" tools:node="remove" />
+        <provider android:name="com.smartdigimkt.sdk.api.SDMInitializationProvider" tools:node="remove" />
+        <provider android:name="com.byazt.yx.TTMultiProvider" tools:node="remove" />
+        <provider android:name="com.byazt.hii.MainProcessProviderProxy" tools:node="remove" />
+        <provider android:name="com.byazt.hh.MainServerManager" tools:node="remove" />
+        <provider android:name="com.byazt.ozr.MainServerManager" tools:node="remove" />
+        <provider android:name="com.byazt.hh.DownloaderServerManager" tools:node="remove" />
+        <provider android:name="com.bytedance.android.openliveplugin.process.server.LiveServerManager" tools:node="remove" />
+        <provider android:name="com.byted.live.lite.ServerManager_bytelive" tools:node="remove" />
+        <provider android:name="com.byted.live.lite.ServerManager_push" tools:node="remove" />
+        <provider android:name="com.byted.live.lite.ServerManager_downloader" tools:node="remove" />
     </application>
 
 </manifest>

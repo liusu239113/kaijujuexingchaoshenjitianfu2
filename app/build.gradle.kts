@@ -26,8 +26,8 @@ android {
         applicationId = "com.dshx.game.shidai"
         minSdk = 24
         targetSdk = 34
-        versionCode = 114
-        versionName = "1.2.6"
+        versionCode = 115
+        versionName = "1.2.7"
     }
 
     signingConfigs {

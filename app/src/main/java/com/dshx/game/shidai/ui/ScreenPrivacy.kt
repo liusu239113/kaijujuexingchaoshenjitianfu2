@@ -46,8 +46,7 @@ internal fun GameView.drawPrivacyGateOverlay(c: Canvas) {
 
     y = privacySection(c, "一、我们收集的信息", listOf(
         "设备型号、操作系统版本（用于适配和优化）",
-        "设备标识符（用于广告展示和数据统计）",
-        "广告标识符 OAID（本游戏为展示广告与统计广告效果而获取）",
+        "设备标识符：广告标识符 OAID、设备标识 AndroidID（用于广告展示、效果统计与反作弊）",
         "网络类型（WiFi/移动数据，用于广告加载）",
         "游戏存档数据（仅存储在本地设备，不上传服务器）",
         "应用崩溃日志（用于定位与修复问题）"
@@ -60,15 +59,17 @@ internal fun GameView.drawPrivacyGateOverlay(c: Canvas) {
     ), y)
 
     y = privacySection(c, "三、第三方 SDK 及其收集的信息", listOf(
-        "TapTap 登录 SDK：获取 AndroidID，用于账号登录与身份鉴权",
-        "TapTap 防沉迷 SDK：获取实名认证信息，用于未成年人保护（法定要求）",
-        "Tosin / TopOn 聚合广告 SDK：获取 OAID、AndroidID、WiFi 状态，用于广告展示与投放、反作弊与安全风控",
-        "穿山甲 / 优量汇 / 快手 / 百度 / Sigmob 等广告平台（经聚合 SDK 调用）：获取 OAID、设备 IP，用于广告展示、效果归因与数据统计"
+        "TapTap 登录 SDK：获取 AndroidID、设备型号与系统版本，用于账号登录与身份鉴权",
+        "TapTap 防沉迷 SDK：获取实名认证信息（姓名、身份证号、年龄段），用于未成年人保护（法定要求）",
+        "移动安全联盟 OAID SDK：读取设备标识符 OAID（系统支持时），用于生成广告标识",
+        "Tosin / TopOn 聚合广告 SDK：获取 OAID、AndroidID、设备型号与系统版本、网络状态（WiFi/移动数据）、设备 IP，用于广告展示与投放、反作弊与安全风控",
+        "穿山甲 / 优量汇 / 快手 / 百度 / Sigmob 等广告平台（经聚合 SDK 调用）：获取 OAID、AndroidID、设备型号与系统版本、网络状态、设备 IP，用于广告展示、效果归因与数据统计"
     ), y)
 
     y = privacySection(c, "四、我们已关闭的采集", listOf(
-        "本游戏已关闭 IMEI、MAC 地址、定位、已安装应用列表、录音等敏感信息的采集；",
-        "不申请「读取手机状态」「读写外部存储」「定位」「读取应用列表」等敏感权限。"
+        "本游戏已关闭 IMEI、设备序列号、MAC 地址、定位、已安装应用列表、录音等敏感信息的采集；",
+        "不申请「读取手机状态」「读写外部存储」「定位」「读取应用列表」等敏感权限；",
+        "在您点击「同意」之前，本应用不会初始化任何第三方 SDK，也不会读取 AndroidID、OAID 等任何设备标识。"
     ), y)
 
     y = privacySection(c, "五、您的权利", listOf(
