@@ -379,8 +379,15 @@ internal fun GameView.drawDraftScreen(c: Canvas) {
     endScroll(c, y)
     // 高转化位：本次觉醒多看一次（每次觉醒限一次）
     if (!draftAdUsed) {
-        button(c, "draft_ad_pick", "看广告 · 本次觉醒 +1 次", UiKit.MARGIN, h - 76f, contentW(), 48f, Palette.GOLD)
+        button(c, "draft_ad_pick", "看广告 · 本次觉醒 +1 次", UiKit.MARGIN, h - 132f, contentW(), 48f, Palette.GOLD)
     }
+    // 三个选项都不想要时给条出路：放弃本次觉醒，不占神格环。
+    // 旧版没有这个按钮，玩家只能硬选一张、神格环满了还得拆掉已有的好牌。
+    ghostButton(
+        c, "draft_skip_all",
+        if (picksLeft > 1) "放弃本次觉醒（剩余 ${picksLeft} 次抉择）" else "放弃本次觉醒",
+        UiKit.MARGIN, h - 76f, contentW(), 48f, Palette.TEXT_DIM
+    )
 }
 
 private fun GameView.drawReplacePicker(c: Canvas) {
@@ -410,7 +417,9 @@ private fun GameView.drawReplacePicker(c: Canvas) {
             hit("draft_slot_$i", x, y, cw, 104f)
         }
     }
-    ghostButton(c, "draft_cancel_replace", "返回重选", 24f, h - 76f, w - 48f, 50f, Palette.TEXT_DIM)
+    ghostButton(c, "draft_cancel_replace", "返回重选", 24f, h - 132f, w - 48f, 46f, Palette.TEXT_DIM)
+    // 环满了又抽到不想要的：允许直接丢掉这张，别逼玩家拆掉已有的好神格
+    ghostButton(c, "draft_drop_option", "放弃这个神格（不占环）", 24f, h - 76f, w - 48f, 46f, Palette.RED)
 }
 
 internal fun GameView.drawResonanceStrip(c: Canvas, p: com.dshx.game.shidai.game.RunState, top: Float) {
@@ -461,6 +470,27 @@ internal fun GameView.tapDraft(id: String) {
     if (id == "draft_cancel_replace") {
         pendingOption = null
         replacePick = false
+        return
+    }
+    // 放弃这个神格：把刚选的选项从候选里摘掉，退回选牌页，不消耗次数
+    if (id == "draft_drop_option") {
+        val opt = pendingOption
+        pendingOption = null
+        replacePick = false
+        if (opt != null) draftOptions = draftOptions.filter { it !== opt }
+        showToast("已放弃「" + (opt?.talent?.name ?: "该神格") + "」")
+        return
+    }
+    // 放弃本次觉醒：剩余抉择次数一并放弃，直接进入本轮结束
+    if (id == "draft_skip_all") {
+        val n = picksLeft
+        picksLeft = 0
+        p.draftPicksLeft = 0
+        draftOptions = emptyList()
+        pendingOption = null
+        replacePick = false
+        showToast(if (n > 1) "已放弃本次觉醒的 " + n + " 次抉择" else "已放弃本次觉醒")
+        afterDraft()
         return
     }
     if (id.startsWith("draft_slot_")) {

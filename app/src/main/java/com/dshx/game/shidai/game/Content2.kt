@@ -52,8 +52,8 @@ object Content2 {
         ChapterMechanic(2, "永续再生", "首领每回合回复 4% 最大生命。"),
         ChapterMechanic(3, "双王同临", "首领战出现两名首领（各自生命较低）。"),
         ChapterMechanic(4, "暴走化", "首领攻击 +30%，暴击 +15%。"),
-        ChapterMechanic(5, "虚渊侵蚀", "首领无视 30% 防御，且免疫控制。"),
-        ChapterMechanic(6, "终末形态", "首领获得护盾、再生、沸血全部效果。")
+        ChapterMechanic(5, "虚渊侵蚀", "首领无视 30% 防御，暴击 +15%。"),
+        ChapterMechanic(6, "终末形态", "首领获得护盾、再生，控制抗性大幅提高。")
     )
 
     fun chapterOf(floorNum: Int): Int = (floorNum / 10).coerceIn(0, 6)

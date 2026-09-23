@@ -171,12 +171,17 @@ class Battle(
                 if (chapter >= 2) e.addBuff(Buff("boss_regen", "首领再生", 999, 1, 0.04, false))
                 if (chapter >= 4) e.stats.crit += 15.0
                 if (chapter >= 5) {
-                    e.stats.statusRes = 999.0
+                    // 第 5 章：无视 30% 防御（与章节机制文案一致）
                     e.stats.armorPen = 0.30
+                }
+                if (chapter >= 6) {
+                    // 第 6 章：终末形态。旧版这里给的是 cc_immune（完全免控），
+                    // 玩家堆控制链的构筑到第 60 层直接失效、且毫无提示，体感就是"卡住"。
+                    // 改成高抗性：控制仍有概率生效，但明显更难。
+                    e.stats.statusRes = max(e.stats.statusRes, 80.0)
                 }
                 if (mode == GameMode.CLIMB && run.climbLevel >= 5) e.stats.statusRes += 10.0
                 if (mode == GameMode.CLIMB && run.climbLevel >= 20) e.stats.statusRes += 20.0
-                if (chapter >= 6) e.addBuff(Buff("cc_immune", "免控", 999, 1, 0.0, false))
                 if (mode == GameMode.CLIMB && run.climbLevel >= 30) {
                     e.addBuff(Buff("boss_regen", "首领再生", 999, 1, 0.02, false))
                 }
@@ -194,6 +199,7 @@ class Battle(
             }
             val mech = Content2.mechanicFor(floor)
             if (mech != null) addLog("章节机制 · " + mech.name + "：" + mech.desc)
+            if (Content2.chapterOf(floor) >= 6) addLog("终末形态 · 首领控制抗性极高（约 44% 抵抗），控制类战技仍可生效但更难命中。")
         }
         turn = 0
         finished = false

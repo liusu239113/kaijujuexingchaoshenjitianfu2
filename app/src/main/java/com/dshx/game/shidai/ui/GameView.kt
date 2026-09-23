@@ -1116,6 +1116,14 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
 
     fun handleLongPress(id: String) {
         when {
+            // 战斗里长按单位卡：看完整面板（敌方玩家一直抱怨看不到怪物信息）。
+            // 短按走 tapCombat 的 cb_target_ 分支锁定目标，长按走这里看信息，互不干扰。
+            id.startsWith("cb_target_") -> {
+                val uid = id.removePrefix("cb_target_")
+                val b = battle ?: return
+                val u = (b.enemies + b.allies).firstOrNull { it.id == uid } ?: return
+                showDetail(u.name, unitBody(u, u.isEnemy), "")
+            }
             id.startsWith("cb_skill_") -> {
                 val b = battle ?: return
                 val idx = id.removePrefix("cb_skill_").toIntOrNull() ?: return
@@ -1275,6 +1283,51 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
     }
 
     /** 伙伴完整属性 + 战技，供点击查看详情使用。 */
+    /** 战斗单位详情：敌方也能看面板、词条与战技，避免"莫名被秒"。 */
+    private fun unitBody(u: Unit, isEnemy: Boolean): String {
+        val sb = StringBuilder()
+        val clsName = com.dshx.game.shidai.game.Data.classById[u.clsId]?.name
+        sb.appendLine((clsName ?: if (isEnemy) "敌方单位" else "") + " · Lv." + u.level +
+            (if (isEnemy) "   第 " + (battle?.floor ?: 0) + " 层" else ""))
+        if (u.shield > 0.0) sb.appendLine("护盾 " + u.shield.toInt())
+        sb.appendLine()
+        sb.appendLine("生命 " + u.hp.toInt() + " / " + u.stats.maxHp.toInt())
+        sb.appendLine("攻击 " + u.stats.atk.toInt() + "    法强 " + u.stats.matk.toInt())
+        sb.appendLine("防御 " + u.stats.def.toInt() + "    暴击 " + u.stats.crit.toInt() + "%")
+        sb.appendLine("暴伤 " + u.stats.critDmg.toInt() + "%    闪避 " + u.stats.dodge.toInt() + "%")
+        if (u.stats.statusRes > 0.0) {
+            val pct = (u.stats.statusRes / (100.0 + u.stats.statusRes) * 100).toInt()
+            sb.appendLine("控制抗性 " + pct + "%（越高越难被眩晕/沉默）")
+        }
+        if (u.stats.armorPen > 0.0) sb.appendLine("无视防御 " + (u.stats.armorPen * 100).toInt() + "%")
+        if (u.stats.lifesteal > 0.0) sb.appendLine("生命窃取 " + (u.stats.lifesteal * 100).toInt() + "%")
+        val affixes = u.buffs.filter { it.id.startsWith("affix_") }
+        if (affixes.isNotEmpty()) {
+            sb.appendLine()
+            sb.appendLine("词条：")
+            for (a in affixes) {
+                val def = com.dshx.game.shidai.game.Content.enemyAffixes.firstOrNull { a.id == "affix_" + it.id }
+                if (def != null) sb.appendLine("· " + def.cn + " — " + def.desc)
+                else sb.appendLine("· " + a.name)
+            }
+        }
+        // 反伤单独点出来：玩家「莫名被秒」几乎都是高爆发打在棘刺怪身上被反弹
+        if (u.buffs.any { it.id == "affix_thorns" }) {
+            sb.appendLine()
+            sb.appendLine("⚠ 该单位带【棘刺】：你打它多少，就按比例反弹给你。")
+            sb.appendLine("   对高爆发角色是致命的 —— 建议换低伤多段或先清词条。")
+        }
+        if (u.skills.isNotEmpty()) {
+            sb.appendLine()
+            sb.appendLine("战技：")
+            for (sk in u.skills) {
+                sb.appendLine("· " + sk.name + "（耗能 " + sk.cost + " / 冷却 " + sk.cd + "）")
+                sb.appendLine("   " + sk.desc)
+            }
+        }
+        return sb.toString()
+    }
+
     private fun mercBody(u: Unit): String {
         val sb = StringBuilder()
         sb.appendLine((com.dshx.game.shidai.game.Data.classById[u.clsId]?.name ?: "") + " · " + u.rarity.cn + " · Lv." + u.level)

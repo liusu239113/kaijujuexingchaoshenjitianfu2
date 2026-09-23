@@ -155,15 +155,26 @@ private fun GameView.drawUnitRow(c: Canvas, list: List<Unit>, top: Float, rowH: 
             r.bar(c, x + 8f, cy, cw - 16f, 4f, (u.shield / u.stats.maxHp).toFloat().coerceIn(0f, 1f), Palette.SHIELD, Palette.SHIELD)
             cy += r.lh(7f)
         }
-        val buffs = u.buffs.filter { !it.id.startsWith("affix_") }.take(3)
+        // 词条不再过滤 affix_：棘刺（反弹 20% 伤害）这类词条旧版被隐藏，
+        // 玩家看不见反伤，打上去自己暴毙，反馈就是「莫名被秒」。
+        val buffs = u.buffs.take(3)
         if (buffs.isNotEmpty()) {
             var bx = x + 6f
             for (bf in buffs) {
-                val col = if (bf.isDebuff) Palette.RED else Palette.GREEN
+                val isAffix = bf.id.startsWith("affix_")
+                val col = if (isAffix) Palette.GOLD else if (bf.isDebuff) Palette.RED else Palette.GREEN
                 r.solid(c, bx, cy, 28f, 14f, 7f, r.withAlpha(col, 215))
                 r.text(c, bf.name.take(2), bx + 14f, cy + 11f, 8.5f, 0xFF140B26.toInt(), true, Paint.Align.CENTER)
                 bx += 31f
             }
+        }
+        // 同一个点击区两种行为：短按锁定目标，长按看完整怪物信息
+        // （hitIdAt 从后往前命中，注册两个 id 会互相抢，所以只注册 cb_target_）
+        hit("cb_target_" + u.id, x, gridTop, cw, ch)
+        if (preferredTargetId == u.id && isEnemy) {
+            r.stroke.color = Palette.PINK
+            r.stroke.strokeWidth = 2.5f
+            c.drawRoundRect(x + 1f, gridTop + 1f, x + cw - 1f, gridTop + ch - 1f, 12f, 12f, r.stroke)
         }
     }
 }
