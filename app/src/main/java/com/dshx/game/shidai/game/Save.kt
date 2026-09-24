@@ -408,9 +408,18 @@ object Save {
             o.optJSONArray("floorEvents")?.let { arr ->
                 for (i in 0 until arr.length()) {
                     val je = arr.optJSONObject(i) ?: continue
+                    val kind = je.optString("kind", "event")
+                    val evId = je.optString("eventId", "")
+                    var ev = Content.eventById[evId]
+                    // 兜底：老存档里的 story 事件 id 查不回来（当时 storyEvents 没进索引表），
+                    // 留 null 会退化成空壳事件、点「进入」还没反应，玩家直接卡死在这一层。
+                    // 按层数补一个对应的事件数据。
+                    if (ev == null && evId.isNotEmpty()) {
+                        ev = Content2.storyFor(run.floor) ?: Content.allEvents.firstOrNull { it.id == evId }
+                    }
                     val fe = FloorEvent(
-                        je.optString("kind", "event"),
-                        Content.eventById[je.optString("eventId", "")],
+                        kind,
+                        ev,
                         je.optBoolean("resolved", false),
                         je.optString("result", "")
                     )

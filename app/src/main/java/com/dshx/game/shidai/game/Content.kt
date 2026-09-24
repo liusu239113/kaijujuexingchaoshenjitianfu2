@@ -305,7 +305,12 @@ object Content {
         ))
     )
 
-    val allEvents: List<GameEvent> = events + Content2.extraEvents
+    // 注意：storyEvents（每 10 层的「回廊守望」）也必须进表 ——
+    // 旧版只拼了 extraEvents，导致：
+    //   ① 存档只存事件 id，读档时 Content.eventById 查不到 story 事件 ->
+    //      事件数据丢失，界面退化成空壳「回廊守望」，点「进入」还没反应，玩家彻底卡死；
+    //   ② pickEvent 的随机池里永远抽不到守望事件，成就「聆听回廊」也拿不到。
+    val allEvents: List<GameEvent> = events + Content2.extraEvents + Content2.storyEvents
 
     val eventById: Map<String, GameEvent> = allEvents.associateBy { it.id }
 

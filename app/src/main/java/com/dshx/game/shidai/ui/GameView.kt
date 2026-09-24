@@ -1829,6 +1829,12 @@ fun showDetail(title: String, body: String, icon: String = "", actionId: String 
                 val intro = fe.event?.intro ?: ""
                 if (intro.isNotEmpty()) {
                     openStory(com.dshx.game.shidai.game.StoryScript.encounter(intro, heroName()), Screen.TOWER)
+                } else {
+                    // 事件数据缺失（老存档）时，旧版这里什么都不做 —— 按钮点了没反应，
+                    // 玩家会以为卡死。至少给个反馈并跳过这个空壳事件。
+                    fe.resolved = true
+                    fe.result = "回廊的记录已模糊，这一层直接放行。"
+                    showToast("该事件记录缺失，已跳过")
                 }
             }
             "event" -> {
