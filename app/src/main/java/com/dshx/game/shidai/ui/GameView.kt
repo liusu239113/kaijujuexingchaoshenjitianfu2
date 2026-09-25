@@ -614,9 +614,11 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
      * 已同意过的老玩家在 View 构造时触发。
      */
     fun setupTap() {
+        if (privacyGate || !com.dshx.game.shidai.ads.AdPrivacy.isAccepted(context)) return
         val act = context as? android.app.Activity ?: return
         // 1) 初始化 SDK
         com.dshx.game.shidai.tap.TapHelper.init(context)
+        if (!com.dshx.game.shidai.tap.TapHelper.isInitialized()) return
         // 2) 登录态回调
         com.dshx.game.shidai.tap.TapHelper.listener =
             object : com.dshx.game.shidai.tap.TapHelper.Listener {
@@ -731,6 +733,7 @@ class GameView(context: Context) : View(context), Choreographer.FrameCallback,
 
     /** 初始化广告并把「播放激励视频」注入 RewardAds（必须在同意隐私政策之后调用）。 */
     fun setupAds() {
+        if (privacyGate || !com.dshx.game.shidai.ads.AdPrivacy.isAccepted(context)) return
         val act = context as? android.app.Activity ?: return
         com.dshx.game.shidai.ads.AdBridge.setup(act)
     }

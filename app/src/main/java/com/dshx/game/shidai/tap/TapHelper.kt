@@ -57,6 +57,7 @@ object TapHelper {
     /** 初始化 TapTap SDK（幂等；隐私同意后才可调用）。 */
     @Synchronized
     fun init(context: Context) {
+        if (!com.dshx.game.shidai.ads.AdPrivacy.isAccepted(context)) return
         if (initialized) return
         try {
             TapTapSdk.init(

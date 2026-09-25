@@ -40,6 +40,10 @@ object TosinAdInitializer {
      * 成功后幂等；失败后允许重试（有 3 秒冷却）。
      */
     fun init(application: Application, onDone: (Boolean) -> Unit = {}) {
+        if (!AdPrivacy.isAccepted(application)) {
+            onDone(false)
+            return
+        }
         if (isSdkInitialized) {
             onDone(true)
             return

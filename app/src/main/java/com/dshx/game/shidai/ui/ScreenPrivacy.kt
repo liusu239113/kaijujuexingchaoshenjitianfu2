@@ -151,6 +151,10 @@ internal fun GameView.tapPrivacy(id: String) {
         "priv_accept" -> {
             // 与参考项目一致：同意即写入接受状态，不再单独询问个性化广告。
             AdPrivacy.accept(context, true)
+            if (!AdPrivacy.isAccepted(context)) {
+                showToast("隐私授权保存失败，请重试")
+                return
+            }
             privacyGate = false
             privacyScroll = 0f
             privacyScrollMax = 0f

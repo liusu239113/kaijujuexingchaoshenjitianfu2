@@ -13,6 +13,7 @@ object AdBridge {
 
     /** 用户同意隐私政策后调用：初始化 SDK、注入播放实现、预热第一条广告。 */
     fun setup(activity: Activity) {
+        if (!AdPrivacy.isAccepted(activity)) return
         RewardAds.install { _, callback ->
             AdManager.getInstance().showRewardVideo(activity, callback)
         }

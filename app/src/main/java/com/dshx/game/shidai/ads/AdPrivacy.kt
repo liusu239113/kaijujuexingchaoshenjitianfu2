@@ -25,7 +25,7 @@ object AdPrivacy {
     fun personalizedEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_PERSONALIZED, false)
 
     fun accept(ctx: Context, personalized: Boolean) {
-        prefs(ctx).edit().putBoolean(KEY_ACCEPTED, true).putBoolean(KEY_PERSONALIZED, personalized).apply()
+        prefs(ctx).edit().putBoolean(KEY_ACCEPTED, true).putBoolean(KEY_PERSONALIZED, personalized).commit()
     }
 
     fun setPersonalized(ctx: Context, on: Boolean) {
