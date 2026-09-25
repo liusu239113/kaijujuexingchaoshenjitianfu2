@@ -381,6 +381,10 @@ object Save {
                     val ju = arr.optJSONObject(i) ?: continue
                     if (ju.optString("id") == "player") {
                         hero.avatarKey = ju.optString("avatarKey", hero.clsId)
+                        // 旧版转职锁定立绘的存档仍然显示初始职业头像。
+                        if (hero.avatarKey == run.classId && run.promotionId != null) {
+                            hero.avatarKey = "pc_" + (run.tier2Id ?: run.promotionId)
+                        }
                         hero.level = ju.optInt("level", 1)
                         hero.hp = ju.optDouble("hp", hero.stats.maxHp)
                         hero.energy = ju.optDouble("energy", 0.0)
@@ -411,12 +415,9 @@ object Save {
                     val kind = je.optString("kind", "event")
                     val evId = je.optString("eventId", "")
                     var ev = Content.eventById[evId]
-                    // 兜底：老存档里的 story 事件 id 查不回来（当时 storyEvents 没进索引表），
-                    // 留 null 会退化成空壳事件、点「进入」还没反应，玩家直接卡死在这一层。
-                    // 按层数补一个对应的事件数据。
-                    if (ev == null && evId.isNotEmpty()) {
-                        ev = Content2.storyFor(run.floor) ?: Content.allEvents.firstOrNull { it.id == evId }
-                    }
+                    // 老版读档丢失剧情后，再次存档会把事件 id 覆盖为空。
+                    // 只要槽位仍是 story，就按楼层恢复剧情，不依赖 eventId。
+                    if (kind == "story" && ev == null) ev = Content2.storyFor(run.floor)
                     val fe = FloorEvent(
                         kind,
                         ev,

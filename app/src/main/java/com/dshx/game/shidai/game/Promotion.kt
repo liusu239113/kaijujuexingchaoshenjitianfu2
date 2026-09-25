@@ -191,18 +191,6 @@ object Promotions {
 
     val byId: Map<String, PromotionDef> = all.associateBy { it.id }
 
-    /**
-     * 转职后「不换立绘」的转职。
-     * 这些转职的立绘性别与职阶语音对不上（战士是男声但「怒战之巅」立绘是女性等），
-     * 换上去只会制造新的错位；保持职阶立绘 + 转职称号更稳妥。
-     * 其余转职照常切换立绘。
-     */
-    val artLocked = setOf(
-        "warlord", "lightjudge",                          // 战士线（男声）：立绘为女性
-        "shadowblade",                                    // 夜刃线（女声）：立绘为男性
-        "crimsonpriest", "trueancestor", "crimsonhigh"    // 绯血裔线（男声）：立绘为女性
-    )
-
     fun tier1For(classId: String): List<PromotionDef> =
         all.filter { it.tier == 1 && it.baseClass == classId }
 

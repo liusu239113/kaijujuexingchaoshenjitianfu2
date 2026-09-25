@@ -27,7 +27,7 @@ object Content2 {
 
     val eliteAvatars = listOf("e01", "e02", "e03", "e04", "e05", "e06", "e07", "e08")
     val bossAvatars = listOf("b01", "b02", "b03", "b04", "b05", "b06", "b07", "b08", "b09", "b10", "b11", "b12")
-    val monsterAvatars = (1..32).map { "m" + it.toString().padStart(2, '0') }
+    val monsterAvatars = (1..86).map { "m" + it.toString().padStart(2, '0') }
     /**
      * 伙伴立绘池，按「语音性别」分成两组。
      * 旧实现是 12 张男女混在一起随机抽，和职阶语音性别无关 ——

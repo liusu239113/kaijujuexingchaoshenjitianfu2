@@ -69,7 +69,8 @@ object TowerService {
     }
 
     private fun pickEvent(f: Int): GameEvent {
-        val pool = Content.allEvents.filter { it.minFloor <= f }
+        // 守望剧情只在每十层的固定槽位出现，不进入随机奇遇池。
+        val pool = Content.allEvents.filter { it.minFloor <= f && !it.id.startsWith("story_") }
         if (pool.isEmpty()) return Content.allEvents[0]
         var total = 0
         for (e in pool) total += e.weight

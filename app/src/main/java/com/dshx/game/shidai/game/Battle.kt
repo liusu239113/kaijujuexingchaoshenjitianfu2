@@ -281,7 +281,7 @@ class Battle(
         // 名字与立绘同源：同一索引同时决定名称与图像，避免错配
         val avatarKeys = ArrayList<String>()
         val names = mutableListOf<String>()
-        val seed = (floor * 5 + run.eventIdx * 3) % 97
+        val seed = floor * 37 + run.eventIdx * 29
         for (i in 0 until count) {
             when (kind) {
                 "boss" -> {
